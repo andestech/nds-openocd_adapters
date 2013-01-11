@@ -4,6 +4,11 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#ifdef __MINGW32__
+#include <windows.h>
+#include <process.h>
+#endif
+
 const char *opt_string = "AaDvBsIBhtHKgGjJkd:E:S:R:i:m:M:p:b:z:f:c:u:U:w:W:T:r:e:n:o:C:P:y:Y:F:O:l:L:N:";
 struct option long_option[] = {
 	{"test", no_argument, 0, 't'},
@@ -376,8 +381,6 @@ static close_config_files(void) {
 
 int main(int argc, char **argv) {
 	char line_buffer[LINE_BUFFER_SIZE];
-	char *openocd_argv[4] = {0, 0, 0, 0};
-	char *burner_adapter_argv[4] = {0, 0, 0, 0};
 
 	parse_param(argc, argv);
 
@@ -429,6 +432,30 @@ int main(int argc, char **argv) {
 	/* close config files */
 	close_config_files();
 
+	char *openocd_argv[4] = {0, 0, 0, 0};
+	char *burner_adapter_argv[4] = {0, 0, 0, 0};
+
+#ifdef __MINGW32__
+	int burner_adapter_pid;
+	int openocd_pid;
+
+        char burner_port_num[12];
+        burner_adapter_argv[0] = "burner_adapter.exe";
+        burner_adapter_argv[1] = "-p";
+        sprintf(burner_port_num, "%d", burner_port);
+        burner_adapter_argv[2] = burner_port_num;
+	burner_adapter_pid = _spawnv(_P_NOWAIT, "./burner_adapter.exe", (const char * const *)burner_adapter_argv);
+
+        openocd_argv[0] = "openocd";
+        if (unlimited_log)
+        	openocd_argv[1] = "-d";
+	openocd_pid = _spawnv(_P_NOWAIT, "./openocd.exe", (const char * const *)openocd_argv);
+
+	int burner_adapter_status;
+	int openocd_status;
+        _cwait(&burner_adapter_status, burner_adapter_pid, WAIT_CHILD);
+        _cwait(&openocd_status, openocd_pid, WAIT_CHILD);
+#else
 	pid_t burner_adapter_pid;
 	pid_t openocd_pid;
 
@@ -469,6 +496,7 @@ int main(int argc, char **argv) {
 
 	if (waitpid(openocd_pid, &openocd_status, 0) < 0)
 		fprintf(stderr, "wait openocd failed\n");
+#endif
 
 	return 0;
 }

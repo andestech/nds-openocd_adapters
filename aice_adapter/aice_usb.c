@@ -228,7 +228,7 @@ static int usb_bulk_with_retries(
 		int result = f(dev, ep, bytes + count, size - count, timeout);
 		if (result > 0)
 			count += result;
-#ifndef _WIN32
+#ifndef __MINGW32__
 		else if ((-ETIMEDOUT != result) || !--tries)
 			return result;
 #else
@@ -973,11 +973,8 @@ int aice_usb_open(uint16_t vid, uint16_t pid)
 	 * committing them!
 	 */
 
-#if IS_WIN32 == 0
-
+#ifndef __MINGW32__
 	usb_reset (devh);
-
-#if IS_DARWIN == 0
 
 	int timeout = 5;
 	/* reopen jlink after usb_reset
@@ -991,8 +988,6 @@ int aice_usb_open(uint16_t vid, uint16_t pid)
 	}
 	if (ERROR_OK != retval)
 		return ERROR_FAIL;
-#endif
-
 #endif
 
 	/* usb_set_configuration required under win32 */

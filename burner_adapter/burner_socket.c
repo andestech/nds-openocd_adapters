@@ -11,16 +11,16 @@ static SOCKET host_descriptor;
 static SOCKET client_descriptor;
 
 int prepare_connect(int port_num) {
-	static bool winsock_init = false;
+	static int winsock_init = 0;
 	struct sockaddr_in sockaddr;
 
-	if (winsock_init == false)
+	if (winsock_init == 0)
 	{
 		WSADATA wsadata;
 		if (WSAStartup (MAKEWORD (1, 0), &wsadata) == SOCKET_ERROR)
 			return EINIT;
 
-		winsock_init = true;
+		winsock_init = 1;
 	}
 
 	// Create socket to wait for connection from gdb
@@ -42,7 +42,7 @@ int prepare_connect(int port_num) {
 
 	// Listen on specified port
 	sockaddr.sin_family = PF_INET;
-	sockaddr.sin_port = htons (port_num_);
+	sockaddr.sin_port = htons (port_num);
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind (host_descriptor, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0)
@@ -64,7 +64,7 @@ int wait_connect(void) {
 		Sleep (3000);
 #endif
 
-		client_descriptor = accept (_host_descriptor, (struct sockaddr *)&sockaddr, &sockaddr_len);
+		client_descriptor = accept (host_descriptor, (struct sockaddr *)&sockaddr, &sockaddr_len);
 
 	} while (client_descriptor < 0);
 
@@ -89,16 +89,7 @@ int wait_transaction(void) {
 	FD_ZERO(&read_fds);
 	FD_SET(client_descriptor, &read_fds);
 
-	if (timed_wait_)
-	{
-		tv.tv_sec = 0;
-		tv.tv_usec = timeout_microseconds_;
-		result = select (client_descriptor + 1, &read_fds, NULL, NULL, &tv);
-	}
-	else
-	{
-		result = select (client_descriptor + 1, &read_fds, NULL, NULL, NULL);
-	}
+	result = select (client_descriptor + 1, &read_fds, NULL, NULL, NULL);
 
 	return result;
 }

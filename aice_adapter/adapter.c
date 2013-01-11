@@ -1307,7 +1307,7 @@ static int aice_usb_cache_ctl (uint32_t sub_type, uint32_t address)
 
 static int pipe_read(void *buffer, int length)
 {
-#ifdef _WIN32
+#ifdef __MINGW32__
 	BOOL success;
 	DWORD has_read;
 
@@ -1326,7 +1326,7 @@ static int pipe_read(void *buffer, int length)
 
 static int pipe_write(const void *buffer, int length)
 {
-#ifdef _WIN32
+#ifdef __MINGW32__
 	BOOL success;
 	DWORD written;
 
