@@ -264,12 +264,6 @@ void init_tcl_client(void) {
 	struct sockaddr_in server_addr;  
 
 #ifdef __MINGW32__
-	WSADATA wsadata;
-	if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
-	}
-#endif
-
-#ifdef __MINGW32__
 	if ((tcl_client = socket(PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
 #else
 	if ((tcl_client = socket(PF_INET, SOCK_STREAM, 0)) == -1)
@@ -294,10 +288,6 @@ void close_tcl_client (void)
 	/* free socket resource */
 #ifdef __MINGW32__
 	closesocket (tcl_client);
-	do
-	{
-		WSACleanup ();
-	} while (WSAGetLastError () != WSANOTINITIALISED);
 #else
 	close (tcl_client);
 #endif
