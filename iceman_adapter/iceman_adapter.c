@@ -9,7 +9,7 @@
 #include <process.h>
 #endif
 
-const char *opt_string = "AaDvBsIBhtHKgGjJkd:E:S:R:i:m:M:p:b:z:f:c:u:U:w:W:T:r:e:n:o:C:P:y:Y:F:O:l:L:N:";
+const char *opt_string = "AaDvBsIBhtHKgGjJkd:E:S:R:i:m:M:p:b:z:f:c:u:U:w:W:T:r:e:n:o:C:P:y:Y:F:O:l:L:N:z:";
 struct option long_option[] = {
 	{"test", no_argument, 0, 't'},
 	{"help", no_argument, 0, 'h'},
@@ -54,7 +54,15 @@ struct option long_option[] = {
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
 	{"custom-restart", required_argument, 0, 'N'},
+	{"target", required_argument, 0, 'z'},
 	{0, 0, 0, 0}
+};
+
+enum TARGET_TYPE {
+	TARGET_V2 = 0,
+	TARGET_V3,
+	TARGET_V3m,
+	TARGET_INVALID,
 };
 
 static char *memory_stop_sequence;
@@ -76,6 +84,7 @@ static int reset_aice;
 static int global_stop;
 static int no_crst_detect;
 static int word_access_mem;
+static enum TARGET_TYPE target_type;
 
 static void show_version(void) {
 	printf ("Andes ICEman V2.0.2\n");
@@ -148,6 +157,7 @@ static void show_usage(void) {
 	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
 	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
 	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
+	printf("-z, --target:\tSpecify target type (v2/v3/v3m)\n");
 }
 
 static void parse_param(int a_argc, char **a_argv) {
@@ -224,6 +234,18 @@ static void parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'k':
 				word_access_mem = 1;
+				break;
+			case 'z':
+				optarg_len = strlen(optarg);
+				if (strncmp(optarg, "v2", optarg_len) == 0) {
+					target_type = TARGET_V2;
+				} else if (strncmp(optarg, "v3", optarg_len) == 0) {
+					target_type = TARGET_V3;
+				} else if (strncmp(optarg, "v3m", optarg_len) == 0) {
+					target_type = TARGET_V3m;
+				} else {
+					target_type = TARGET_INVALID;
+				}
 				break;
 				/*
 			case 'F':
@@ -307,13 +329,13 @@ static void parse_param(int a_argc, char **a_argv) {
 				exit(0);
 				*/
 			case 'v':
-				show_version();
-				exit(0);
+					show_version();
+					exit(0);
 			case 'h':
 			case '?':
 			default:
-				show_usage ();
-				exit(0);
+					show_usage ();
+					exit(0);
 		}
 	}
 }
@@ -419,7 +441,18 @@ int main(int argc, char **argv) {
 	/* update nds32_xc5.cfg */
 	char *find_pos;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
-		if ((find_pos = strstr(line_buffer, "--boot")) != NULL) {
+		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
+			if (target_type == TARGET_V3) {
+				strcpy(line_buffer, "source [find target/nds32v3.cfg]\n");
+			} else if (target_type == TARGET_V2) {
+				strcpy(line_buffer, "source [find target/nds32v2.cfg]\n");
+			} else if (target_type == TARGET_V3m) {
+				strcpy(line_buffer, "source [find target/nds32v3m.cfg]\n");
+			} else {
+				fprintf(stderr, "No target specified\n");
+				exit(0);
+			}
+		} else if ((find_pos = strstr(line_buffer, "--boot")) != NULL) {
 			if (boot_code_debug)
 				strcpy(find_pos - 1, "reset halt\n");
 			else
