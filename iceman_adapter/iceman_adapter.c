@@ -65,8 +65,22 @@ enum TARGET_TYPE {
 	TARGET_INVALID,
 };
 
-static char *memory_stop_sequence;
-static char *memory_resume_sequence;
+struct MEM_OPERATIONS {
+	int address;
+	int data;
+	int mask;
+	int restore;
+};
+
+#define MAX_MEM_OPERATIONS_NUM 32
+
+struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
+struct MEM_OPERATIONS resume_sequences[MAX_MEM_OPERATIONS_NUM];
+int stop_sequences_num = 0;
+int resume_sequences_num = 0;
+
+static char *memory_stop_sequence = NULL;
+static char *memory_resume_sequence = NULL;
 static int aice_retry_time = 10;
 static int clock_setting = 8;
 static int debug_level;
@@ -401,6 +415,29 @@ static close_config_files(void) {
 	fclose(board_cfg);
 }
 
+static void parse_mem_operation(const char *mem_operation) {
+	char *next_data;
+
+	if (strncmp(mem_operation, "stop-seq ", 9) == 0) {
+		stop_sequences[stop_sequences_num].address = strtol(mem_operation+9, &next_data, 0);
+		stop_sequences[stop_sequences_num].data = strtol(next_data+1, &next_data, 0);
+		if (*next_data == ':')
+			stop_sequences[stop_sequences_num].mask = strtol(next_data+1, &next_data, 0);
+		stop_sequences_num++;
+	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
+		resume_sequences[resume_sequences_num].address = strtol(mem_operation+11, &next_data, 0);
+		if (*(next_data+1) == 'r')
+			resume_sequences[resume_sequences_num].restore = 1;
+		else {
+			resume_sequences[resume_sequences_num].restore = 0;
+			resume_sequences[resume_sequences_num].data = strtol(next_data+1, &next_data, 0);
+			if (*next_data == ':')
+				resume_sequences[resume_sequences_num].mask = strtol(next_data+1, &next_data, 0);
+		}
+		resume_sequences_num++;
+	}
+}
+
 int main(int argc, char **argv) {
 	char line_buffer[LINE_BUFFER_SIZE];
 
@@ -461,6 +498,51 @@ int main(int argc, char **argv) {
 
 		fputs(line_buffer, board_cfg);
 	}
+
+	/* open sw-reset-seq.txt */
+	FILE *sw_reset_fd = NULL;
+	char *next_data;
+	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
+	if (sw_reset_fd != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL) {
+			parse_mem_operation(line_buffer);
+		}
+		fclose(sw_reset_fd);
+	}
+	if (memory_stop_sequence) {
+		parse_mem_operation(memory_stop_sequence);
+	}
+	if (memory_resume_sequence) {
+		parse_mem_operation(memory_resume_sequence);
+	}
+
+	int i;
+	for (i = 0 ; i < stop_sequences_num ; i++) {
+		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
+	}
+
+	fputs("$_TARGETNAME configure -event halted {\n", board_cfg);
+	fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
+	for (i = 0 ; i < stop_sequences_num ; i++) {
+		fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_sequences[i].address);
+		fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_sequences[i].address, stop_sequences[i].address);
+		fprintf(board_cfg, "\tmww 0x%x 0x%x\n", stop_sequences[i].address, stop_sequences[i].data);
+	}
+	fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
+	fputs("}\n", board_cfg);
+
+	fputs("$_TARGETNAME configure -event resumed {\n", board_cfg);
+	fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
+	for (i = 0 ; i < resume_sequences_num ; i++) {
+		if (resume_sequences[i].restore) {
+			fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_sequences[i].address);
+			fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_sequences[i].address, resume_sequences[i].address);
+		} else {
+			fprintf(board_cfg, "\tmww 0x%x 0x%x\n", resume_sequences[i].address, resume_sequences[i].data);
+		}
+	}
+	fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
+	fputs("}\n", board_cfg);
 
 	/* close config files */
 	close_config_files();
