@@ -143,12 +143,10 @@ static void show_usage(void) {
 	printf("-T, --boot-time:\tBoot time of target board\n");
 	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
 	printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
-	printf("\t\tUsage: --stop-seq A1:D1[:M1],A2:D2[:M2]\n");
-	printf("\t\t\t--resume-seq A3:D3[:M3],A2:rst\n");
-	printf("\t\t\tA*:address D*:data [:M*]:optional mask rst:restore D2\n");
-	printf("\t\t\tA*,D*,[M*] should be hex as following example\n\n");
-	printf("\t\tExample: --stop-seq 0x500000:0x80,0x600000:0x20\n");
-	printf("\t\t\t--resume-seq 0x500000:0x80,0x600000:rst\n\n");
+	printf("\t\tUsage: --stop-seq \"stop-seq address:data\"\n");
+	printf("\t\t\t--resume-seq \"resume-seq address:{data|rst}\"\n");
+	printf("\t\tExample: --stop-seq \"stop-seq 0x200800:0x80\"\n");
+	printf("\t\t\t--resume-seq \"resume-seq 0x200800:rst\"\n\n");
 	printf("-o, --reset-time:\tReset time of reset-and-hold\n");
 	printf("-C, --check-times:\tCount to check DBGER\n");
 	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
