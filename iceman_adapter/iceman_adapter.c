@@ -101,8 +101,8 @@ static int word_access_mem;
 static enum TARGET_TYPE target_type;
 
 static void show_version(void) {
-	printf ("Andes ICEman V2.0.2\n");
-	printf ("Copyright (C) 2012 Andes Technology Corporation\n");
+	printf ("Andes ICEman V2.0.3\n");
+	printf ("Copyright (C) 2007-2013 Andes Technology Corporation\n");
 }
 
 static void show_usage(void) {
@@ -118,9 +118,8 @@ static void show_usage(void) {
 	printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
 	printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
 	printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
-	printf("-s, --source:\t\tShow commit ID of this version\n");
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
-	printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
+	printf("[TODO]-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
 	printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
 	printf("\t\t\t0: 30 MHz\n");
 	printf("\t\t\t1: 15 MHz\n");
@@ -138,7 +137,7 @@ static void show_usage(void) {
 	printf("\t\t\t13: 1.5 MHz\n");
 	printf("\t\t\t14: 750 KHz\n");
 	printf("\t\t\t15: 375 KHz\n");
-	printf("\t\t\tAICE-MCU only supports 8 ~ 15\n");
+	printf("\t\t\tAICE2 only supports 8 ~ 15\n");
 	printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
 	printf("-T, --boot-time:\tBoot time of target board\n");
 	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
@@ -147,28 +146,24 @@ static void show_usage(void) {
 	printf("\t\t\t--resume-seq \"resume-seq address:{data|rst}\"\n");
 	printf("\t\tExample: --stop-seq \"stop-seq 0x200800:0x80\"\n");
 	printf("\t\t\t--resume-seq \"resume-seq 0x200800:rst\"\n\n");
-	printf("-o, --reset-time:\tReset time of reset-and-hold\n");
-	printf("-C, --check-times:\tCount to check DBGER\n");
-	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
-	printf("-u, --update-fw:\tUpdate AICE F/W\n");
-	printf("-U, --update-fpga:\tUpdate AICE FPGA\n");
-	printf("-w, --backup-fw:\tBackup AICE F/W\n");
-	printf("-W, --backup-fpga:\tBackup AICE FPGA\n");
-	printf("-a, --reset-aice:\tReset AICE as ICEman startup\n");
-	printf("-O, --edm-port-operation: EDM port0/1 operations\n");
+	printf("[TODO]-o, --reset-time:\tReset time of reset-and-hold\n");
+	printf("[TODO]-C, --check-times:\tCount to check DBGER\n");
+	printf("[TODO]-P, --passcode:\t\tPASSCODE of secure MPU\n");
+	printf("[TODO]-a, --reset-aice:\tReset AICE as ICEman startup\n");
+	printf("[TODO]-O, --edm-port-operation: EDM port0/1 operations\n");
 	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678);\"\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n");
-	printf("-F, --edm-port-file:\tEDM port0/1 operations file name\n");
+	printf("[TODO]-F, --edm-port-file:\tEDM port0/1 operations file name\n");
 	printf("\t\tFile format:\n");
 	printf("\t\t\twrite_edm 6:0x1234,7:0x1234);\n");
 	printf("\t\t\twrite_edm 6:0x1111);\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n");
 	printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
-	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
-	printf("-k, --word-access-mem:\tAlways use word-aligned address to access memory device\n");
-	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
-	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
-	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
+	printf("[TODO]-A, --no-crst-detect:\tNo CRST detection in debug session\n");
+	printf("[TODO]-k, --word-access-mem:\tAlways use word-aligned address to access memory device\n");
+	printf("[TODO]-l, --custom-srst:\tUse custom script to do SRST\n");
+	printf("[TODO]-L, --custom-trst:\tUse custom script to do TRST\n");
+	printf("[TODO]-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
 	printf("-z, --target:\tSpecify target type (v2/v3/v3m)\n");
 }
 
