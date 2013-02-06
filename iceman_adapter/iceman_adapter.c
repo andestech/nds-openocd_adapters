@@ -98,7 +98,8 @@ static int reset_aice;
 static int global_stop;
 static int no_crst_detect;
 static int word_access_mem;
-static enum TARGET_TYPE target_type;
+static enum TARGET_TYPE target_type = TARGET_V3;
+static char *edm_passcode = NULL;
 
 static void show_version(void) {
 	printf ("Andes ICEman V2.0.3\n");
@@ -148,7 +149,7 @@ static void show_usage(void) {
 	printf("\t\t\t--resume-seq \"resume-seq 0x200800:rst\"\n\n");
 	printf("[TODO]-o, --reset-time:\tReset time of reset-and-hold\n");
 	printf("[TODO]-C, --check-times:\tCount to check DBGER\n");
-	printf("[TODO]-P, --passcode:\t\tPASSCODE of secure MPU\n");
+	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
 	printf("[TODO]-a, --reset-aice:\tReset AICE as ICEman startup\n");
 	printf("[TODO]-O, --edm-port-operation: EDM port0/1 operations\n");
 	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678);\"\n");
@@ -193,6 +194,10 @@ static void parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'c':
 				clock_setting = strtol(optarg, NULL, 0);
+				if (clock_setting < 0)
+					clock_setting = 0;
+				if (15 < clock_setting)
+					clock_setting = 15;
 				break;
 			case 'd':
 				debug_level = strtol(optarg, NULL, 0);
@@ -254,6 +259,11 @@ static void parse_param(int a_argc, char **a_argv) {
 					target_type = TARGET_INVALID;
 				}
 				break;
+			case 'P':
+				optarg_len = strlen(optarg);
+				edm_passcode = malloc(optarg_len + 1);
+				memcpy(edm_passcode, optarg, optarg_len + 1);
+				break;
 				/*
 			case 'F':
 				{
@@ -278,11 +288,6 @@ static void parse_param(int a_argc, char **a_argv) {
 			case 'N': // customer-restart
 				customer_restart_file_ = optarg;
 				customer_restart_ = true;
-				break;
-			case 'P':
-				exist_pass_code_ = true;
-				pass_code_ = optarg;
-				pass_code_length_ = pass_code_.length ();
 				break;
 			case 'E':
 				if (strncmp (optarg, "disable_auto", 12) == 0)
@@ -355,9 +360,9 @@ static char *clock_hz[] = {
 	"7500",
 	"3750",
 	"1875",
-	"937.5",
-	"468.75",
-	"234.375",
+	"937",
+	"468",
+	"234",
 	"48000",
 	"24000",
 	"12000",
@@ -487,6 +492,12 @@ int main(int argc, char **argv) {
 				strcpy(find_pos - 1, "reset halt\n");
 			else
 				strcpy(find_pos - 1, "halt\n");
+		} else if ((find_pos = strstr(line_buffer, "--edm-passcode")) != NULL) {
+			if (edm_passcode != NULL) {
+				sprintf(line_buffer, "nds edm_passcode %s\n", edm_passcode);
+			} else {
+				strcpy(line_buffer, "\n");
+			}
 		}
 
 		fputs(line_buffer, board_cfg);
