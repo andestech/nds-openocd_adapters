@@ -33,7 +33,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = iceman_adapter$(EXEEXT)
+bin_PROGRAMS = iceman$(EXEEXT)
 subdir = iceman_adapter
 DIST_COMMON = $(dist_openocd_boardcfg_DATA) $(dist_openocd_cfg_DATA) \
 	$(dist_openocd_interfacecfg_DATA) \
@@ -52,11 +52,11 @@ am__installdirs = "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(openocd_interfacecfgdir)" \
 	"$(DESTDIR)$(openocd_targetcfgdir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_iceman_adapter_OBJECTS = iceman_adapter-iceman_adapter.$(OBJEXT)
-iceman_adapter_OBJECTS = $(am_iceman_adapter_OBJECTS)
-iceman_adapter_LDADD = $(LDADD)
-iceman_adapter_LINK = $(CCLD) $(iceman_adapter_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_iceman_OBJECTS = iceman-iceman_adapter.$(OBJEXT)
+iceman_OBJECTS = $(am_iceman_OBJECTS)
+iceman_LDADD = $(LDADD)
+iceman_LINK = $(CCLD) $(iceman_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -65,8 +65,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(iceman_adapter_SOURCES)
-DIST_SOURCES = $(iceman_adapter_SOURCES)
+SOURCES = $(iceman_SOURCES)
+DIST_SOURCES = $(iceman_SOURCES)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -185,7 +185,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-iceman_adapter_SOURCES = iceman_adapter.c
+iceman_SOURCES = iceman_adapter.c
 openocd_cfgdir = $(bindir)
 dist_openocd_cfg_DATA = openocd.cfg.tpl
 openocd_boardcfgdir = $(bindir)/board
@@ -197,8 +197,8 @@ dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 			      target/nds32v3.cfg \
 			      target/nds32v3m.cfg
 
-@BUILD_MINGW_BINARY_FALSE@iceman_adapter_CFLAGS = 
-@BUILD_MINGW_BINARY_TRUE@iceman_adapter_CFLAGS = -mno-cygwin -DCYG
+@BUILD_MINGW_BINARY_FALSE@iceman_CFLAGS = 
+@BUILD_MINGW_BINARY_TRUE@iceman_CFLAGS = -mno-cygwin -DCYG
 all: all-am
 
 .SUFFIXES:
@@ -270,9 +270,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-iceman_adapter$(EXEEXT): $(iceman_adapter_OBJECTS) $(iceman_adapter_DEPENDENCIES) $(EXTRA_iceman_adapter_DEPENDENCIES) 
-	@rm -f iceman_adapter$(EXEEXT)
-	$(iceman_adapter_LINK) $(iceman_adapter_OBJECTS) $(iceman_adapter_LDADD) $(LIBS)
+iceman$(EXEEXT): $(iceman_OBJECTS) $(iceman_DEPENDENCIES) $(EXTRA_iceman_DEPENDENCIES) 
+	@rm -f iceman$(EXEEXT)
+	$(iceman_LINK) $(iceman_OBJECTS) $(iceman_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -280,7 +280,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iceman_adapter-iceman_adapter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/iceman-iceman_adapter.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -296,19 +296,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
-iceman_adapter-iceman_adapter.o: iceman_adapter.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_adapter_CFLAGS) $(CFLAGS) -MT iceman_adapter-iceman_adapter.o -MD -MP -MF $(DEPDIR)/iceman_adapter-iceman_adapter.Tpo -c -o iceman_adapter-iceman_adapter.o `test -f 'iceman_adapter.c' || echo '$(srcdir)/'`iceman_adapter.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/iceman_adapter-iceman_adapter.Tpo $(DEPDIR)/iceman_adapter-iceman_adapter.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='iceman_adapter.c' object='iceman_adapter-iceman_adapter.o' libtool=no @AMDEPBACKSLASH@
+iceman-iceman_adapter.o: iceman_adapter.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_CFLAGS) $(CFLAGS) -MT iceman-iceman_adapter.o -MD -MP -MF $(DEPDIR)/iceman-iceman_adapter.Tpo -c -o iceman-iceman_adapter.o `test -f 'iceman_adapter.c' || echo '$(srcdir)/'`iceman_adapter.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/iceman-iceman_adapter.Tpo $(DEPDIR)/iceman-iceman_adapter.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='iceman_adapter.c' object='iceman-iceman_adapter.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_adapter_CFLAGS) $(CFLAGS) -c -o iceman_adapter-iceman_adapter.o `test -f 'iceman_adapter.c' || echo '$(srcdir)/'`iceman_adapter.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_CFLAGS) $(CFLAGS) -c -o iceman-iceman_adapter.o `test -f 'iceman_adapter.c' || echo '$(srcdir)/'`iceman_adapter.c
 
-iceman_adapter-iceman_adapter.obj: iceman_adapter.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_adapter_CFLAGS) $(CFLAGS) -MT iceman_adapter-iceman_adapter.obj -MD -MP -MF $(DEPDIR)/iceman_adapter-iceman_adapter.Tpo -c -o iceman_adapter-iceman_adapter.obj `if test -f 'iceman_adapter.c'; then $(CYGPATH_W) 'iceman_adapter.c'; else $(CYGPATH_W) '$(srcdir)/iceman_adapter.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/iceman_adapter-iceman_adapter.Tpo $(DEPDIR)/iceman_adapter-iceman_adapter.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='iceman_adapter.c' object='iceman_adapter-iceman_adapter.obj' libtool=no @AMDEPBACKSLASH@
+iceman-iceman_adapter.obj: iceman_adapter.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_CFLAGS) $(CFLAGS) -MT iceman-iceman_adapter.obj -MD -MP -MF $(DEPDIR)/iceman-iceman_adapter.Tpo -c -o iceman-iceman_adapter.obj `if test -f 'iceman_adapter.c'; then $(CYGPATH_W) 'iceman_adapter.c'; else $(CYGPATH_W) '$(srcdir)/iceman_adapter.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/iceman-iceman_adapter.Tpo $(DEPDIR)/iceman-iceman_adapter.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='iceman_adapter.c' object='iceman-iceman_adapter.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_adapter_CFLAGS) $(CFLAGS) -c -o iceman_adapter-iceman_adapter.obj `if test -f 'iceman_adapter.c'; then $(CYGPATH_W) 'iceman_adapter.c'; else $(CYGPATH_W) '$(srcdir)/iceman_adapter.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(iceman_CFLAGS) $(CFLAGS) -c -o iceman-iceman_adapter.obj `if test -f 'iceman_adapter.c'; then $(CYGPATH_W) 'iceman_adapter.c'; else $(CYGPATH_W) '$(srcdir)/iceman_adapter.c'; fi`
 install-dist_openocd_boardcfgDATA: $(dist_openocd_boardcfg_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(openocd_boardcfgdir)" || $(MKDIR_P) "$(DESTDIR)$(openocd_boardcfgdir)"

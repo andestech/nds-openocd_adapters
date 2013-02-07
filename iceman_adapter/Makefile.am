@@ -1,5 +1,5 @@
-bin_PROGRAMS = iceman_adapter
-iceman_adapter_SOURCES = iceman_adapter.c
+bin_PROGRAMS = iceman
+iceman_SOURCES = iceman_adapter.c
 
 openocd_cfgdir = $(bindir)
 dist_openocd_cfg_DATA = openocd.cfg.tpl
@@ -16,7 +16,7 @@ dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 			      target/nds32v3m.cfg
 
 if BUILD_MINGW_BINARY
-iceman_adapter_CFLAGS = -mno-cygwin -DCYG
+iceman_CFLAGS = -mno-cygwin -DCYG
 else
-iceman_adapter_CFLAGS =
+iceman_CFLAGS =
 endif
