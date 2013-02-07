@@ -120,7 +120,7 @@ static void show_usage(void) {
 	printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
 	printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
-	printf("[TODO]-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
+	printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
 	printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
 	printf("\t\t\t0: 30 MHz\n");
 	printf("\t\t\t1: 15 MHz\n");
@@ -497,6 +497,12 @@ int main(int argc, char **argv) {
 				sprintf(line_buffer, "nds edm_passcode %s\n", edm_passcode);
 			} else {
 				strcpy(line_buffer, "\n");
+			}
+		} else if ((find_pos = strstr(line_buffer, "--soft-reset-halt")) != NULL) {
+			if (soft_reset_halt) {
+				strcpy(line_buffer, "nds soft_reset_halt on\n");
+			} else {
+				strcpy(line_buffer, "nds soft_reset_halt off\n");
 			}
 		}
 
