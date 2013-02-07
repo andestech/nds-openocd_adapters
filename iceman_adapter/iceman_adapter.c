@@ -107,8 +107,7 @@ static void show_version(void) {
 }
 
 static void show_usage(void) {
-	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
-	printf("ICEman --update-fw filename\n\n");
+	printf("Usage:\niceman --port start_port_number [--help]\n");
 
 	printf("-h, --help:\t\tThe usage is for ICEman\n");
 	printf("-p, --port:\t\tSocket port number for gdb connection\n");
