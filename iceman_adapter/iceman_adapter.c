@@ -490,7 +490,7 @@ int main(int argc, char **argv) {
 			if (boot_code_debug)
 				strcpy(find_pos - 1, "reset halt\n");
 			else
-				strcpy(find_pos - 1, "halt\n");
+				strcpy(find_pos - 1, "\n");
 		} else if ((find_pos = strstr(line_buffer, "--edm-passcode")) != NULL) {
 			if (edm_passcode != NULL) {
 				sprintf(line_buffer, "nds edm_passcode %s\n", edm_passcode);
@@ -530,28 +530,32 @@ int main(int argc, char **argv) {
 		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
 	}
 
-	fputs("$_TARGETNAME configure -event halted {\n", board_cfg);
-	fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
-	for (i = 0 ; i < stop_sequences_num ; i++) {
-		fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_sequences[i].address);
-		fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_sequences[i].address, stop_sequences[i].address);
-		fprintf(board_cfg, "\tmww 0x%x 0x%x\n", stop_sequences[i].address, stop_sequences[i].data);
-	}
-	fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
-	fputs("}\n", board_cfg);
-
-	fputs("$_TARGETNAME configure -event resumed {\n", board_cfg);
-	fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
-	for (i = 0 ; i < resume_sequences_num ; i++) {
-		if (resume_sequences[i].restore) {
-			fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_sequences[i].address);
-			fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_sequences[i].address, resume_sequences[i].address);
-		} else {
-			fprintf(board_cfg, "\tmww 0x%x 0x%x\n", resume_sequences[i].address, resume_sequences[i].data);
+	if (stop_sequences_num > 0) {
+		fputs("$_TARGETNAME configure -event halted {\n", board_cfg);
+		fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
+		for (i = 0 ; i < stop_sequences_num ; i++) {
+			fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_sequences[i].address);
+			fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_sequences[i].address, stop_sequences[i].address);
+			fprintf(board_cfg, "\tmww 0x%x 0x%x\n", stop_sequences[i].address, stop_sequences[i].data);
 		}
+		fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
+		fputs("}\n", board_cfg);
 	}
-	fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
-	fputs("}\n", board_cfg);
+
+	if (resume_sequences_num > 0) {
+		fputs("$_TARGETNAME configure -event resumed {\n", board_cfg);
+		fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
+		for (i = 0 ; i < resume_sequences_num ; i++) {
+			if (resume_sequences[i].restore) {
+				fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_sequences[i].address);
+				fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_sequences[i].address, resume_sequences[i].address);
+			} else {
+				fprintf(board_cfg, "\tmww 0x%x 0x%x\n", resume_sequences[i].address, resume_sequences[i].data);
+			}
+		}
+		fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
+		fputs("}\n", board_cfg);
+	}
 
 	/* close config files */
 	close_config_files();
