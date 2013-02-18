@@ -10,14 +10,13 @@ set connected 0
 
 $_TARGETNAME configure -event gdb-attach {
 	if  {$connected == 0} {
-		#--boot [reset halt|halt]
+		#--boot [reset halt]
 		set connected 1
 	}
 }
 
 $_TARGETNAME configure -event gdb-detach {
 	if {$connected == 1} {
-		resume
 		set connected 0
 	}
 }
