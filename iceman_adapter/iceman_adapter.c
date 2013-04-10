@@ -34,10 +34,6 @@ struct option long_option[] = {
 	{"bport", required_argument, 0, 'b'},
 	{"ppp", required_argument, 0, 'f'},
 	{"clock", required_argument, 0, 'c'},
-	{"update-fw", required_argument, 0, 'u'},
-	{"update-fpga", required_argument, 0, 'U'},
-	{"backup-fw", required_argument, 0, 'w'},
-	{"backup-fpga", required_argument, 0, 'W'},
 	{"boot-time", required_argument, 0, 'T'},
 	{"ice-retry", required_argument, 0, 'r'},
 	{"edm-retry", required_argument, 0, 'e'},
@@ -72,6 +68,11 @@ struct MEM_OPERATIONS {
 	int restore;
 };
 
+struct EDM_OPERATIONS {
+	int reg_no;
+	int data;
+};
+
 #define MAX_MEM_OPERATIONS_NUM 32
 
 struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
@@ -79,8 +80,15 @@ struct MEM_OPERATIONS resume_sequences[MAX_MEM_OPERATIONS_NUM];
 int stop_sequences_num = 0;
 int resume_sequences_num = 0;
 
+#define MAX_EDM_OPERATIONS_NUM 32
+
+struct EDM_OPERATIONS edm_operations[MAX_EDM_OPERATIONS_NUM];
+int edm_operations_num = 0;
+
 static char *memory_stop_sequence = NULL;
 static char *memory_resume_sequence = NULL;
+static char *edm_port_operations = NULL;
+static const char *edm_port_op_file = NULL;
 static int aice_retry_time = 10;
 static int clock_setting = 8;
 static int debug_level;
@@ -102,7 +110,7 @@ static enum TARGET_TYPE target_type = TARGET_V3;
 static char *edm_passcode = NULL;
 
 static void show_version(void) {
-	printf ("Andes ICEman V2.0.3\n");
+	printf ("Andes ICEman v3.0.0 (openocd-0.7.0)\n");
 	printf ("Copyright (C) 2007-2013 Andes Technology Corporation\n");
 }
 
@@ -180,13 +188,15 @@ static void parse_param(int a_argc, char **a_argv) {
 		switch (c) {
 			case 'S':
 				optarg_len = strlen(optarg);
-				memory_stop_sequence = malloc(optarg_len + 1);
-				memcpy(memory_stop_sequence, optarg, optarg_len + 1);
+				memory_stop_sequence = malloc(optarg_len + 1 + 9);  /* +9 for stop-seq */
+				memcpy(memory_stop_sequence, "stop-seq ", 9);
+				memcpy(memory_stop_sequence + 9, optarg, optarg_len + 1);
 				break;
 			case 'R':
 				optarg_len = strlen(optarg);
-				memory_resume_sequence = malloc(optarg_len + 1);
-				memcpy(memory_resume_sequence, optarg, optarg_len + 1);
+				memory_resume_sequence = malloc(optarg_len + 1 + 11); /* +11 for resume-seq */
+				memcpy(memory_resume_sequence, "resume-seq ", 11);
+				memcpy(memory_resume_sequence + 11, optarg, optarg_len + 1);
 				break;
 			case 'r':
 				aice_retry_time = strtol(optarg, NULL, 0);
@@ -263,19 +273,15 @@ static void parse_param(int a_argc, char **a_argv) {
 				edm_passcode = malloc(optarg_len + 1);
 				memcpy(edm_passcode, optarg, optarg_len + 1);
 				break;
-				/*
-			case 'F':
-				{
-					edm_port_file_ = optarg;
-					set_edm_port_file_ = true;
-				}
-				break;
 			case 'O':
-				{
-					edm_port_operation_ = optarg;
-					set_edm_port_operation_ = true;
-				}
+				optarg_len = strlen(optarg);
+				edm_port_operations = malloc(optarg_len + 1);
+				memcpy(edm_port_operations, optarg, optarg_len + 1);
 				break;
+			case 'F':
+				edm_port_op_file = optarg;
+				break;
+				/*
 			case 'l': // customer-srst
 				customer_srst_file_ = optarg;
 				customer_srst_ = true;
@@ -313,26 +319,6 @@ static void parse_param(int a_argc, char **a_argv) {
 					SMP_mode_ = true;
 				else
 					SMP_mode_ = false;
-				break;
-			case 'u': // --update-fw
-				field_programming_ = true;
-				field_programming_type_ = FIELD_PROG_UPDATE_FW;
-				strcpy (field_programming_filename_, optarg);
-				break;
-			case 'U': // --update-fpga
-				field_programming_ = true;
-				field_programming_type_ = FIELD_PROG_UPDATE_FPGA;
-				strcpy (field_programming_filename_, optarg);
-				break;
-			case 'w': // --backup-fw
-				field_programming_ = true;
-				field_programming_type_ = FIELD_PROG_BACKUP_FW;
-				strcpy (field_programming_filename_, optarg);
-				break;
-			case 'W': // --backup-fpga
-				field_programming_ = true;
-				field_programming_type_ = FIELD_PROG_BACKUP_FPGA;
-				strcpy (field_programming_filename_, optarg);
 				break;
 			case 's':
 				printf ("Branch%s\n", BRANCH_NAME);
@@ -435,6 +421,36 @@ static void parse_mem_operation(const char *mem_operation) {
 	}
 }
 
+/* edm_operation format: write_edm 6:0x1234,7:0x5678; */
+static void parse_edm_operation(const char *edm_operation) {
+	char *processing_str;
+	char *end_ptr;
+	int reg_no;
+	int value;
+
+	processing_str = strstr(edm_operation, "write_edm ");
+	if (processing_str == NULL)
+		return;
+	processing_str += 10;
+
+	while (1) {
+		reg_no = strtol(processing_str, &end_ptr, 0);
+		if (end_ptr[0] != ':')
+			return;
+		processing_str = end_ptr + 1;
+		value = strtol(processing_str, &end_ptr, 0);
+
+		edm_operations[edm_operations_num].reg_no = reg_no;
+		edm_operations[edm_operations_num].data = value;
+		edm_operations_num++;
+
+		if (end_ptr[0] == ';')
+			break;
+		else if (end_ptr[0] == ',')
+			processing_str = end_ptr + 1;
+	}
+}
+
 int main(int argc, char **argv) {
 	char line_buffer[LINE_BUFFER_SIZE];
 
@@ -447,7 +463,7 @@ int main(int argc, char **argv) {
 		fputs(line_buffer, openocd_cfg);
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port);
-	printf("The core listens on %d.\n", gdb_port);
+	printf("The core #0 listens on %d.\n", gdb_port);
 	fflush(stdout);
 
 	if (virtual_hosting)
@@ -493,7 +509,7 @@ int main(int argc, char **argv) {
 				strcpy(find_pos - 1, "\n");
 		} else if ((find_pos = strstr(line_buffer, "--edm-passcode")) != NULL) {
 			if (edm_passcode != NULL) {
-				sprintf(line_buffer, "nds edm_passcode %s\n", edm_passcode);
+				sprintf(line_buffer, "nds login_edm_passcode %s\n", edm_passcode);
 			} else {
 				strcpy(line_buffer, "\n");
 			}
@@ -506,6 +522,27 @@ int main(int argc, char **argv) {
 		}
 
 		fputs(line_buffer, board_cfg);
+	}
+
+	/* login edm operations */
+	FILE *edm_operation_fd = NULL;
+	int i;
+	if (edm_port_op_file != NULL)
+		edm_operation_fd = fopen(edm_port_op_file, "r");
+	if (edm_operation_fd != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd) != NULL) {
+			parse_edm_operation(line_buffer);
+		}
+		fclose(edm_operation_fd);
+	}
+	if (edm_port_operations) {
+		parse_edm_operation(edm_port_operations);
+	}
+
+	if (edm_operations_num > 0) {
+		for (i = 0 ; i < edm_operations_num ; i++) {
+			fprintf(board_cfg, "nds32.cpu nds login_edm_operation 0x%x 0x%x\n", edm_operations[i].reg_no, edm_operations[i].data);
+		}
 	}
 
 	/* open sw-reset-seq.txt */
@@ -525,7 +562,6 @@ int main(int argc, char **argv) {
 		parse_mem_operation(memory_resume_sequence);
 	}
 
-	int i;
 	for (i = 0 ; i < stop_sequences_num ; i++) {
 		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
 	}
