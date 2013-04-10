@@ -108,6 +108,9 @@ static int no_crst_detect;
 static int word_access_mem;
 static enum TARGET_TYPE target_type = TARGET_V3;
 static char *edm_passcode = NULL;
+static const char *custom_srst_script = NULL;
+static const char *custom_trst_script = NULL;
+static const char *custom_restart_script = NULL;
 
 static void show_version(void) {
 	printf ("Andes ICEman v3.0.0 (openocd-0.7.0)\n");
@@ -157,11 +160,10 @@ static void show_usage(void) {
 	printf("[TODO]-o, --reset-time:\tReset time of reset-and-hold\n");
 	printf("[TODO]-C, --check-times:\tCount to check DBGER\n");
 	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
-	printf("[TODO]-a, --reset-aice:\tReset AICE as ICEman startup\n");
-	printf("[TODO]-O, --edm-port-operation: EDM port0/1 operations\n");
+	printf("-O, --edm-port-operation: EDM port0/1 operations\n");
 	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678);\"\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n");
-	printf("[TODO]-F, --edm-port-file:\tEDM port0/1 operations file name\n");
+	printf("-F, --edm-port-file:\tEDM port0/1 operations file name\n");
 	printf("\t\tFile format:\n");
 	printf("\t\t\twrite_edm 6:0x1234,7:0x1234);\n");
 	printf("\t\t\twrite_edm 6:0x1111);\n");
@@ -169,9 +171,9 @@ static void show_usage(void) {
 	printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
 	printf("[TODO]-A, --no-crst-detect:\tNo CRST detection in debug session\n");
 	printf("[TODO]-k, --word-access-mem:\tAlways use word-aligned address to access memory device\n");
-	printf("[TODO]-l, --custom-srst:\tUse custom script to do SRST\n");
-	printf("[TODO]-L, --custom-trst:\tUse custom script to do TRST\n");
-	printf("[TODO]-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
+	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
+	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
+	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
 	printf("-z, --target:\tSpecify target type (v2/v3/v3m)\n");
 }
 
@@ -281,19 +283,16 @@ static void parse_param(int a_argc, char **a_argv) {
 			case 'F':
 				edm_port_op_file = optarg;
 				break;
+			case 'l': /* customer-srst */
+				custom_srst_script = optarg;
+				break;
+			case 'L': /* customer-trst */
+				custom_trst_script = optarg;
+				break;
+			case 'N': /* customer-restart */
+				custom_restart_script = optarg;
+				break;
 				/*
-			case 'l': // customer-srst
-				customer_srst_file_ = optarg;
-				customer_srst_ = true;
-				break;
-			case 'L': // customer-trst
-				customer_trst_file_ = optarg;
-				customer_trst_ = true;
-				break;
-			case 'N': // customer-restart
-				customer_restart_file_ = optarg;
-				customer_restart_ = true;
-				break;
 			case 'E':
 				if (strncmp (optarg, "disable_auto", 12) == 0)
 					auto_adjust_edm_ = false;
@@ -488,6 +487,19 @@ int main(int argc, char **argv) {
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 
+	/* custom srst/trst/restart scripts */
+	if (custom_srst_script) {
+		fprintf(interface_cfg, "aice custom_srst_script %s\n", custom_srst_script);
+	}
+	if (custom_trst_script) {
+		fprintf(interface_cfg, "aice custom_trst_script %s\n", custom_trst_script);
+	}
+	if (custom_restart_script) {
+		fprintf(interface_cfg, "aice custom_restart_script %s\n", custom_restart_script);
+	}
+	fputs("\n", interface_cfg);
+
+
 	/* update nds32_xc5.cfg */
 	char *find_pos;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
@@ -523,6 +535,7 @@ int main(int argc, char **argv) {
 
 		fputs(line_buffer, board_cfg);
 	}
+	fputs("\n", board_cfg);
 
 	/* login edm operations */
 	FILE *edm_operation_fd = NULL;
