@@ -19,6 +19,7 @@ static const char *command_string[TARGET_CMD_NUMBER] =
 	"nds32.cpu nds bulk_read 0x%08x %d\x1a",
 	"nds32.cpu nds read_edmsr %s\x1a",
 	"nds32.cpu nds write_edmsr %s 0x%08x\x1a",
+	"nds32.cpu nds multi_write %d ",
 };
 
 static int issue_command(const char *command, char *response)
@@ -72,48 +73,45 @@ void write_word (const char *packet, char *packet_response, int *response_len) {
 	*response_len = 2;
 }
 
-/*
-   void multiple_write (const char *command, char *response, int *response_len) {
-   unsigned int num_of_pairs;
-   unsigned int address_fields[MAX_MULTI_WRITE_PAIR];
-   unsigned int data_fields[MAX_MULTI_WRITE_PAIR];
+void multiple_write (const char *packet, char *packet_response, int *response_len) {
+	char command[MAX_COMMAND_LEN];
+	char response[MAX_RESPONSE_LEN];
+	char data_str[16];
+	int command_length;
+	unsigned int num_of_pairs = (unsigned int)packet[1];
+	const unsigned int *data_ptr = (unsigned int *)(packet + 2);
+	unsigned int i;
 
-   num_of_pairs = (unsigned int)command[1];
+	if (num_of_pairs > MAX_MULTI_WRITE_PAIR)
+	{
+		packet_response[0] = MULTIPLE_WRITE | 0x80;
+		packet_response[1] = 0;
+		*response_len = 2;
 
-   if (num_of_pairs > MAX_MULTI_WRITE_PAIR)
-   {
-   response[0] = MULTIPLE_WRITE | 0x80;
-   response[1] = 0;
- *response_len = 2;
+		return;
+	}
 
- return;
- }
+	sprintf(command, command_string[TARGET_CMD_MULTI_WRITE], num_of_pairs);
+	for (i = 0 ; i < num_of_pairs ; i++)
+	{
+		/* append address */
+		sprintf(data_str, "0x%08x ", data_ptr[2*i]);
+		strcat(command, data_str);
+		/* append data */
+		sprintf(data_str, "0x%08x ", data_ptr[2*i+1]);
+		strcat(command, data_str);
+	}
+	command_length = strlen(command);
+	command[command_length - 1] = '\x1a';
 
- for (unsigned int i = 0 ; i < num_of_pairs ; i++)
- {
- address_fields[i] = ((((unsigned int)command[i*8+5] << 24) & 0xFF000000) |
- (((unsigned int)command[i*8+4] << 16) & 0x00FF0000) |
- (((unsigned int)command[i*8+3] << 8) & 0x0000FF00) |
- (((unsigned int)command[i*8+2] << 0) & 0x000000FF));
+	if (issue_command(command, response) == 0)
+		packet_response[0] = MULTIPLE_WRITE;
+	else
+		packet_response[0] = MULTIPLE_WRITE | 0x80;
 
- data_fields[i] = ((((unsigned int)command[i*8+9] << 24) & 0xFF000000) |
- (((unsigned int)command[i*8+8] << 16) & 0x00FF0000) |
- (((unsigned int)command[i*8+7] << 8) & 0x0000FF00) |
- (((unsigned int)command[i*8+6] << 0) & 0x000000FF));
- }
-
- AccessMem *memory = board_->memory (core_id_);
-// TODO: use all address_fields members to select access mode
-memory->select_access_mode_by_address (address_fields[0]);
-if (memory->write_mem_multiple (num_of_pairs, address_fields, data_fields) < 0)
-response[0] = MULTIPLE_WRITE | 0x80;
-else
-response[0] = MULTIPLE_WRITE;
-
-response[1] = 0;
- *response_len = 2;
- }
- */
+	packet_response[1] = 0;
+	*response_len = 2;
+}
 
 void write_io (const char *command, char *response, int *response_len) {
 	unsigned int address, size;
@@ -458,7 +456,7 @@ int handle_packet(const char *packet, int length) {
 		case BURNER_QUIT:
 			return -1;
 		case MULTIPLE_WRITE:
-			//multiple_write(packet, res_buf, &res_length);
+			multiple_write(packet, res_buf, &res_length);
 			break;
 		case READ_EDM_SR:
 			read_edm_sr(packet, res_buf, &res_length);
