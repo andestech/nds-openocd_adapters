@@ -9,13 +9,10 @@
 #include <process.h>
 #endif
 
-const char *opt_string = "AaDvBsIBhtHKgGjJkd:E:S:R:i:m:M:p:b:z:f:c:u:U:w:W:T:r:e:n:o:C:P:y:Y:F:O:l:L:N:z:";
+const char *opt_string = "hBvDHKgjJGkd:S:R:p:b:c:T:r:C:P:F:O:l:L:N:z:";
 struct option long_option[] = {
-	{"test", no_argument, 0, 't'},
 	{"help", no_argument, 0, 'h'},
 	{"boot", no_argument, 0, 'B'},
-	{"IceBoxCmd", no_argument, 0, 'I'},
-	{"source", no_argument, 0, 's'},
 	{"version", no_argument, 0, 'v'},
 	{"unlimited-log", no_argument, 0, 'D'},
 	{"reset-hold", no_argument, 0, 'H'},
@@ -23,34 +20,32 @@ struct option long_option[] = {
 	{"force-debug", no_argument, 0, 'g'},
 	{"enable-virtual-hosting", no_argument, 0, 'j'},
 	{"disable-virtual-hosting", no_argument, 0, 'J'},
+	{"enable-global-stop", no_argument, 0, 'G'},
+	{"word-access-mem", no_argument, 0, 'k'},
 	{"debug", required_argument, 0, 'd'},
-	{"EDM", required_argument, 0, 'E'},
 	{"stop-seq", required_argument, 0, 'S'},
 	{"resume-seq", required_argument, 0, 'R'},
-	{"icebox", required_argument, 0, 'i'},
-	{"Mode", required_argument, 0, 'M'},
-	{"p", required_argument, 0, 'p'},
 	{"port", required_argument, 0, 'p'},
 	{"bport", required_argument, 0, 'b'},
-	{"ppp", required_argument, 0, 'f'},
 	{"clock", required_argument, 0, 'c'},
 	{"boot-time", required_argument, 0, 'T'},
 	{"ice-retry", required_argument, 0, 'r'},
-	{"edm-retry", required_argument, 0, 'e'},
-	{"test-iteration", required_argument, 0, 'n'},
-	{"reset-time", required_argument, 0, 'o'},
 	{"check-times", required_argument, 0, 'C'},
 	{"passcode", required_argument, 0, 'P'},
-	{"reset-aice", no_argument, 0, 'a'},
 	{"edm-port-file", required_argument, 0, 'F'},
 	{"edm-port-operation", required_argument, 0, 'O'},
-	{"enable-global-stop", no_argument, 0, 'G'},
-	{"no-crst-detect", no_argument, 0, 'A'},
-	{"word-access-mem", no_argument, 0, 'k'},
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
 	{"custom-restart", required_argument, 0, 'N'},
 	{"target", required_argument, 0, 'z'},
+	/* {"IceBoxCmd", no_argument, 0, 'I'}, */
+	/* {"source", no_argument, 0, 's'}, */
+	/* {"EDM", required_argument, 0, 'E'}, */
+	/* {"icebox", required_argument, 0, 'i'}, */
+	/* {"Mode", required_argument, 0, 'M'}, */
+	/* {"ppp", required_argument, 0, 'f'}, */
+	/* {"edm-retry", required_argument, 0, 'e'}, */
+	/* {"test-iteration", required_argument, 0, 'n'}, */
 	{0, 0, 0, 0}
 };
 
@@ -101,10 +96,8 @@ static int soft_reset_halt;
 static int force_debug;
 static int unlimited_log;
 static int boot_time = 2500;
-static int reset_time;
-static int reset_aice;
+static unsigned int count_to_check_dbger = 30;
 static int global_stop;
-static int no_crst_detect;
 static int word_access_mem;
 static enum TARGET_TYPE target_type = TARGET_V3;
 static char *edm_passcode = NULL;
@@ -157,8 +150,7 @@ static void show_usage(void) {
 	printf("\t\t\t--resume-seq \"resume-seq address:{data|rst}\"\n");
 	printf("\t\tExample: --stop-seq \"stop-seq 0x200800:0x80\"\n");
 	printf("\t\t\t--resume-seq \"resume-seq 0x200800:rst\"\n\n");
-	printf("[TODO]-o, --reset-time:\tReset time of reset-and-hold\n");
-	printf("[TODO]-C, --check-times:\tCount to check DBGER\n");
+	printf("-C, --check-times:\tCount to check DBGER\n");
 	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
 	printf("-O, --edm-port-operation: EDM port0/1 operations\n");
 	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678);\"\n");
@@ -169,12 +161,11 @@ static void show_usage(void) {
 	printf("\t\t\twrite_edm 6:0x1111);\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n");
 	printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
-	printf("[TODO]-A, --no-crst-detect:\tNo CRST detection in debug session\n");
-	printf("[TODO]-k, --word-access-mem:\tAlways use word-aligned address to access memory device\n");
+	printf("-k, --word-access-mem:\tAlways use word-aligned address to access memory device\n");
 	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
 	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
 	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
-	printf("-z, --target:\tSpecify target type (v2/v3/v3m)\n");
+	printf("-z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
 }
 
 static void parse_param(int a_argc, char **a_argv) {
@@ -243,17 +234,8 @@ static void parse_param(int a_argc, char **a_argv) {
 			case 'T':
 				boot_time = strtol(optarg, NULL, 0);
 				break;
-			case 'o':
-				reset_time = strtol (optarg, NULL, 0);
-				break;
-			case 'a':
-				reset_aice = 1;
-				break;
 			case 'G':
 				global_stop = 1;
-				break;
-			case 'A':
-				no_crst_detect = 1;
 				break;
 			case 'k':
 				word_access_mem = 1;
@@ -292,6 +274,9 @@ static void parse_param(int a_argc, char **a_argv) {
 			case 'N': /* customer-restart */
 				custom_restart_script = optarg;
 				break;
+			case 'C':
+				count_to_check_dbger = strtoul(optarg, NULL, 0);
+				break;
 				/*
 			case 'E':
 				if (strncmp (optarg, "disable_auto", 12) == 0)
@@ -319,10 +304,6 @@ static void parse_param(int a_argc, char **a_argv) {
 				else
 					SMP_mode_ = false;
 				break;
-			case 's':
-				printf ("Branch%s\n", BRANCH_NAME);
-				printf ("%s\n", COMMIT_ID);
-				exit(0);
 				*/
 			case 'v':
 					show_version();
@@ -480,12 +461,16 @@ int main(int argc, char **argv) {
 
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
 
+	if (word_access_mem)
+		fprintf(openocd_cfg, "nds word_access_mem on\n");
+
 	/* update nds32-aice.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, interface_cfg_tpl) != NULL)
 		fputs(line_buffer, interface_cfg);
 
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
+	fprintf(interface_cfg, "aice count_to_check_dbger %d\n", count_to_check_dbger);
 
 	/* custom srst/trst/restart scripts */
 	if (custom_srst_script) {
