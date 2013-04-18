@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <signal.h>
 
 #ifdef __MINGW32__
 #include <windows.h>
@@ -38,14 +39,6 @@ struct option long_option[] = {
 	{"custom-trst", required_argument, 0, 'L'},
 	{"custom-restart", required_argument, 0, 'N'},
 	{"target", required_argument, 0, 'z'},
-	/* {"IceBoxCmd", no_argument, 0, 'I'}, */
-	/* {"source", no_argument, 0, 's'}, */
-	/* {"EDM", required_argument, 0, 'E'}, */
-	/* {"icebox", required_argument, 0, 'i'}, */
-	/* {"Mode", required_argument, 0, 'M'}, */
-	/* {"ppp", required_argument, 0, 'f'}, */
-	/* {"edm-retry", required_argument, 0, 'e'}, */
-	/* {"test-iteration", required_argument, 0, 'n'}, */
 	{0, 0, 0, 0}
 };
 
@@ -277,34 +270,6 @@ static void parse_param(int a_argc, char **a_argv) {
 			case 'C':
 				count_to_check_dbger = strtoul(optarg, NULL, 0);
 				break;
-				/*
-			case 'E':
-				if (strncmp (optarg, "disable_auto", 12) == 0)
-					auto_adjust_edm_ = false;
-				else
-					user_specified_edm_version_ = strtol(optarg, NULL, 0);
-				break;
-			case 'I':
-				execute_aice_command_ = true;
-				break;
-			case 'f':
-				polling_period_ = strtol(optarg, NULL, 0);
-				break;
-			case 'i':
-				if (strncmp(optarg, "fw_ver", 6) == 0)
-					aice_fw_version_ = strtol((optarg + 6), NULL, 0);
-				else if (strncmp(optarg, "hw_ver", 6) == 0)
-					aice_hw_version_ = strtol((optarg + 6), NULL, 0);
-				else if (strncmp(optarg, "fpga_ver", 8) == 0)
-					aice_fpga_version_ = strtol((optarg + 8), NULL, 0);
-				break;
-			case 'M':
-				if (strncmp(optarg, "SMP", 3) == 0)
-					SMP_mode_ = true;
-				else
-					SMP_mode_ = false;
-				break;
-				*/
 			case 'v':
 					show_version();
 					exit(0);
@@ -431,20 +396,128 @@ static void parse_edm_operation(const char *edm_operation) {
 	}
 }
 
-int main(int argc, char **argv) {
+
+#ifdef __MINGW32__
+static HANDLE adapter_pipe_input[2];
+static PROCESS_INFORMATION burner_proc_info;
+static PROCESS_INFORMATION openocd_proc_info;
+#else
+static pid_t burner_adapter_pid;
+static pid_t openocd_pid;
+static int adapter_pipe_input[2];
+#endif
+
+static void sig_pipe(int signo)
+{
+	exit(1);
+}
+
+#ifdef __MINGW32__
+static void sig_int(int signo)
+{
+	WaitForSingleObject(burner_proc_info.hProcess, INFINITE);
+	WaitForSingleObject(openocd_proc_info.hProcess, INFINITE);
+
+	CloseHandle(burner_proc_info.hProcess);
+	CloseHandle(burner_proc_info.hThread);
+	CloseHandle(openocd_proc_info.hProcess);
+	CloseHandle(openocd_proc_info.hThread);
+
+	exit(0);
+}
+#else
+static void sig_int(int signo)
+{
+	int burner_adapter_status;
+	int openocd_status;
+	if (waitpid(burner_adapter_pid, &burner_adapter_status, 0) < 0)
+		fprintf(stderr, "wait burner_adapter failed\n");
+
+	if (waitpid(openocd_pid, &openocd_status, 0) < 0)
+		fprintf(stderr, "wait openocd failed\n");
+
+	exit(0);
+}
+#endif
+
+static void process_openocd_message(void)
+{
 	char line_buffer[LINE_BUFFER_SIZE];
+	char *search_str;
 
-	parse_param(argc, argv);
+	printf("Andes ICEman V3.0.0 (OpenOCD)\n");
+	printf("The core #0 listens on %d.\n", gdb_port);
+	printf("Burner listens on %d\n", burner_port);
+#ifdef __MINGW32__
+	/* ReadFile from pipe is not LINE_BUFFERED. So, we process newline ourselves. */
+	DWORD had_read;
+	char buffer[LINE_BUFFER_SIZE];
+	char *newline_pos;
+	DWORD line_buffer_index;
+	DWORD unprocessed_len;
+	char *unprocessed_buf;
 
-	open_config_files();
+	/* init unprocessed buffer */
+	if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) == 0)
+		return;
+	buffer[had_read] = '\0';
+	unprocessed_buf = buffer;
+	unprocessed_len = had_read;
+	line_buffer_index = 0;
+
+	while (unprocessed_len >= 0) {
+		/* find '\n' */
+		newline_pos = strchr(unprocessed_buf, '\n');
+		if (newline_pos == NULL) {
+			/* cannot find '\n', copy whole buffer to line_buffer */
+			strcpy(line_buffer + line_buffer_index, unprocessed_buf);
+			line_buffer_index += strlen(unprocessed_buf);
+			if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) == 0)
+				return;
+			buffer[had_read] = '\0';
+			unprocessed_buf = buffer;
+			unprocessed_len = had_read;
+			continue;
+		} else {
+			/* found '\n', copy substring before '\n' to line_buffer */
+			strncpy(line_buffer + line_buffer_index, unprocessed_buf, newline_pos - unprocessed_buf);
+			line_buffer_index += (newline_pos - unprocessed_buf);
+			line_buffer[line_buffer_index] = '\n';
+			line_buffer[line_buffer_index + 1] = '\0';
+			line_buffer_index++;
+			/* line_buffer is ready */
+
+			/* update unprocessed_buf */
+			unprocessed_buf = newline_pos + 1;
+			unprocessed_len = (buffer + had_read) - unprocessed_buf;
+		}
+#else
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, stdin) != NULL) {
+#endif
+		if ((search_str = strstr(line_buffer, "clock speed")) != NULL) {
+			printf("JTAG frequency %s", search_str + 12);
+			fflush(stdout);
+		} else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
+			printf("Core #0: EDM version %s", search_str + 12);
+			printf("ICEman is ready to use.\n");
+			fflush(stdout);
+		}
+#ifdef __MINGW32__
+		line_buffer_index = 0;
+#endif
+		/* TODO: use pin-pon buffer to log debug messages */
+	}
+}
+
+static void update_openocd_cfg(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
 		fputs(line_buffer, openocd_cfg);
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port);
-	printf("The core #0 listens on %d.\n", gdb_port);
-	fflush(stdout);
 
 	if (virtual_hosting)
 		fprintf(openocd_cfg, "nds virtual_hosting on\n");
@@ -463,6 +536,11 @@ int main(int argc, char **argv) {
 
 	if (word_access_mem)
 		fprintf(openocd_cfg, "nds word_access_mem on\n");
+}
+
+static void update_interface_cfg(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update nds32-aice.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, interface_cfg_tpl) != NULL)
@@ -483,7 +561,15 @@ int main(int argc, char **argv) {
 		fprintf(interface_cfg, "aice custom_restart_script %s\n", custom_restart_script);
 	}
 	fputs("\n", interface_cfg);
+}
 
+static void update_target_cfg(void)
+{
+}
+
+static void update_board_cfg(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update nds32_xc5.cfg */
 	char *find_pos;
@@ -591,36 +677,116 @@ int main(int argc, char **argv) {
 		fputs("}\n", board_cfg);
 	}
 
+}
+
+int main(int argc, char **argv) {
+	parse_param(argc, argv);
+
+	open_config_files();
+
+	update_openocd_cfg();
+	update_interface_cfg();
+	update_target_cfg();
+	update_board_cfg();
+
 	/* close config files */
 	close_config_files();
 
+	/* create processes */
 	char *openocd_argv[4] = {0, 0, 0, 0};
 	char *burner_adapter_argv[4] = {0, 0, 0, 0};
 
 #ifdef __MINGW32__
-	int burner_adapter_pid;
-	int openocd_pid;
+	BOOL success;
+	char cmd_string[256];
 
-	char burner_port_num[12];
-	burner_adapter_argv[0] = "burner_adapter.exe";
-	burner_adapter_argv[1] = "-p";
-	sprintf(burner_port_num, "%d", burner_port);
-	burner_adapter_argv[2] = burner_port_num;
-	burner_adapter_pid = _spawnv(_P_NOWAIT, "./burner_adapter.exe", (const char * const *)burner_adapter_argv);
+	sprintf(cmd_string, "./burner_adapter.exe -p %d", burner_port);
 
-	openocd_argv[0] = "openocd";
+	STARTUPINFO burner_start_info;
+
+	ZeroMemory(&burner_proc_info, sizeof(PROCESS_INFORMATION));
+	ZeroMemory(&burner_start_info, sizeof(STARTUPINFO));
+	burner_start_info.cb = sizeof(STARTUPINFO);
+	burner_start_info.dwFlags |= STARTF_USESTDHANDLES;
+
+	success = CreateProcess(NULL,
+			cmd_string,
+			NULL,
+			NULL,
+			TRUE,
+			0,
+			NULL,
+			NULL,
+			&burner_start_info,
+			&burner_proc_info);
+
+	if (!success) {
+		fprintf(stderr, "Create new process(burner) failed.\n");
+		return -1;
+	}
+
+	/* init pipe */
+	SECURITY_ATTRIBUTES attribute;
+
+	attribute.nLength = sizeof(SECURITY_ATTRIBUTES);
+	attribute.bInheritHandle = TRUE;
+	attribute.lpSecurityDescriptor = NULL;
+
+	/* adapter_pipe_input[0] is the read end of pipe
+	 * adapter_pipe_input[1] is the write end of pipe */
+	if (!CreatePipe(&adapter_pipe_input[0], &adapter_pipe_input[1], &attribute, 0)) {
+		fprintf(stderr, "Create pipes failed.\n");
+		return -1;
+	}
+
+	/* Do not inherit read end of pipe to child process. */
+	if (!SetHandleInformation(adapter_pipe_input[0], HANDLE_FLAG_INHERIT, 0))
+		return -1;
+
+	HANDLE stdout_handle;
+	HANDLE stderr_handle;
+	/* Backup the original standard output/error handle. */
+	stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
+	/* Set the standard output handler to write end of pipe. */
+	SetStdHandle(STD_OUTPUT_HANDLE, adapter_pipe_input[1]);
+	SetStdHandle(STD_ERROR_HANDLE, adapter_pipe_input[1]);
+
+	STARTUPINFO openocd_start_info;
+
+	ZeroMemory(&openocd_proc_info, sizeof(PROCESS_INFORMATION));
+	ZeroMemory(&openocd_start_info, sizeof(STARTUPINFO));
+	openocd_start_info.cb = sizeof(STARTUPINFO);
+
 	if (unlimited_log)
-		openocd_argv[1] = "-d";
-	openocd_pid = _spawnv(_P_NOWAIT, "./openocd.exe", (const char * const *)openocd_argv);
+		sprintf(cmd_string, "./openocd.exe -d");
+	else
+		sprintf(cmd_string, "./openocd.exe");
 
-	int burner_adapter_status;
-	int openocd_status;
-	_cwait(&burner_adapter_status, burner_adapter_pid, WAIT_CHILD);
-	_cwait(&openocd_status, openocd_pid, WAIT_CHILD);
+	success = CreateProcess(NULL,
+			cmd_string,
+			NULL,
+			NULL,
+			TRUE,
+			0,
+			NULL,
+			NULL,
+			&openocd_start_info,
+			&openocd_proc_info);
+
+	if (!success) {
+		fprintf(stderr, "Create new process(openocd) failed.\n");
+		return -1;
+	}
+
+	/* Close write end of the pipe. After the child process inherits
+	 * the write handle, the parent process no longer needs its copy. */
+	CloseHandle(adapter_pipe_input[1]);
+
+	/* Restore the original standard output handle. */
+	SetStdHandle(STD_OUTPUT_HANDLE, stdout_handle);
+	SetStdHandle(STD_ERROR_HANDLE, stderr_handle);
 #else
-	pid_t burner_adapter_pid;
-	pid_t openocd_pid;
-
 	burner_adapter_pid = fork();
 	if (burner_adapter_pid < 0) {
 		fprintf(stderr, "invoke burner_adapter failed\n");
@@ -637,11 +803,32 @@ int main(int argc, char **argv) {
 		exit(127);
 	}
 
+	/* init pipe */
+	if (signal(SIGPIPE, sig_pipe) == SIG_ERR) {
+		fprintf(stderr, "Register SIGPIPE handler failed.\n");
+		return -1;
+	}
+
+	if (pipe(adapter_pipe_input) < 0) {
+		fprintf(stderr, "Create pipes failed.\n");
+		return -1;
+	}
+
 	openocd_pid = fork();
 	if (openocd_pid < 0) {
 		fprintf(stderr, "invoke openocd failed\n");
 		exit(127);
 	} else if (openocd_pid == 0) {
+		/* child process */
+		/* close read pipe, pipe write through STDOUT */
+		close(adapter_pipe_input[0]);
+		if ((adapter_pipe_input[1] != STDOUT_FILENO) &&
+				(adapter_pipe_input[1] != STDERR_FILENO)) {
+			dup2(adapter_pipe_input[1], STDOUT_FILENO);
+			dup2(adapter_pipe_input[1], STDERR_FILENO);
+			close(adapter_pipe_input[1]);
+		}
+
 		/* invoke openocd */
 		openocd_argv[0] = "openocd";
 		if (unlimited_log)
@@ -651,14 +838,23 @@ int main(int argc, char **argv) {
 		exit(127);
 	}
 
-	int burner_adapter_status;
-	int openocd_status;
-	if (waitpid(burner_adapter_pid, &burner_adapter_status, 0) < 0)
-		fprintf(stderr, "wait burner_adapter failed\n");
-
-	if (waitpid(openocd_pid, &openocd_status, 0) < 0)
-		fprintf(stderr, "wait openocd failed\n");
+	/* parent process */
+	/* close write pipe, pipe read through STDIN */
+	close(adapter_pipe_input[1]);
+	if (adapter_pipe_input[0] != STDIN_FILENO) {
+		dup2(adapter_pipe_input[0], STDIN_FILENO);
+		close(adapter_pipe_input[0]);
+	}
 #endif
+
+	/* use SIGINT handler to wait children termination status */
+	if (signal(SIGINT, sig_int) == SIG_ERR) {
+		fprintf(stderr, "Register SIGINT handler failed.\n");
+		return -1;
+	}
+
+	/* process openocd output */
+	process_openocd_message();
 
 	return 0;
 }
