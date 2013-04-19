@@ -501,6 +501,9 @@ static void process_openocd_message(void)
 			printf("Core #0: EDM version %s", search_str + 12);
 			printf("ICEman is ready to use.\n");
 			fflush(stdout);
+		} else if ((search_str = strstr(line_buffer, "<--")) != NULL) {
+			printf("%s", search_str);
+			fflush(stdout);
 		}
 #ifdef __MINGW32__
 		line_buffer_index = 0;
