@@ -407,11 +407,6 @@ static pid_t openocd_pid;
 static int adapter_pipe_input[2];
 #endif
 
-static void sig_pipe(int signo)
-{
-	exit(1);
-}
-
 #ifdef __MINGW32__
 static void sig_int(int signo)
 {
@@ -426,6 +421,12 @@ static void sig_int(int signo)
 	exit(0);
 }
 #else
+static void sig_pipe(int signo)
+{
+	kill(burner_adapter_pid, SIGTERM);
+	exit(1);
+}
+
 static void sig_int(int signo)
 {
 	int burner_adapter_status;
@@ -693,23 +694,7 @@ static void update_board_cfg(void)
 
 }
 
-int main(int argc, char **argv) {
-	parse_param(argc, argv);
-
-	open_config_files();
-
-	update_openocd_cfg();
-	update_interface_cfg();
-	update_target_cfg();
-	update_board_cfg();
-
-	/* close config files */
-	close_config_files();
-
-	/* create processes */
-	char *openocd_argv[4] = {0, 0, 0, 0};
-	char *burner_adapter_argv[4] = {0, 0, 0, 0};
-
+int create_burner_adapter(void) {
 #ifdef __MINGW32__
 	BOOL success;
 	char cmd_string[256];
@@ -738,6 +723,30 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Create new process(burner) failed.\n");
 		return -1;
 	}
+#else
+	char *burner_adapter_argv[4] = {0, 0, 0, 0};
+	burner_adapter_pid = fork();
+	if (burner_adapter_pid < 0) {
+		fprintf(stderr, "invoke burner_adapter failed\n");
+		return -1;
+	} else if (burner_adapter_pid == 0) {
+		/* invoke burner adapter */
+		char burner_port_num[12];
+		burner_adapter_argv[0] = "burner_adapter";
+		burner_adapter_argv[1] = "-p";
+		sprintf(burner_port_num, "%d", burner_port);
+		burner_adapter_argv[2] = burner_port_num;
+
+		execv("./burner_adapter", burner_adapter_argv);
+	}
+#endif
+	return 0;
+}
+
+int create_openocd(void) {
+#ifdef __MINGW32__
+	BOOL success;
+	char cmd_string[256];
 
 	/* init pipe */
 	SECURITY_ATTRIBUTES attribute;
@@ -801,21 +810,7 @@ int main(int argc, char **argv) {
 	SetStdHandle(STD_OUTPUT_HANDLE, stdout_handle);
 	SetStdHandle(STD_ERROR_HANDLE, stderr_handle);
 #else
-	burner_adapter_pid = fork();
-	if (burner_adapter_pid < 0) {
-		fprintf(stderr, "invoke burner_adapter failed\n");
-		exit(127);
-	} else if (burner_adapter_pid == 0) {
-		/* invoke burner adapter */
-		char burner_port_num[12];
-		burner_adapter_argv[0] = "burner_adapter";
-		burner_adapter_argv[1] = "-p";
-		sprintf(burner_port_num, "%d", burner_port);
-		burner_adapter_argv[2] = burner_port_num;
-
-		execv("./burner_adapter", burner_adapter_argv);
-		exit(127);
-	}
+	char *openocd_argv[4] = {0, 0, 0, 0};
 
 	/* init pipe */
 	if (signal(SIGPIPE, sig_pipe) == SIG_ERR) {
@@ -831,7 +826,7 @@ int main(int argc, char **argv) {
 	openocd_pid = fork();
 	if (openocd_pid < 0) {
 		fprintf(stderr, "invoke openocd failed\n");
-		exit(127);
+		return -1;
 	} else if (openocd_pid == 0) {
 		/* child process */
 		/* close read pipe, pipe write through STDOUT */
@@ -849,7 +844,6 @@ int main(int argc, char **argv) {
 			openocd_argv[1] = "-d";
 
 		execv("./openocd", openocd_argv);
-		exit(127);
 	}
 
 	/* parent process */
@@ -860,16 +854,45 @@ int main(int argc, char **argv) {
 		close(adapter_pipe_input[0]);
 	}
 #endif
+	return 0;
+}
+
+int main(int argc, char **argv) {
+	parse_param(argc, argv);
+
+	open_config_files();
+
+	update_openocd_cfg();
+	update_interface_cfg();
+	update_target_cfg();
+	update_board_cfg();
+
+	/* close config files */
+	close_config_files();
+
+	/* create processes */
+	if (create_burner_adapter() < 0)
+		return -1;
+
+	if (create_openocd() < 0)
+		goto PROCESS_CLEANUP;
 
 	/* use SIGINT handler to wait children termination status */
 	if (signal(SIGINT, sig_int) == SIG_ERR) {
 		fprintf(stderr, "Register SIGINT handler failed.\n");
-		return -1;
+		goto PROCESS_CLEANUP;
 	}
 
-	/* process openocd output */
+	/* main loop. process openocd output */
 	process_openocd_message();
+
+PROCESS_CLEANUP:
+	/* openocd process exits. kill burner_adapter process */
+#ifdef __MINGW32__
+	TerminateProcess(burner_proc_info.hProcess, 0);
+#else
+	kill(burner_adapter_pid, SIGTERM);
+#endif
 
 	return 0;
 }
-
