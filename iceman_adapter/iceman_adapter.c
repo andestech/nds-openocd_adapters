@@ -444,6 +444,13 @@ static void process_openocd_message(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	char *search_str;
+	FILE *debug_log;
+
+	debug_log =  fopen("iceman_debug.log", "w+");
+	if (debug_log == NULL) {
+		printf("ERROR! Cannot create iceman debug log file.\n");
+		debug_log = stderr;
+	}
 
 	printf("Andes ICEman V3.0.0 (OpenOCD)\n");
 	printf("The core #0 listens on %d.\n", gdb_port);
@@ -504,6 +511,10 @@ static void process_openocd_message(void)
 		} else if ((search_str = strstr(line_buffer, "<--")) != NULL) {
 			printf("%s", search_str);
 			fflush(stdout);
+		} else {
+			/* output to debug log */
+			fprintf(debug_log, "%s", line_buffer);
+			fflush(debug_log);
 		}
 #ifdef __MINGW32__
 		line_buffer_index = 0;
