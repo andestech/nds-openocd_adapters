@@ -30,7 +30,6 @@ static void create_burner_server(void) {
 		FD_SET((unsigned int)burner_server_fd, &readfds);
 		if (burner_server_fd > max_fd)
 			max_fd = burner_server_fd;
-		printf("Burner listens on %d\n", burner_port);
 	}
 }
 

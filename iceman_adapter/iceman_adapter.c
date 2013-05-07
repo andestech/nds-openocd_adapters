@@ -146,7 +146,7 @@ static void show_usage(void) {
 	printf("-C, --check-times:\tCount to check DBGER\n");
 	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
 	printf("-O, --edm-port-operation: EDM port0/1 operations\n");
-	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678);\"\n");
+	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678;\"\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n");
 	printf("-F, --edm-port-file:\tEDM port0/1 operations file name\n");
 	printf("\t\tFile format:\n");
