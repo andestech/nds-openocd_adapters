@@ -77,7 +77,7 @@ static char *memory_stop_sequence = NULL;
 static char *memory_resume_sequence = NULL;
 static char *edm_port_operations = NULL;
 static const char *edm_port_op_file = NULL;
-static int aice_retry_time = 10;
+static int aice_retry_time = 50;
 static int clock_setting = 8;
 static int debug_level;
 static int boot_code_debug;
