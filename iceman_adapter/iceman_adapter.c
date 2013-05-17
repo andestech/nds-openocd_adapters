@@ -280,6 +280,10 @@ static void parse_param(int a_argc, char **a_argv) {
 					exit(0);
 		}
 	}
+
+	if (optind < a_argc) {
+		printf("<-- Unknown argument: %s -->\n", a_argv[optind]);
+	}
 }
 
 #define LINE_BUFFER_SIZE 1024
