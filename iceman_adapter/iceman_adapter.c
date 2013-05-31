@@ -351,20 +351,20 @@ static void parse_mem_operation(const char *mem_operation) {
 	char *next_data;
 
 	if (strncmp(mem_operation, "stop-seq ", 9) == 0) {
-		stop_sequences[stop_sequences_num].address = strtol(mem_operation+9, &next_data, 0);
-		stop_sequences[stop_sequences_num].data = strtol(next_data+1, &next_data, 0);
+		stop_sequences[stop_sequences_num].address = strtoll(mem_operation+9, &next_data, 0);
+		stop_sequences[stop_sequences_num].data = strtoll(next_data+1, &next_data, 0);
 		if (*next_data == ':')
-			stop_sequences[stop_sequences_num].mask = strtol(next_data+1, &next_data, 0);
+			stop_sequences[stop_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
 		stop_sequences_num++;
 	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
-		resume_sequences[resume_sequences_num].address = strtol(mem_operation+11, &next_data, 0);
+		resume_sequences[resume_sequences_num].address = strtoll(mem_operation+11, &next_data, 0);
 		if (*(next_data+1) == 'r')
 			resume_sequences[resume_sequences_num].restore = 1;
 		else {
 			resume_sequences[resume_sequences_num].restore = 0;
-			resume_sequences[resume_sequences_num].data = strtol(next_data+1, &next_data, 0);
+			resume_sequences[resume_sequences_num].data = strtoll(next_data+1, &next_data, 0);
 			if (*next_data == ':')
-				resume_sequences[resume_sequences_num].mask = strtol(next_data+1, &next_data, 0);
+				resume_sequences[resume_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
 		}
 		resume_sequences_num++;
 	}
@@ -383,11 +383,11 @@ static void parse_edm_operation(const char *edm_operation) {
 	processing_str += 10;
 
 	while (1) {
-		reg_no = strtol(processing_str, &end_ptr, 0);
+		reg_no = strtoll(processing_str, &end_ptr, 0);
 		if (end_ptr[0] != ':')
 			return;
 		processing_str = end_ptr + 1;
-		value = strtol(processing_str, &end_ptr, 0);
+		value = strtoll(processing_str, &end_ptr, 0);
 
 		edm_operations[edm_operations_num].reg_no = reg_no;
 		edm_operations[edm_operations_num].data = value;
