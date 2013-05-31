@@ -20,9 +20,3 @@ $_TARGETNAME configure -event gdb-detach {
 		set connected 0
 	}
 }
-
-$_TARGETNAME configure -event reset-assert-post {
-}
-
-$_TARGETNAME configure -event reset-init {
-}
