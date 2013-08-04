@@ -83,7 +83,7 @@ static int debug_level;
 static int boot_code_debug;
 static int gdb_port = 1111;
 static int burner_port = 2354;
-static int virtual_hosting;
+static int virtual_hosting = 0;
 static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
