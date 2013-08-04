@@ -10,7 +10,7 @@
 #include <process.h>
 #endif
 
-const char *opt_string = "hBvDHKgjJGkd:S:R:p:b:c:T:r:C:P:F:O:l:L:N:z:";
+const char *opt_string = "hBvDHKgjJGkd:S:R:p:b:c:T:r:C:P:F:O:l:L:N:z:t:";
 struct option long_option[] = {
 	{"help", no_argument, 0, 'h'},
 	{"boot", no_argument, 0, 'B'},
@@ -28,6 +28,7 @@ struct option long_option[] = {
 	{"resume-seq", required_argument, 0, 'R'},
 	{"port", required_argument, 0, 'p'},
 	{"bport", required_argument, 0, 'b'},
+	{"tport", required_argument, 0, 't'},
 	{"clock", required_argument, 0, 'c'},
 	{"boot-time", required_argument, 0, 'T'},
 	{"ice-retry", required_argument, 0, 'r'},
@@ -83,6 +84,7 @@ static int debug_level;
 static int boot_code_debug;
 static int gdb_port = 1111;
 static int burner_port = 2354;
+static int telnet_port = 6666;
 static int virtual_hosting = 0;
 static int startup_reset_halt;
 static int soft_reset_halt;
@@ -110,6 +112,8 @@ static void show_usage(void) {
 	printf("-p, --port:\t\tSocket port number for gdb connection\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
+	printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
+	printf("\t\t\t(default: 6666)\n");
 	printf("-v, --version:\t\tVersion of ICEman\n");
 	printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
 	printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
@@ -202,6 +206,9 @@ static void parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'b':
 				burner_port = strtol(optarg, NULL, 0);
+				break;
+			case 't':
+				telnet_port = strtol(optarg, NULL, 0);
 				break;
 			case 'p':
 				gdb_port = strtol(optarg, NULL, 0);
@@ -460,6 +467,7 @@ static void process_openocd_message(void)
 	printf("Andes ICEman V3.0.0 (OpenOCD)\n");
 	printf("The core #0 listens on %d.\n", gdb_port);
 	printf("Burner listens on %d\n", burner_port);
+	printf("Telnet port: %d\n", telnet_port);
 #ifdef __MINGW32__
 	/* ReadFile from pipe is not LINE_BUFFERED. So, we process newline ourselves. */
 	DWORD had_read;
@@ -537,6 +545,7 @@ static void update_openocd_cfg(void)
 		fputs(line_buffer, openocd_cfg);
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port);
+	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 
 	if (virtual_hosting)
 		fprintf(openocd_cfg, "nds virtual_hosting on\n");
