@@ -418,6 +418,28 @@ static pid_t openocd_pid;
 static int adapter_pipe_input[2];
 #endif
 
+#define LOG_BUFFER_SIZE 512*1024
+static char *log_buffer;
+static int is_rewind = 0;
+static unsigned int log_buffer_start = 0;
+
+static void dump_debug_log ()
+{
+	FILE *debug_log =  fopen("iceman_debug.log", "w+");
+	if (debug_log == NULL) {
+		printf("ERROR! Cannot create iceman debug log file.\n");
+		debug_log = stderr;
+	}
+	if (is_rewind == 0) {
+		fwrite(log_buffer, 1, log_buffer_start, debug_log);
+	} else {
+		fwrite(log_buffer + log_buffer_start, 1,  LOG_BUFFER_SIZE - log_buffer_start, debug_log);
+		fwrite(log_buffer, 1,  log_buffer_start, debug_log);
+	}
+	fclose(debug_log);
+
+}
+
 #ifdef __MINGW32__
 static void sig_int(int signo)
 {
@@ -448,6 +470,9 @@ static void sig_int(int signo)
 	if (waitpid(openocd_pid, &openocd_status, 0) < 0)
 		fprintf(stderr, "wait openocd failed\n");
 
+	if (!unlimited_log)
+		dump_debug_log();
+
 	exit(0);
 }
 #endif
@@ -457,11 +482,17 @@ static void process_openocd_message(void)
 	char line_buffer[LINE_BUFFER_SIZE];
 	char *search_str;
 	FILE *debug_log;
+	int is_ready = 0;
+	unsigned int line_buffer_len, log_buffer_remain;
 
-	debug_log =  fopen("iceman_debug.log", "w+");
-	if (debug_log == NULL) {
-		printf("ERROR! Cannot create iceman debug log file.\n");
-		debug_log = stderr;
+	if (unlimited_log) {
+		debug_log =  fopen("iceman_debug.log", "w+");
+		if (debug_log == NULL) {
+			printf("ERROR! Cannot create iceman debug log file.\n");
+			debug_log = stderr;
+		}
+	} else {
+		log_buffer = (char *)malloc(sizeof(char) * LOG_BUFFER_SIZE);
 	}
 
 	printf("Andes ICEman V3.0.0 (OpenOCD)\n");
@@ -514,20 +545,46 @@ static void process_openocd_message(void)
 #else
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, stdin) != NULL) {
 #endif
-		if ((search_str = strstr(line_buffer, "clock speed")) != NULL) {
-			printf("JTAG frequency %s", search_str + 12);
-			fflush(stdout);
-		} else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
-			printf("Core #0: EDM version %s", search_str + 12);
-			printf("ICEman is ready to use.\n");
-			fflush(stdout);
-		} else if ((search_str = strstr(line_buffer, "<--")) != NULL) {
-			printf("%s", search_str);
-			fflush(stdout);
+		if (is_ready == 0) {
+			if ((search_str = strstr(line_buffer, "clock speed")) != NULL) {
+				printf("JTAG frequency %s", search_str + 12);
+				fflush(stdout);
+			} else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
+				printf("Core #0: EDM version %s", search_str + 12);
+				printf("ICEman is ready to use.\n");
+				fflush(stdout);
+				is_ready = 1;
+			}
 		} else {
-			/* output to debug log */
-			fprintf(debug_log, "%s", line_buffer);
-			fflush(debug_log);
+			 if ((search_str = strstr(line_buffer, "<--")) != NULL) {
+				printf("%s", search_str);
+				fflush(stdout);
+			} else {
+				if (unlimited_log) {
+					/* output to debug log */
+					fprintf(debug_log, "%s", line_buffer);
+					fflush(debug_log);
+				} else {
+					line_buffer_len = strlen(line_buffer);
+					log_buffer_remain = LOG_BUFFER_SIZE - log_buffer_start;
+					if (line_buffer_len <= log_buffer_remain) {
+						/* there is enough space for this line */
+						strncpy(log_buffer + log_buffer_start, line_buffer, line_buffer_len);
+						log_buffer_start += line_buffer_len;
+						if (log_buffer_start == LOG_BUFFER_SIZE)
+						{
+							log_buffer_start = 0;
+							is_rewind = 1;
+						}
+					} else {
+						/* split this line into two part */
+						strncpy(log_buffer + log_buffer_start, line_buffer, log_buffer_remain);
+						strncpy(log_buffer, line_buffer + log_buffer_remain, line_buffer_len - log_buffer_remain);
+						log_buffer_start = 0 + line_buffer_len - log_buffer_remain;
+						is_rewind = 1;
+					}
+				}
+			}
 		}
 #ifdef __MINGW32__
 		line_buffer_index = 0;
@@ -806,10 +863,7 @@ int create_openocd(void) {
 	ZeroMemory(&openocd_start_info, sizeof(STARTUPINFO));
 	openocd_start_info.cb = sizeof(STARTUPINFO);
 
-	if (unlimited_log)
-		sprintf(cmd_string, "./openocd.exe -d");
-	else
-		sprintf(cmd_string, "./openocd.exe");
+	sprintf(cmd_string, "./openocd.exe -d");
 
 	success = CreateProcess(NULL,
 			cmd_string,
@@ -865,8 +919,7 @@ int create_openocd(void) {
 
 		/* invoke openocd */
 		openocd_argv[0] = "openocd";
-		if (unlimited_log)
-			openocd_argv[1] = "-d";
+		openocd_argv[1] = "-d";
 
 		execv("./openocd", openocd_argv);
 	}
