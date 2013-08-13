@@ -80,7 +80,7 @@ static char *edm_port_operations = NULL;
 static const char *edm_port_op_file = NULL;
 static int aice_retry_time = 50;
 static int clock_setting = 9;
-static int debug_level;
+static int debug_level = 2;
 static int boot_code_debug;
 static int gdb_port = 1111;
 static int burner_port = 2354;
@@ -603,6 +603,7 @@ static void update_openocd_cfg(void)
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
+	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
 	if (virtual_hosting)
 		fprintf(openocd_cfg, "nds virtual_hosting on\n");
