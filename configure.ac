@@ -17,5 +17,5 @@ esac
 
 AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
 
-AC_CONFIG_FILES([Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile])
+AC_CONFIG_FILES([Makefile aice/Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile])
 AC_OUTPUT

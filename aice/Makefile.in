@@ -32,8 +32,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = aice_adapter$(EXEEXT)
-subdir = aice_adapter
+subdir = aice
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -42,14 +41,14 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-PROGRAMS = $(bin_PROGRAMS)
-am_aice_adapter_OBJECTS = aice_adapter-adapter.$(OBJEXT)
-aice_adapter_OBJECTS = $(am_aice_adapter_OBJECTS)
-am__DEPENDENCIES_1 =
-aice_adapter_DEPENDENCIES = ../aice/libaice.a $(am__DEPENDENCIES_1)
-aice_adapter_LINK = $(CCLD) $(aice_adapter_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+LIBRARIES = $(noinst_LIBRARIES)
+AR = ar
+ARFLAGS = cru
+libaice_a_AR = $(AR) $(ARFLAGS)
+libaice_a_LIBADD =
+am_libaice_a_OBJECTS = libaice_a-aice_usb.$(OBJEXT) \
+	libaice_a-nds32_reg.$(OBJEXT) libaice_a-log.$(OBJEXT)
+libaice_a_OBJECTS = $(am_libaice_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -58,8 +57,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(aice_adapter_SOURCES)
-DIST_SOURCES = $(aice_adapter_SOURCES)
+SOURCES = $(libaice_a_SOURCES)
+DIST_SOURCES = $(libaice_a_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -148,12 +147,20 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-aice_adapter_SOURCES = adapter.c \
-		       adapter.h
+noinst_LIBRARIES = libaice.a
+libaice_a_SOURCES = aice_port.h \
+		    aice_usb.c \
+		    aice_usb.h \
+		    config.h \
+		    nds32_edm.h \
+		    nds32_insn.h \
+		    nds32_reg.c \
+		    nds32_reg.h \
+		    log.c \
+		    log.h
 
-aice_adapter_LDADD = ../aice/libaice.a $(USBLIB)
-@BUILD_MINGW_BINARY_FALSE@aice_adapter_CFLAGS = -I$(srcdir)/../aice
-@BUILD_MINGW_BINARY_TRUE@aice_adapter_CFLAGS = -I$(srcdir)/../aice -mno-cygwin -DCYG
+@BUILD_MINGW_BINARY_FALSE@libaice_a_CFLAGS = 
+@BUILD_MINGW_BINARY_TRUE@libaice_a_CFLAGS = -mno-cygwin -DCYG
 all: all-am
 
 .SUFFIXES:
@@ -167,9 +174,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign aice_adapter/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign aice/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign aice_adapter/Makefile
+	  $(AUTOMAKE) --foreign aice/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -188,46 +195,13 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-install-binPROGRAMS: $(bin_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p; \
-	  then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	      echo " $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	      $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
-	    } \
-	; done
 
-uninstall-binPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' `; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(bindir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(bindir)" && rm -f $$files
-
-clean-binPROGRAMS:
-	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-aice_adapter$(EXEEXT): $(aice_adapter_OBJECTS) $(aice_adapter_DEPENDENCIES) $(EXTRA_aice_adapter_DEPENDENCIES) 
-	@rm -f aice_adapter$(EXEEXT)
-	$(aice_adapter_LINK) $(aice_adapter_OBJECTS) $(aice_adapter_LDADD) $(LIBS)
+clean-noinstLIBRARIES:
+	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+libaice.a: $(libaice_a_OBJECTS) $(libaice_a_DEPENDENCIES) $(EXTRA_libaice_a_DEPENDENCIES) 
+	-rm -f libaice.a
+	$(libaice_a_AR) libaice.a $(libaice_a_OBJECTS) $(libaice_a_LIBADD)
+	$(RANLIB) libaice.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -235,7 +209,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/aice_adapter-adapter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-aice_usb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-nds32_reg.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -251,19 +227,47 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
-aice_adapter-adapter.o: adapter.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aice_adapter_CFLAGS) $(CFLAGS) -MT aice_adapter-adapter.o -MD -MP -MF $(DEPDIR)/aice_adapter-adapter.Tpo -c -o aice_adapter-adapter.o `test -f 'adapter.c' || echo '$(srcdir)/'`adapter.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/aice_adapter-adapter.Tpo $(DEPDIR)/aice_adapter-adapter.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='adapter.c' object='aice_adapter-adapter.o' libtool=no @AMDEPBACKSLASH@
+libaice_a-aice_usb.o: aice_usb.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-aice_usb.o -MD -MP -MF $(DEPDIR)/libaice_a-aice_usb.Tpo -c -o libaice_a-aice_usb.o `test -f 'aice_usb.c' || echo '$(srcdir)/'`aice_usb.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-aice_usb.Tpo $(DEPDIR)/libaice_a-aice_usb.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='aice_usb.c' object='libaice_a-aice_usb.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aice_adapter_CFLAGS) $(CFLAGS) -c -o aice_adapter-adapter.o `test -f 'adapter.c' || echo '$(srcdir)/'`adapter.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-aice_usb.o `test -f 'aice_usb.c' || echo '$(srcdir)/'`aice_usb.c
 
-aice_adapter-adapter.obj: adapter.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aice_adapter_CFLAGS) $(CFLAGS) -MT aice_adapter-adapter.obj -MD -MP -MF $(DEPDIR)/aice_adapter-adapter.Tpo -c -o aice_adapter-adapter.obj `if test -f 'adapter.c'; then $(CYGPATH_W) 'adapter.c'; else $(CYGPATH_W) '$(srcdir)/adapter.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/aice_adapter-adapter.Tpo $(DEPDIR)/aice_adapter-adapter.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='adapter.c' object='aice_adapter-adapter.obj' libtool=no @AMDEPBACKSLASH@
+libaice_a-aice_usb.obj: aice_usb.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-aice_usb.obj -MD -MP -MF $(DEPDIR)/libaice_a-aice_usb.Tpo -c -o libaice_a-aice_usb.obj `if test -f 'aice_usb.c'; then $(CYGPATH_W) 'aice_usb.c'; else $(CYGPATH_W) '$(srcdir)/aice_usb.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-aice_usb.Tpo $(DEPDIR)/libaice_a-aice_usb.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='aice_usb.c' object='libaice_a-aice_usb.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(aice_adapter_CFLAGS) $(CFLAGS) -c -o aice_adapter-adapter.obj `if test -f 'adapter.c'; then $(CYGPATH_W) 'adapter.c'; else $(CYGPATH_W) '$(srcdir)/adapter.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-aice_usb.obj `if test -f 'aice_usb.c'; then $(CYGPATH_W) 'aice_usb.c'; else $(CYGPATH_W) '$(srcdir)/aice_usb.c'; fi`
+
+libaice_a-nds32_reg.o: nds32_reg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-nds32_reg.o -MD -MP -MF $(DEPDIR)/libaice_a-nds32_reg.Tpo -c -o libaice_a-nds32_reg.o `test -f 'nds32_reg.c' || echo '$(srcdir)/'`nds32_reg.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-nds32_reg.Tpo $(DEPDIR)/libaice_a-nds32_reg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nds32_reg.c' object='libaice_a-nds32_reg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-nds32_reg.o `test -f 'nds32_reg.c' || echo '$(srcdir)/'`nds32_reg.c
+
+libaice_a-nds32_reg.obj: nds32_reg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-nds32_reg.obj -MD -MP -MF $(DEPDIR)/libaice_a-nds32_reg.Tpo -c -o libaice_a-nds32_reg.obj `if test -f 'nds32_reg.c'; then $(CYGPATH_W) 'nds32_reg.c'; else $(CYGPATH_W) '$(srcdir)/nds32_reg.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-nds32_reg.Tpo $(DEPDIR)/libaice_a-nds32_reg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nds32_reg.c' object='libaice_a-nds32_reg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-nds32_reg.obj `if test -f 'nds32_reg.c'; then $(CYGPATH_W) 'nds32_reg.c'; else $(CYGPATH_W) '$(srcdir)/nds32_reg.c'; fi`
+
+libaice_a-log.o: log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-log.o -MD -MP -MF $(DEPDIR)/libaice_a-log.Tpo -c -o libaice_a-log.o `test -f 'log.c' || echo '$(srcdir)/'`log.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-log.Tpo $(DEPDIR)/libaice_a-log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='log.c' object='libaice_a-log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-log.o `test -f 'log.c' || echo '$(srcdir)/'`log.c
+
+libaice_a-log.obj: log.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-log.obj -MD -MP -MF $(DEPDIR)/libaice_a-log.Tpo -c -o libaice_a-log.obj `if test -f 'log.c'; then $(CYGPATH_W) 'log.c'; else $(CYGPATH_W) '$(srcdir)/log.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-log.Tpo $(DEPDIR)/libaice_a-log.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='log.c' object='libaice_a-log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-log.obj `if test -f 'log.c'; then $(CYGPATH_W) 'log.c'; else $(CYGPATH_W) '$(srcdir)/log.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -349,11 +353,8 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(LIBRARIES)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
-	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
-	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -386,7 +387,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
+clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -412,7 +413,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am:
 
 install-html: install-html-am
 
@@ -451,22 +452,22 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS
+uninstall-am:
 
 .MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic ctags distclean distclean-compile \
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
+	clean-noinstLIBRARIES ctags distclean distclean-compile \
 	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS
+	uninstall-am
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

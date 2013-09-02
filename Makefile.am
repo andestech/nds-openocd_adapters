@@ -1,1 +1,1 @@
-SUBDIRS = aice_adapter burner_adapter iceman_adapter
+SUBDIRS = aice aice_adapter burner_adapter iceman_adapter

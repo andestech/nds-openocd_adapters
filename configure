@@ -3573,7 +3573,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile"
+ac_config_files="$ac_config_files Makefile aice/Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -4326,6 +4326,7 @@ do
   case $ac_config_target in
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "aice/Makefile") CONFIG_FILES="$CONFIG_FILES aice/Makefile" ;;
     "aice_adapter/Makefile") CONFIG_FILES="$CONFIG_FILES aice_adapter/Makefile" ;;
     "burner_adapter/Makefile") CONFIG_FILES="$CONFIG_FILES burner_adapter/Makefile" ;;
     "iceman_adapter/Makefile") CONFIG_FILES="$CONFIG_FILES iceman_adapter/Makefile" ;;
