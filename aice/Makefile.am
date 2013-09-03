@@ -1,5 +1,6 @@
 noinst_LIBRARIES = libaice.a
-libaice_a_SOURCES = aice_port.h \
+libaice_a_SOURCES = aice_usb_wrapper.c \
+		    aice_port.h \
 		    aice_usb.c \
 		    aice_usb.h \
 		    config.h \

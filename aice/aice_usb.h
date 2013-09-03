@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Hsiangkai Wang                                  *
+ *   Copyright (C) 2013 by Andes Technology                                *
  *   Hsiangkai Wang <hkwang@andestech.com>                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -15,13 +15,15 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.           *
  ***************************************************************************/
 #ifndef __AICE_USB_H__
 #define __AICE_USB_H__
 
 #include <usb.h>
 #include "aice_port.h"
+#include "nds32_edm.h"
+#include "aice_usb_patch.h"
 
 /* AICE USB timeout value */
 #define AICE_USB_TIMEOUT			5000
@@ -29,6 +31,12 @@
 /* AICE USB buffer size */
 #define AICE_IN_BUFFER_SIZE			2048
 #define AICE_OUT_BUFFER_SIZE			2048
+#define AICE_IN_PACKETS_BUFFER_SIZE		2048
+#define AICE_OUT_PACKETS_BUFFER_SIZE	2048
+#define AICE_IN_BATCH_COMMAND_SIZE		512
+#define AICE_OUT_BATCH_COMMAND_SIZE		512
+#define AICE_IN_PACK_COMMAND_SIZE		2048
+#define AICE_OUT_PACK_COMMAND_SIZE		2048
 
 /* Constants for AICE command */
 #define AICE_CMD_SCAN_CHAIN			0x00
@@ -96,6 +104,11 @@
 #define AICE_READ_CTRL_GET_FPGA_VERSION		0x02
 #define AICE_READ_CTRL_GET_FIRMWARE_VERSION	0x03
 #define AICE_READ_CTRL_GET_JTAG_PIN_STATUS	0x04
+#define AICE_READ_CTRL_BATCH_BUF_INFO		0x22
+#define AICE_READ_CTRL_BATCH_STATUS		0x23
+#define AICE_READ_CTRL_BATCH_BUF0_STATE		0x31
+#define AICE_READ_CTRL_BATCH_BUF4_STATE		0x39
+#define AICE_READ_CTRL_BATCH_BUF5_STATE		0x3b
 
 /* Constants for AICE command WRITE_CTRL */
 #define AICE_WRITE_CTRL_TCK_CONTROL		0x00
@@ -103,6 +116,22 @@
 #define AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS	0x02
 #define AICE_WRITE_CTRL_RESERVED		0x03
 #define AICE_WRITE_CTRL_JTAG_PIN_STATUS		0x04
+#define AICE_WRITE_CTRL_CUSTOM_DELAY		0x0d
+#define AICE_WRITE_CTRL_BATCH_CTRL		0x20
+#define AICE_WRITE_CTRL_BATCH_ITERATION		0x21
+#define AICE_WRITE_CTRL_BATCH_DIM_SIZE		0x22
+#define AICE_WRITE_CTRL_BATCH_CMD_BUF0_CTRL	0x30
+#define AICE_WRITE_CTRL_BATCH_DATA_BUF0_CTRL	0x38
+#define AICE_WRITE_CTRL_BATCH_DATA_BUF1_CTRL	0x3a
+
+#define AICE_BATCH_COMMAND_BUFFER_0		0x0
+#define AICE_BATCH_COMMAND_BUFFER_1		0x1
+#define AICE_BATCH_COMMAND_BUFFER_2		0x2
+#define AICE_BATCH_COMMAND_BUFFER_3		0x3
+#define AICE_BATCH_DATA_BUFFER_0		0x4
+#define AICE_BATCH_DATA_BUFFER_1		0x5
+#define AICE_BATCH_DATA_BUFFER_2		0x6
+#define AICE_BATCH_DATA_BUFFER_3		0x7
 
 /* Constants for AICE command WRITE_CTRL:TCK_CONTROL */
 #define AICE_TCK_CONTROL_TCK3048		0x08
@@ -116,35 +145,52 @@
 /* Constants for AICE command WRITE_CTRL:TCK_CONTROL */
 #define AICE_TCK_CONTROL_TCK_SCAN		0x10
 
+/* Custom SRST/DBGI/TRST */
+#define AICE_CUSTOM_DELAY_SET_SRST		0x01
+#define AICE_CUSTOM_DELAY_CLEAN_SRST		0x02
+#define AICE_CUSTOM_DELAY_SET_DBGI		0x04
+#define AICE_CUSTOM_DELAY_CLEAN_DBGI		0x08
+#define AICE_CUSTOM_DELAY_SET_TRST		0x10
+#define AICE_CUSTOM_DELAY_CLEAN_TRST		0x20
+
 struct aice_usb_handler_s {
-	uint32_t usb_read_ep;
-	uint32_t usb_write_ep;
-	usb_dev_handle *usb_handle;
+	unsigned int usb_read_ep;
+	unsigned int usb_write_ep;
+	struct usb_dev_handle *usb_handle;
+};
+
+struct cache_info {
+	uint32_t set;
+	uint32_t way;
+	uint32_t line_size;
+
+	uint32_t log2_set;
+	uint32_t log2_line_size;
+};
+
+struct aice_nds32_info {
+	uint32_t edm_version;
+	uint32_t r0_backup;
+	uint32_t r1_backup;
+	uint32_t host_dtr_backup;
+	uint32_t target_dtr_backup;
+	uint32_t edmsw_backup;
+	uint32_t edm_ctl_backup;
+	bool debug_under_dex_on;
+	bool dex_use_psw_on;
+	bool host_dtr_valid;
+	bool target_dtr_valid;
+	enum nds_memory_access access_channel;
+	enum nds_memory_select memory_select;
+	enum aice_target_state_s core_state;
+	bool cache_init;
+	struct cache_info icache;
+	struct cache_info dcache;
 };
 
 extern struct aice_port_api_s aice_usb_api;
 
-int aice_scan_chain(uint32_t *id_codes, uint8_t *num_of_ids);
 int aice_read_ctrl(uint32_t address, uint32_t *data);
 int aice_write_ctrl(uint32_t address, uint32_t data);
-int aice_read_dtr(uint8_t target_id, uint32_t *data);
-int aice_write_dtr(uint8_t target_id, uint32_t data);
-int aice_read_misc(uint8_t target_id, uint32_t address, uint32_t *data);
-int aice_write_misc(uint8_t target_id, uint32_t address, uint32_t data);
-int aice_read_edmsr(uint8_t target_id, uint32_t address, uint32_t *data);
-int aice_write_edmsr(uint8_t target_id, uint32_t address, uint32_t data);
-int aice_write_dim(uint8_t target_id, uint32_t *word, uint8_t num_of_words);
-int aice_execute(uint8_t target_id);
-int aice_write_mem_b(uint8_t target_id, uint32_t address, uint32_t data);
-int aice_write_mem_h(uint8_t target_id, uint32_t address, uint32_t data);
-int aice_write_mem(uint8_t target_id, uint32_t address, uint32_t data);
-int aice_fastread_mem(uint8_t target_id, uint32_t *word, uint32_t num_of_words);
-int aice_fastwrite_mem(uint8_t target_id, const uint32_t *word, uint32_t num_of_words);
-int aice_read_mem_b(uint8_t target_id, uint32_t address, uint32_t *data);
-int aice_read_mem_h(uint8_t target_id, uint32_t address, uint32_t *data);
-int aice_read_mem(uint8_t target_id, uint32_t address, uint32_t *data);
-
-int aice_usb_open(uint16_t vid, uint16_t pid);
-int aice_usb_close(void);
 
 #endif

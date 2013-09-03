@@ -6,7 +6,9 @@
 #define ERROR_DISCONNECT	(-2)
 #define ERROR_AICE_TIMEOUT	(-3)
 
+#define AICE_MAX_NUM_CORE      (0x10)
 
+#define ERROR_AICE_DISCONNECT  (-200)
 #define MAX_ID_CODE 	(16)
 
 enum aice_target_state_s {
@@ -24,10 +26,17 @@ enum aice_srst_type_s {
 	AICE_RESET_HOLD = 0x8,
 };
 
+enum aice_target_endian {
+	AICE_LITTLE_ENDIAN = 0,
+	AICE_BIG_ENDIAN,
+};
+
 enum aice_api_s {
 	AICE_OPEN = 0x0,
 	AICE_CLOSE,
 	AICE_RESET,
+	AICE_IDCODE,
+	AICE_SET_JTAG_CLOCK,
 	AICE_ASSERT_SRST,
 	AICE_RUN,
 	AICE_HALT,
@@ -42,14 +51,20 @@ enum aice_api_s {
 	AICE_WRITE_MEM_BULK,
 	AICE_READ_DEBUG_REG,
 	AICE_WRITE_DEBUG_REG,
-	AICE_IDCODE,
 	AICE_STATE,
-	AICE_SET_JTAG_CLOCK,
-	AICE_SELECT_TARGET,
 	AICE_MEMORY_ACCESS,
 	AICE_MEMORY_MODE,
 	AICE_READ_TLB,
 	AICE_CACHE_CTL,
+	AICE_SET_RETRY_TIMES,
+	AICE_PROGRAM_EDM,
+	AICE_SET_COMMAND_MODE,
+	AICE_EXECUTE,
+	AICE_SET_CUSTOM_SRST_SCRIPT,
+	AICE_SET_CUSTOM_TRST_SCRIPT,
+	AICE_SET_CUSTOM_RESTART_SCRIPT,
+	AICE_SET_COUNT_TO_CHECK_DBGER,
+	AICE_SET_DATA_ENDIAN,
 };
 
 enum aice_error_s {
@@ -77,6 +92,19 @@ enum aice_cache_ctl_type {
 	AICE_CACHE_CTL_L1D_VA_WB,
 	AICE_CACHE_CTL_L1I_INVALALL,
 	AICE_CACHE_CTL_L1I_VA_INVAL,
+};
+
+enum aice_command_mode {
+	AICE_COMMAND_MODE_NORMAL,
+	AICE_COMMAND_MODE_PACK,
+	AICE_COMMAND_MODE_BATCH,
+};
+
+struct aice_port_s {
+	/** */
+	uint32_t coreid;
+	/** */
+	const struct aice_port *port;
 };
 
 const static const char *AICE_MEMORY_ACCESS_NAME[] = {

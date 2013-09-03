@@ -24,16 +24,6 @@ static enum aice_memory_mode memory_mode = AICE_MEMORY_MODE_AUTO;
 static bool memory_mode_auto_select;
 static uint32_t edm_version;
 
-struct cache_info
-{
-	uint32_t set;
-	uint32_t way;
-	uint32_t line_size;
-
-	uint32_t log2_set;
-	uint32_t log2_line_size;
-};
-
 static struct cache_info icache = {0, 0, 0};
 static struct cache_info dcache = {0, 0, 0};
 static bool cache_init = false;
@@ -289,7 +279,7 @@ static int aice_execute_dim(uint32_t *insts, uint8_t n_inst)
 		return ERROR_FAIL;
 
 	/** execute DIM */
-	if (aice_execute(current_target_id) != ERROR_OK)
+	if (aice_do_execute(current_target_id) != ERROR_OK)
 		return ERROR_FAIL;
 
 	/** read DBGER.DPED */
@@ -2006,9 +1996,6 @@ int main ()
 				break;
 			case AICE_SET_JTAG_CLOCK:
 				aice_set_jtag_clock (line);
-				break;
-			case AICE_SELECT_TARGET:
-				aice_select_target (line);
 				break;
 			case AICE_MEMORY_ACCESS:
 				aice_memory_access (line);

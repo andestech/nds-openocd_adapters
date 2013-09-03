@@ -1,12 +1,30 @@
+/***************************************************************************
+ *   Copyright (C) 2013 Andes Technology                                   *
+ *   Hsiangkai Wang <hkwang@andestech.com>                                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.           *
+ ***************************************************************************/
 #ifndef __NDS32_REG_H__
 #define __NDS32_REG_H__
 
 #define SRIDX(a, b, c)			((a << 7) | (b << 3) | c)
-#define NDS32_REGISTER_DISABLE 		(0x0)
+#define NDS32_REGISTER_DISABLE		(0x0)
 
 enum nds32_reg_number_s {
-	/* general registers */
-	R0 = 0,
+	R0 = 0, /* general registers */
 	R1,
 	R2,
 	R3,
@@ -45,9 +63,7 @@ enum nds32_reg_number_s {
 	D1HI,
 	ITB,
 	IFC_LP,
-
-	/* system registers */
-	CR0,
+	CR0, /* system registers */
 	CR1,
 	CR2,
 	CR3,
@@ -80,6 +96,11 @@ enum nds32_reg_number_s {
 	IR23,
 	IR24,
 	IR25,
+	IR26,
+	IR27,
+	IR28,
+	IR29,
+	IR30,
 	MR0,
 	MR1,
 	MR2,
@@ -161,9 +182,7 @@ enum nds32_reg_number_s {
 	IDR0,
 	IDR1,
 	SECUR0,
-
-	/* audio registers */
-	D0L24,
+	D0L24, /* audio registers */
 	D1L24,
 	I0,
 	I1,
@@ -195,9 +214,7 @@ enum nds32_reg_number_s {
 	CBE1,
 	CBE2,
 	CBE3,
-
-	/* fpu */
-	FPCSR,
+	FPCSR, /* fpu */
 	FPCFG,
 	FS0,
 	FS1,
@@ -291,11 +308,19 @@ struct nds32_reg_s {
 	uint8_t size;
 };
 
+struct nds32_reg_exception_s {
+	uint32_t reg_num;
+	uint32_t ex_value_bit_pos;
+	uint32_t ex_value_mask;
+	uint32_t ex_value;
+};
+
 void nds32_reg_init(void);
 uint32_t nds32_reg_sr_index(uint32_t number);
 enum nds32_reg_type_s nds32_reg_type(uint32_t number);
 uint8_t nds32_reg_size(uint32_t number);
 const char *nds32_reg_simple_name(uint32_t number);
 const char *nds32_reg_symbolic_name(uint32_t number);
+bool nds32_reg_exception(uint32_t number, uint32_t value);
 
 #endif

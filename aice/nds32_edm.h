@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Hsiangkai Wang                                  *
+ *   Copyright (C) 2013 Andes Technology                                   *
  *   Hsiangkai Wang <hkwang@andestech.com>                                 *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -15,7 +15,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, write to the                         *
  *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.           *
  ***************************************************************************/
 #ifndef __NDS32_EDM_H__
 #define __NDS32_EDM_H__
@@ -32,6 +32,9 @@ enum nds_edm_misc_reg {
 	NDS_EDM_MISC_EDM_CMDR,
 	NDS_EDM_MISC_DBGER,
 	NDS_EDM_MISC_ACC_CTL,
+	NDS_EDM_MISC_EDM_PROBE,
+	NDS_EDM_MISC_GEN_PORT0,
+	NDS_EDM_MISC_GEN_PORT1,
 };
 
 /* EDM system registers */
@@ -76,22 +79,36 @@ enum nds_edm_system_reg {
 	NDS_EDM_SR_BPCID5,
 	NDS_EDM_SR_BPCID6,
 	NDS_EDM_SR_BPCID7,
-        NDS_EDM_SR_EDM_CFG = 0x28,
-        NDS_EDM_SR_EDMSW = 0x30,
-        NDS_EDM_SR_EDM_CTL = 0x38,
-        NDS_EDM_SR_EDM_DTR = 0x40,
-        NDS_EDM_SR_BPMTV = 0x48,
-        NDS_EDM_SR_DIMBR = 0x50,
-        NDS_EDM_SR_TECR0 = 0x70,
-        NDS_EDM_SR_TECR1 = 0x71,
+	NDS_EDM_SR_EDM_CFG = 0x28,
+	NDS_EDM_SR_EDMSW = 0x30,
+	NDS_EDM_SR_EDM_CTL = 0x38,
+	NDS_EDM_SR_EDM_DTR = 0x40,
+	NDS_EDM_SR_BPMTV = 0x48,
+	NDS_EDM_SR_DIMBR = 0x50,
+	NDS_EDM_SR_TECR0 = 0x70,
+	NDS_EDM_SR_TECR1 = 0x71,
+};
+
+enum nds_memory_access {
+	NDS_MEMORY_ACC_BUS = 0,
+	NDS_MEMORY_ACC_CPU,
+};
+
+enum nds_memory_select {
+	NDS_MEMORY_SELECT_AUTO = 0,
+	NDS_MEMORY_SELECT_MEM = 1,
+	NDS_MEMORY_SELECT_ILM = 2,
+	NDS_MEMORY_SELECT_DLM = 3,
 };
 
 #define NDS_DBGER_DEX		(0x1)
 #define NDS_DBGER_DPED		(0x2)
 #define NDS_DBGER_CRST		(0x4)
 #define NDS_DBGER_AT_MAX	(0x8)
+#define NDS_DBGER_ILL_SEC_ACC	(0x10)
 #define NDS_DBGER_ALL_SUPRS_EX	(0x40000000)
 #define NDS_DBGER_RESACC	(0x80000000)
+#define NDS_DBGER_CLEAR_ALL	(0x1F)
 
 #define NDS_EDMSW_WDV		(1 << 0)
 #define NDS_EDMSW_RDV		(1 << 1)
