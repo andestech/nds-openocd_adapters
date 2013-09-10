@@ -56,7 +56,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" \
 PROGRAMS = $(bin_PROGRAMS)
 am_iceman_OBJECTS = iceman-iceman_adapter.$(OBJEXT)
 iceman_OBJECTS = $(am_iceman_OBJECTS)
-iceman_LDADD = $(LDADD)
+am__DEPENDENCIES_1 =
+iceman_DEPENDENCIES = ../aice/libaice.a $(am__DEPENDENCIES_1)
 iceman_LINK = $(CCLD) $(iceman_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -199,6 +200,7 @@ dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 			      target/nds32v3.cfg \
 			      target/nds32v3m.cfg
 
+iceman_LDADD = ../aice/libaice.a $(USBLIB)
 iceman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(am__append_1) \
 	$(am__append_2)
 all: all-am

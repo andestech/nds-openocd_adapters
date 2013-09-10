@@ -118,7 +118,7 @@ static int boot_time = 2500;
 static unsigned int count_to_check_dbger = 30;
 static int global_stop;
 static int word_access_mem;
-static enum TARGET_TYPE target_type = TARGET_V3;
+static enum TARGET_TYPE target_type = TARGET_INVALID;
 static char *edm_passcode = NULL;
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
@@ -315,6 +315,67 @@ static void parse_param(int a_argc, char **a_argv) {
 	if (optind < a_argc) {
 		printf("<-- Unknown argument: %s -->\n", a_argv[optind]);
 	}
+}
+
+int aice_usb_read_reg(uint32_t coreid, uint32_t num, uint32_t *val);
+int aice_edm_init(uint32_t coreid);
+int aice_usb_halt(uint32_t coreid);
+int aice_usb_run(uint32_t coreid);
+
+static void target_probe(void)
+{
+	uint16_t vid = 0x1CFC;
+	uint16_t pid = 0x0;
+	uint32_t value_edmcfg, value_cr4;
+	uint32_t version = 0;
+	uint32_t coreid = 0;
+
+	if (target_type != TARGET_INVALID)
+		return;
+
+	nds32_reg_init ();
+
+	if (ERROR_OK != aice_usb_open(vid, pid)) {
+		printf("<-- Can not open usb -->\n");
+		return;
+	}
+
+	if (ERROR_OK != aice_edm_init(coreid)) {
+		printf("<-- Can not init EDM -->\n");
+		return;
+	}
+
+	if (ERROR_OK != aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CFG, &value_edmcfg)) {
+		printf("<-- Can not read EDMSR -->\n");
+		return;
+	}
+	version = (value_edmcfg >> 16) & 0xFFFF;
+	if ((version & 0x1000) == 0) {
+		/* edm v2 */
+		target_type = TARGET_V2;
+	} else {
+		/* edm v3 */
+		/* halt cpu to check whether cpu belongs to mcu not */
+		if (ERROR_OK != aice_usb_halt(coreid)) {
+			printf("<-- Can not halt cpu -->\n");
+			return;
+		}
+		if (ERROR_OK != aice_usb_read_reg(coreid, CR4, &value_cr4)) {
+			printf("<-- Can not read register -->\n");
+			return;
+		}
+		if ((value_cr4 & 0x100000) == 0x100000) {
+			target_type = TARGET_V3m;
+		} else {
+			target_type = TARGET_V3;
+		}
+		if (ERROR_OK != aice_usb_run(coreid)) {
+			printf("<-- Can not release cpu -->\n");
+			return;
+		}
+	}
+	aice_usb_close();
+
 }
 
 #define LINE_BUFFER_SIZE 1024
@@ -627,6 +688,7 @@ static void update_openocd_cfg(void)
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
+	fprintf(openocd_cfg, "tcl_port %d\n", telnet_port+1);
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
 	if (virtual_hosting)
@@ -962,6 +1024,7 @@ int create_openocd(void) {
 int main(int argc, char **argv) {
 	parse_param(argc, argv);
 
+	target_probe();
 	open_config_files();
 
 	update_openocd_cfg();

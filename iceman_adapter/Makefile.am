@@ -15,6 +15,8 @@ dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 			      target/nds32v3.cfg \
 			      target/nds32v3m.cfg
 
+iceman_LDADD = ../aice/libaice.a $(USBLIB)
+
 iceman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra
 if BUILD_MINGW_BINARY
 iceman_CFLAGS += -mno-cygwin -DCYG
