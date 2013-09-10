@@ -21,6 +21,4 @@ void log_add (uint32_t a_level, const char *a_format, ...);
 #define SCNx64 "llx"
 #define PRIx64 "llx"
 
-#define DEBUG_JTAG_IO printf
-
 #endif

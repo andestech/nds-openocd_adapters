@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include "config.h"
 
+#include <sys/time.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
@@ -399,8 +400,6 @@ static int aice_usb_packet_flush(void)
 		/* wait 1 second (AICE bug, workaround) */
 		alive_sleep(1000);
 
-#if 0
-		/* TODO: verify me, comment because of keep_alive */
 		/* check status */
 		uint32_t i;
 		uint32_t batch_status;
@@ -419,7 +418,6 @@ static int aice_usb_packet_flush(void)
 
 			i++;
 		}
-#endif
 	}
 
 	return ERROR_OK;
@@ -1771,26 +1769,6 @@ static int check_privilege(uint32_t coreid, uint32_t dbger_value)
 
 static int aice_check_dbger(uint32_t coreid, uint32_t expect_status)
 {
-/* ---------- */
-	uint32_t dbger_value;
-	if (aice_read_misc(coreid, NDS_EDM_MISC_DBGER, &dbger_value) != ERROR_OK)
-		return ERROR_FAIL;
-
-	if ((dbger_value & expect_status) != expect_status)
-	{
-#if 0
-		log_add (LOG_INFO, "Debug operations do not finish properly: \
-				0x%08x 0x%08x 0x%08x 0x%08x\n", insts[0], insts[1], insts[2], insts[3]);
-#endif
-		return ERROR_FAIL;
-	}
-
-	if (ERROR_OK != check_suppressed_exception(coreid, dbger_value))
-		return ERROR_FAIL;
-
-	return ERROR_OK;
-#if 0
-	/* TODO: verify me */
 	uint32_t i = 0;
 	uint32_t value_dbger;
 
@@ -1822,7 +1800,6 @@ static int aice_check_dbger(uint32_t coreid, uint32_t expect_status)
 	}
 
 	return ERROR_FAIL;
-#endif
 }
 
 static int aice_execute_dim(uint32_t coreid, uint32_t *insts, uint8_t n_inst)
@@ -2086,7 +2063,7 @@ int aice_usb_open(uint16_t vids, uint16_t pids)
 
 	/* usb_set_configuration required under win32 */
 	struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
-	jtag_libusb_set_configuration(devh, 0);
+	int result = jtag_libusb_set_configuration(devh, 0);
 	jtag_libusb_claim_interface(devh, 0);
 
 	unsigned int aice_read_ep;
@@ -2741,22 +2718,7 @@ static int aice_issue_srst(uint32_t coreid)
 		if (aice_execute_custom_script(custom_srst_script) != ERROR_OK)
 			return ERROR_FAIL;
 	}
-/* ---------- */
-	uint32_t dbger_value;
-	if (aice_read_misc(coreid, NDS_EDM_MISC_DBGER, &dbger_value) != ERROR_OK)
-		return ERROR_FAIL;
 
-	if (dbger_value & NDS_DBGER_CRST)
-	{
-		core_info[coreid].host_dtr_valid = false;
-		core_info[coreid].target_dtr_valid = false;
-
-		core_info[coreid].core_state = AICE_TARGET_RUNNING;
-		return ERROR_OK;
-	}
-
-#if 0
-	/* TODO: verify me */
 	/* wait CRST infinitely */
 	uint32_t dbger_value;
 	int i = 0;
@@ -2772,11 +2734,11 @@ static int aice_issue_srst(uint32_t coreid)
 			keep_alive();
 		i++;
 	}
+
 	core_info[coreid].host_dtr_valid = false;
 	core_info[coreid].target_dtr_valid = false;
 
 	core_info[coreid].core_state = AICE_TARGET_RUNNING;
-#endif
 	return ERROR_OK;
 }
 
@@ -2977,11 +2939,7 @@ static int aice_usb_step(uint32_t coreid)
 
 		if (AICE_TARGET_HALTED == state)
 			break;
-/* -------- */
-		if (i >= 30) {
-			return ERROR_FAIL;
 
-#if 0
 		long long then = 0;
 		if (i == 30)
 			then = timeval_ms();
@@ -2991,7 +2949,6 @@ static int aice_usb_step(uint32_t coreid)
 				LOG_WARNING("Timeout (1000ms) waiting for halt to complete");
 
 			return ERROR_FAIL;
-#endif
 		}
 		i++;
 	}
@@ -3994,8 +3951,6 @@ static int aice_usb_profiling(uint32_t coreid, uint32_t interval, uint32_t itera
 		/* wait a while (AICE bug, workaround) */
 		alive_sleep(this_iteration);
 
-#if 0
-		/* TODO: verify me, comment because of keep_alive */
 		/* check status */
 		uint32_t i;
 		uint32_t batch_status;
@@ -4017,7 +3972,6 @@ static int aice_usb_profiling(uint32_t coreid, uint32_t interval, uint32_t itera
 
 			i++;
 		}
-#endif
 
 		aice_usb_halt(coreid);
 

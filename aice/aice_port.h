@@ -1,5 +1,27 @@
+/***************************************************************************
+ *   Copyright (C) 2013 by Andes Technology                                *
+ *   Hsiangkai Wang <hkwang@andestech.com>                                 *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.           *
+ ***************************************************************************/
 #ifndef _AICE_PORT_H_
 #define _AICE_PORT_H_
+
+#include "config.h"
+#include "nds32_edm.h"
 
 #define ERROR_OK 		(0)
 #define ERROR_FAIL 		(-1)
@@ -73,18 +95,6 @@ enum aice_error_s {
 	AICE_ERROR,
 };
 
-enum aice_memory_access {
-	AICE_MEMORY_ACC_BUS = 0,
-	AICE_MEMORY_ACC_CPU,
-};
-
-enum aice_memory_mode {
-	AICE_MEMORY_MODE_AUTO = 0,
-	AICE_MEMORY_MODE_MEM = 1,
-	AICE_MEMORY_MODE_ILM = 2,
-	AICE_MEMORY_MODE_DLM = 3,
-};
-
 enum aice_cache_ctl_type {
 	AICE_CACHE_CTL_L1D_INVALALL = 0,
 	AICE_CACHE_CTL_L1D_VA_INVAL,
@@ -100,6 +110,19 @@ enum aice_command_mode {
 	AICE_COMMAND_MODE_BATCH,
 };
 
+struct aice_port_param_s {
+	/** */
+	char *device_desc;
+	/** */
+	char *serial;
+	/** */
+	uint16_t vid;
+	/** */
+	uint16_t pid;
+	/** */
+	char *adapter_name;
+};
+
 struct aice_port_s {
 	/** */
 	uint32_t coreid;
@@ -107,12 +130,25 @@ struct aice_port_s {
 	const struct aice_port *port;
 };
 
-const static const char *AICE_MEMORY_ACCESS_NAME[] = {
+enum aice_memory_access {
+	AICE_MEMORY_ACC_BUS = 0,
+	AICE_MEMORY_ACC_CPU,
+};
+
+enum aice_memory_mode {
+	AICE_MEMORY_MODE_AUTO = 0,
+	AICE_MEMORY_MODE_MEM = 1,
+	AICE_MEMORY_MODE_ILM = 2,
+	AICE_MEMORY_MODE_DLM = 3,
+};
+
+
+static const char *AICE_MEMORY_ACCESS_NAME[] = {
 	"BUS",
 	"CPU",
 };
 
-const static const char *AICE_MEMORY_MODE_NAME[] = {
+static const char *AICE_MEMORY_MODE_NAME[] = {
 	"AUTO",
 	"MEM",
 	"ILM",

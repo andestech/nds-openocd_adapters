@@ -32,6 +32,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+@BUILD_MINGW_BINARY_TRUE@am__append_1 = -mno-cygwin -DCYG
+@BUILD_MINGW_BINARY_FALSE@am__append_2 = 
 subdir = aice
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -46,9 +48,8 @@ AR = ar
 ARFLAGS = cru
 libaice_a_AR = $(AR) $(ARFLAGS)
 libaice_a_LIBADD =
-am_libaice_a_OBJECTS = libaice_a-aice_usb_wrapper.$(OBJEXT) \
-	libaice_a-aice_usb.$(OBJEXT) libaice_a-nds32_reg.$(OBJEXT) \
-	libaice_a-log.$(OBJEXT)
+am_libaice_a_OBJECTS = libaice_a-aice_usb.$(OBJEXT) \
+	libaice_a-nds32_reg.$(OBJEXT) libaice_a-log.$(OBJEXT)
 libaice_a_OBJECTS = $(am_libaice_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -149,8 +150,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libaice.a
-libaice_a_SOURCES = aice_usb_wrapper.c \
-		    aice_port.h \
+libaice_a_SOURCES = aice_port.h \
 		    aice_usb.c \
 		    aice_usb.h \
 		    config.h \
@@ -159,10 +159,11 @@ libaice_a_SOURCES = aice_usb_wrapper.c \
 		    nds32_reg.c \
 		    nds32_reg.h \
 		    log.c \
-		    log.h
+		    log.h \
+		    aice_usb_patch.h
 
-@BUILD_MINGW_BINARY_FALSE@libaice_a_CFLAGS = 
-@BUILD_MINGW_BINARY_TRUE@libaice_a_CFLAGS = -mno-cygwin -DCYG
+libaice_a_CFLAGS = -Wall -Wextra -Wno-unused -D__LIBAICE__ \
+	$(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
@@ -212,7 +213,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-aice_usb.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-aice_usb_wrapper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-nds32_reg.Po@am__quote@
 
@@ -229,20 +229,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-
-libaice_a-aice_usb_wrapper.o: aice_usb_wrapper.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-aice_usb_wrapper.o -MD -MP -MF $(DEPDIR)/libaice_a-aice_usb_wrapper.Tpo -c -o libaice_a-aice_usb_wrapper.o `test -f 'aice_usb_wrapper.c' || echo '$(srcdir)/'`aice_usb_wrapper.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-aice_usb_wrapper.Tpo $(DEPDIR)/libaice_a-aice_usb_wrapper.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='aice_usb_wrapper.c' object='libaice_a-aice_usb_wrapper.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-aice_usb_wrapper.o `test -f 'aice_usb_wrapper.c' || echo '$(srcdir)/'`aice_usb_wrapper.c
-
-libaice_a-aice_usb_wrapper.obj: aice_usb_wrapper.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-aice_usb_wrapper.obj -MD -MP -MF $(DEPDIR)/libaice_a-aice_usb_wrapper.Tpo -c -o libaice_a-aice_usb_wrapper.obj `if test -f 'aice_usb_wrapper.c'; then $(CYGPATH_W) 'aice_usb_wrapper.c'; else $(CYGPATH_W) '$(srcdir)/aice_usb_wrapper.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-aice_usb_wrapper.Tpo $(DEPDIR)/libaice_a-aice_usb_wrapper.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='aice_usb_wrapper.c' object='libaice_a-aice_usb_wrapper.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-aice_usb_wrapper.obj `if test -f 'aice_usb_wrapper.c'; then $(CYGPATH_W) 'aice_usb_wrapper.c'; else $(CYGPATH_W) '$(srcdir)/aice_usb_wrapper.c'; fi`
 
 libaice_a-aice_usb.o: aice_usb.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-aice_usb.o -MD -MP -MF $(DEPDIR)/libaice_a-aice_usb.Tpo -c -o libaice_a-aice_usb.o `test -f 'aice_usb.c' || echo '$(srcdir)/'`aice_usb.c

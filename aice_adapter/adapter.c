@@ -4,12 +4,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
 #include "aice_port.h"
-#include "aice_usb.h"
 #include "nds32_edm.h"
 #include "nds32_reg.h"
 #include "nds32_insn.h"
-#include "adapter.h"
+#include "aice_usb.h"
 #include "log.h"
 
 #define MAXLINE 8192
@@ -24,8 +24,8 @@ static enum aice_memory_mode memory_mode = AICE_MEMORY_MODE_AUTO;
 static bool memory_mode_auto_select;
 static uint32_t edm_version;
 
-static struct cache_info icache = {0, 0, 0};
-static struct cache_info dcache = {0, 0, 0};
+static struct cache_info icache = {0, 0, 0, 0, 0};
+static struct cache_info dcache = {0, 0, 0, 0, 0};
 static bool cache_init = false;
 
 static int aice_usb_read_reg(uint32_t num, uint32_t *val);
@@ -157,6 +157,7 @@ static int aice_issue_srst(void)
 		core_state = AICE_TARGET_RUNNING;
 		return ERROR_OK;
 	}
+	return ERROR_FAIL;
 }
 
 static int aice_issue_reset_hold(void)
@@ -235,7 +236,6 @@ static int aice_usb_assert_srst(enum aice_srst_type_s srst)
 
 static int check_suppressed_exception(uint32_t dbger_value)
 {
-	uint32_t value;
 	uint32_t ir4_value;
 	uint32_t ir6_value;
 
@@ -1380,7 +1380,6 @@ static void aice_set_jtag_clock (const char *input)
 	log_add (LOG_INFO, "<aice_set_jtag_clock>: ");
 
 	char response[MAXLINE];
-	uint32_t clock;
 
 	jtag_clock = get_u32 (input + 1);
 
@@ -1601,7 +1600,7 @@ static void aice_read_mem_unit (const char *input)
 		aice_usb_set_address_dim(addr);
 	}
 
-	aice_usb_read_memory_unit (addr, size, count, response);
+	aice_usb_read_memory_unit (addr, size, count, (uint8_t *)response);
 
 	pipe_write (response, size * count);
 }
@@ -1622,7 +1621,7 @@ static void aice_write_mem_unit (const char *input)
 		aice_usb_set_address_dim(addr);
 	}
 
-	if (ERROR_OK == aice_usb_write_memory_unit (addr, size, count, input + 13))
+	if (ERROR_OK == aice_usb_write_memory_unit (addr, size, count, (uint8_t *)(input + 13)))
 		response[0] = AICE_OK;
 	else
 		response[0] = AICE_ERROR;
@@ -1647,9 +1646,9 @@ static void aice_read_mem_bulk (const char *input)
 	}
 
 	if (AICE_MEMORY_ACC_CPU == access_channel)
-		retval = aice_usb_read_memory_unit(addr, 4, length / 4, response + 1);
+		retval = aice_usb_read_memory_unit(addr, 4, length / 4, (uint8_t *)(response + 1));
 	else
-		retval = aice_usb_bulk_read_mem(addr, length / 4, response + 1);
+		retval = aice_usb_bulk_read_mem(addr, length / 4, (uint8_t *)(response + 1));
 
 	if (retval != ERROR_OK)
 	{
@@ -1714,9 +1713,9 @@ static void aice_write_mem_bulk (const char *input)
 		log_add (LOG_DEBUG, "\tremain_len: 0x%08x, write_len: 0x%08x\n", remain_len, write_len);
 
 		if (AICE_MEMORY_ACC_CPU == access_channel)
-			retval = aice_usb_write_memory_unit (write_addr, 4, write_len / 4, remain_data);
+			retval = aice_usb_write_memory_unit (write_addr, 4, write_len / 4, (uint8_t *)remain_data);
 		else
-			retval = aice_usb_bulk_write_mem(write_addr, write_len / 4, remain_data);
+			retval = aice_usb_bulk_write_mem(write_addr, write_len / 4, (uint8_t *)remain_data);
 
 		if (retval != ERROR_OK)
 		{
@@ -1823,6 +1822,7 @@ static void aice_state (const char *input)
 	pipe_write (response, 1);
 }
 
+#if 0
 static void aice_select_target (const char *input)
 {
 	log_add (LOG_INFO, "<aice_select_target>: ");
@@ -1836,8 +1836,9 @@ static void aice_select_target (const char *input)
 	response[0] = AICE_OK;
 	pipe_write (response, 1);
 }
+#endif
 
-static int aice_memory_access (const char *input)
+static void aice_memory_access (const char *input)
 {
 	log_add (LOG_INFO, "<aice_memory_access>: ");
 
@@ -1851,7 +1852,7 @@ static int aice_memory_access (const char *input)
 	pipe_write (response, 1);
 }
 
-static int aice_memory_mode (const char *input)
+static void aice_memory_mode (const char *input)
 {
 	log_add (LOG_INFO, "<aice_memory_mode>: ");
 
@@ -1876,7 +1877,7 @@ static int aice_memory_mode (const char *input)
 	pipe_write (response, 1);
 }
 
-static int aice_read_tlb (const char *input)
+static void aice_read_tlb (const char *input)
 {
 	log_add (LOG_INFO, "<aice_read_tlb>: ");
 
@@ -1903,7 +1904,7 @@ static int aice_read_tlb (const char *input)
 	pipe_write (response, 5);
 }
 
-static int aice_cache_ctl (const char *input)
+static void aice_cache_ctl (const char *input)
 {
 	log_add (LOG_INFO, "<aice_cache_ctl>: ");
 

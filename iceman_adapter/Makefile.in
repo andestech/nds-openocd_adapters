@@ -34,6 +34,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = iceman$(EXEEXT)
+@BUILD_MINGW_BINARY_TRUE@am__append_1 = -mno-cygwin -DCYG
+@BUILD_MINGW_BINARY_FALSE@am__append_2 = 
 subdir = iceman_adapter
 DIST_COMMON = $(dist_openocd_boardcfg_DATA) $(dist_openocd_cfg_DATA) \
 	$(dist_openocd_interfacecfg_DATA) \
@@ -197,8 +199,8 @@ dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 			      target/nds32v3.cfg \
 			      target/nds32v3m.cfg
 
-@BUILD_MINGW_BINARY_FALSE@iceman_CFLAGS = 
-@BUILD_MINGW_BINARY_TRUE@iceman_CFLAGS = -mno-cygwin -DCYG
+iceman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(am__append_1) \
+	$(am__append_2)
 all: all-am
 
 .SUFFIXES:

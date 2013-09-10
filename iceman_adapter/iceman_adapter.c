@@ -1,13 +1,37 @@
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <signal.h>
+#include "aice_port.h"
+#include "aice_usb.h"
+#include "nds32_edm.h"
+#include "nds32_reg.h"
+#include "nds32_insn.h"
+#include "log.h"
 
 #ifdef __MINGW32__
-#include <windows.h>
-#include <process.h>
+# include <windows.h>
+# include <process.h>
+#else
+# include <sys/types.h>
+# include <sys/wait.h>
+#endif
+
+
+#ifdef __GNUC__
+#  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
+#else
+#  define UNUSED(x) UNUSED_ ## x
+#endif
+
+#ifdef __GNUC__
+#  define UNUSED_FUNCTION(x) __attribute__((__unused__)) UNUSED_ ## x
+#else
+#  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
 const char *opt_string = "hBvDHKgjJGkd:S:R:p:b:c:T:r:C:P:F:O:l:L:N:z:t:";
@@ -320,9 +344,8 @@ static FILE *interface_cfg_tpl;
 static FILE *interface_cfg;
 static FILE *board_cfg_tpl;
 static FILE *board_cfg;
-static FILE *target_cfg;
 
-static open_config_files(void) {
+static void open_config_files(void) {
 	openocd_cfg_tpl = fopen("openocd.cfg.tpl", "r");
 	openocd_cfg = fopen("openocd.cfg", "w");
 	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
@@ -345,7 +368,7 @@ static open_config_files(void) {
 	}
 }
 
-static close_config_files(void) {
+static void close_config_files(void) {
 	fclose(openocd_cfg_tpl);
 	fclose(openocd_cfg);
 	fclose(interface_cfg_tpl);
@@ -441,7 +464,7 @@ static void dump_debug_log ()
 }
 
 #ifdef __MINGW32__
-static void sig_int(int signo)
+static void sig_int(int UNUSED(signo))
 {
 	WaitForSingleObject(burner_proc_info.hProcess, INFINITE);
 	WaitForSingleObject(openocd_proc_info.hProcess, INFINITE);
@@ -454,16 +477,17 @@ static void sig_int(int signo)
 	exit(0);
 }
 #else
-static void sig_pipe(int signo)
+static void sig_pipe(int UNUSED(signo))
 {
 	kill(burner_adapter_pid, SIGTERM);
 	exit(1);
 }
 
-static void sig_int(int signo)
+static void sig_int(int UNUSED(signo))
 {
 	int burner_adapter_status;
 	int openocd_status;
+
 	if (waitpid(burner_adapter_pid, &burner_adapter_status, 0) < 0)
 		fprintf(stderr, "wait burner_adapter failed\n");
 
@@ -481,7 +505,7 @@ static void process_openocd_message(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	char *search_str;
-	FILE *debug_log;
+	FILE *debug_log = NULL;
 	int is_ready = 0;
 	unsigned int line_buffer_len, log_buffer_remain;
 
@@ -717,7 +741,6 @@ static void update_board_cfg(void)
 
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
-	char *next_data;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
 	if (sw_reset_fd != NULL) {
 		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL) {

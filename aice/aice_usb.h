@@ -32,7 +32,7 @@
 #define AICE_IN_BUFFER_SIZE			2048
 #define AICE_OUT_BUFFER_SIZE			2048
 #define AICE_IN_PACKETS_BUFFER_SIZE		2048
-#define AICE_OUT_PACKETS_BUFFER_SIZE	2048
+#define AICE_OUT_PACKETS_BUFFER_SIZE		2048
 #define AICE_IN_BATCH_COMMAND_SIZE		512
 #define AICE_OUT_BATCH_COMMAND_SIZE		512
 #define AICE_IN_PACK_COMMAND_SIZE		2048
@@ -156,7 +156,7 @@
 struct aice_usb_handler_s {
 	unsigned int usb_read_ep;
 	unsigned int usb_write_ep;
-	struct usb_dev_handle *usb_handle;
+	struct jtag_libusb_device_handle *usb_handle;
 };
 
 struct cache_info {
@@ -192,5 +192,29 @@ extern struct aice_port_api_s aice_usb_api;
 
 int aice_read_ctrl(uint32_t address, uint32_t *data);
 int aice_write_ctrl(uint32_t address, uint32_t data);
+int aice_read_edmsr(uint8_t target_id, uint32_t address, uint32_t *data);
+int aice_write_edmsr(uint8_t target_id, uint32_t address, uint32_t data);
+int aice_read_misc(uint8_t target_id, uint32_t address, uint32_t *data);
+int aice_write_misc(uint8_t target_id, uint32_t address, uint32_t data);
+int aice_read_dtr(uint8_t target_id, uint32_t *data);
+int aice_write_dtr(uint8_t target_id, uint32_t data);
+int aice_read_dtr_to_buffer(uint8_t target_id, uint32_t buffer_idx);
+int aice_write_dtr_from_buffer(uint8_t target_id, uint32_t buffer_idx);
+int aice_read_mem_b(uint8_t target_id, uint32_t address, uint32_t *data);
+int aice_write_mem_b(uint8_t target_id, uint32_t address, uint32_t data);
+int aice_read_mem_h(uint8_t target_id, uint32_t address, uint32_t *data);
+int aice_write_mem_h(uint8_t target_id, uint32_t address, uint32_t data);
+int aice_read_mem(uint8_t target_id, uint32_t address, uint32_t *data);
+int aice_write_mem(uint8_t target_id, uint32_t address, uint32_t data);
+int aice_fastread_mem(uint8_t target_id, uint32_t *word, uint32_t num_of_words);
+int aice_fastwrite_mem(uint8_t target_id, const uint32_t *word, uint32_t num_of_words);
+int aice_batch_buffer_read(uint8_t buf_index, uint32_t *word, uint32_t num_of_words);
+int aice_batch_buffer_write(uint8_t buf_index, const uint32_t *word, uint32_t num_of_words);
+int aice_write_dim(uint8_t target_id, uint32_t *word, uint8_t num_of_words);
+int aice_do_execute(uint8_t target_id);
+int aice_scan_chain(uint32_t *id_codes, uint8_t *num_of_ids);
+
+int aice_usb_open(uint16_t vids, uint16_t pids);
+int aice_usb_close(void);
 
 #endif

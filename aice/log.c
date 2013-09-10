@@ -10,9 +10,9 @@
 #define MINIMUM_DEBUG_LOG_SIZE 1024
 #define WORKING_BUF_SIZE 4096
 
-const uint8_t *FILE_NO_NAME = "NEXT_FILE_NO";
-const uint8_t *DEBUG_FILE_1 = "debug_dump_1.log";
-const uint8_t *DEBUG_FILE_2 = "debug_dump_2.log";
+const char *FILE_NO_NAME = "NEXT_FILE_NO";
+const char *DEBUG_FILE_1 = "debug_dump_1.log";
+const char *DEBUG_FILE_2 = "debug_dump_2.log";
 
 
 static uint32_t start_index_;
@@ -22,7 +22,7 @@ static bool enable_debug_;
 static uint32_t remain_debug_buf_size_;
 static char *debug_buf_;
 static FILE *debug_fd_;
-static uint32_t debug_level_ = LOG_VERBOSE;
+static uint32_t debug_level_ = LOG_DEBUG;
 static uint32_t debug_buf_size_ = MINIMUM_DEBUG_LOG_SIZE;
 static bool log_unlimited_ = false;
 
@@ -31,7 +31,7 @@ static const char *get_debug_file_name (void)
 	FILE *file_no_fd = NULL;
 	char buffer[128];
 	int file_no;
-	const uint8_t *filename;
+	const char *filename;
 
 	file_no_fd = fopen (FILE_NO_NAME, "r");
 	if (file_no_fd == NULL)
@@ -83,7 +83,7 @@ static void open_debug_file (void)
 
 static void close_debug_file (void)
 {
-	fclose (debug_fd_); 
+	fclose (debug_fd_);
 }
 
 static void append_to_full_debug_buf (const char *a_content, uint32_t a_content_len)
