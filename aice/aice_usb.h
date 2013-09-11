@@ -21,9 +21,10 @@
 #define __AICE_USB_H__
 
 #include <usb.h>
+#include <sys/time.h>
 #include "aice_port.h"
 #include "nds32_edm.h"
-#include "aice_usb_patch.h"
+#include "libusb0_common.h"
 
 /* AICE USB timeout value */
 #define AICE_USB_TIMEOUT			5000
@@ -208,12 +209,9 @@ int aice_read_mem(uint8_t target_id, uint32_t address, uint32_t *data);
 int aice_write_mem(uint8_t target_id, uint32_t address, uint32_t data);
 int aice_fastread_mem(uint8_t target_id, uint32_t *word, uint32_t num_of_words);
 int aice_fastwrite_mem(uint8_t target_id, const uint32_t *word, uint32_t num_of_words);
-int aice_batch_buffer_read(uint8_t buf_index, uint32_t *word, uint32_t num_of_words);
-int aice_batch_buffer_write(uint8_t buf_index, const uint32_t *word, uint32_t num_of_words);
 int aice_write_dim(uint8_t target_id, uint32_t *word, uint8_t num_of_words);
 int aice_do_execute(uint8_t target_id);
 int aice_scan_chain(uint32_t *id_codes, uint8_t *num_of_ids);
-
 int aice_usb_open(uint16_t vids, uint16_t pids);
 int aice_usb_close(void);
 

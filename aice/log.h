@@ -21,4 +21,10 @@ void log_add (uint32_t a_level, const char *a_format, ...);
 #define SCNx64 "llx"
 #define PRIx64 "llx"
 
+#define LOG_ERROR(fmt, ...) log_add (LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) log_add (LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
+#define LOG_INFO(fmt, ...) log_add (LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
+#define LOG_WARNING(fmt, ...) log_add (LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
+#define DEBUG_JTAG_IO(fmt, ...) log_add (LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
+
 #endif

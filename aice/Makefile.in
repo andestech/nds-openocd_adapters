@@ -49,7 +49,8 @@ ARFLAGS = cru
 libaice_a_AR = $(AR) $(ARFLAGS)
 libaice_a_LIBADD =
 am_libaice_a_OBJECTS = libaice_a-aice_usb.$(OBJEXT) \
-	libaice_a-nds32_reg.$(OBJEXT) libaice_a-log.$(OBJEXT)
+	libaice_a-nds32_reg.$(OBJEXT) libaice_a-log.$(OBJEXT) \
+	libaice_a-libusb0_common.$(OBJEXT)
 libaice_a_OBJECTS = $(am_libaice_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -160,9 +161,11 @@ libaice_a_SOURCES = aice_port.h \
 		    nds32_reg.h \
 		    log.c \
 		    log.h \
-		    aice_usb_patch.h
+		    libusb0_common.h \
+		    libusb0_common.c \
+		    aice_usb_helper.h
 
-libaice_a_CFLAGS = -Wall -Wextra -Wno-unused -D__LIBAICE__ \
+libaice_a_CFLAGS = -std=gnu99 -Wall -Wextra -Wno-unused \
 	$(am__append_1) $(am__append_2)
 all: all-am
 
@@ -213,6 +216,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-aice_usb.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-libusb0_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-nds32_reg.Po@am__quote@
 
@@ -271,6 +275,20 @@ libaice_a-log.obj: log.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='log.c' object='libaice_a-log.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-log.obj `if test -f 'log.c'; then $(CYGPATH_W) 'log.c'; else $(CYGPATH_W) '$(srcdir)/log.c'; fi`
+
+libaice_a-libusb0_common.o: libusb0_common.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-libusb0_common.o -MD -MP -MF $(DEPDIR)/libaice_a-libusb0_common.Tpo -c -o libaice_a-libusb0_common.o `test -f 'libusb0_common.c' || echo '$(srcdir)/'`libusb0_common.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-libusb0_common.Tpo $(DEPDIR)/libaice_a-libusb0_common.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libusb0_common.c' object='libaice_a-libusb0_common.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-libusb0_common.o `test -f 'libusb0_common.c' || echo '$(srcdir)/'`libusb0_common.c
+
+libaice_a-libusb0_common.obj: libusb0_common.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-libusb0_common.obj -MD -MP -MF $(DEPDIR)/libaice_a-libusb0_common.Tpo -c -o libaice_a-libusb0_common.obj `if test -f 'libusb0_common.c'; then $(CYGPATH_W) 'libusb0_common.c'; else $(CYGPATH_W) '$(srcdir)/libusb0_common.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-libusb0_common.Tpo $(DEPDIR)/libaice_a-libusb0_common.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libusb0_common.c' object='libaice_a-libusb0_common.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-libusb0_common.obj `if test -f 'libusb0_common.c'; then $(CYGPATH_W) 'libusb0_common.c'; else $(CYGPATH_W) '$(srcdir)/libusb0_common.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

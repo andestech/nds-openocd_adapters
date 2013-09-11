@@ -19,13 +19,13 @@
  ***************************************************************************/
 #include "config.h"
 
-#include <sys/time.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
 #include "nds32_insn.h"
 #include "nds32_reg.h"
 #include "aice_usb.h"
+#include "aice_usb_helper.h"
 #include "log.h"
 
 
@@ -357,7 +357,7 @@ static uint32_t usb_out_packets_buffer_length;
 static uint32_t usb_in_packets_buffer_length;
 static enum aice_command_mode aice_command_mode;
 
-extern int aice_batch_buffer_write(uint8_t buf_index, const uint32_t *word,
+static int aice_batch_buffer_write(uint8_t buf_index, const uint8_t *word,
 		uint32_t num_of_words);
 
 static int aice_usb_packet_flush(void)
@@ -384,7 +384,7 @@ static int aice_usb_packet_flush(void)
 
 		/* use BATCH_BUFFER_WRITE to fill command-batch-buffer */
 		if (aice_batch_buffer_write(AICE_BATCH_COMMAND_BUFFER_0,
-				(const uint32_t *)usb_out_packets_buffer,
+				usb_out_packets_buffer,
 				(usb_out_packets_buffer_length + 3) / 4) != ERROR_OK)
 			return ERROR_FAIL;
 
@@ -1034,9 +1034,8 @@ int aice_write_edmsr(uint8_t target_id, uint32_t address, uint32_t data)
 static int aice_switch_to_big_endian(uint32_t *word, uint8_t num_of_words)
 {
 	uint32_t tmp;
-	uint8_t i;
 
-	for (i = 0 ; i < num_of_words ; i++) {
+	for (uint8_t i = 0 ; i < num_of_words ; i++) {
 		tmp = ((word[i] >> 24) & 0x000000FF) |
 			((word[i] >>  8) & 0x0000FF00) |
 			((word[i] <<  8) & 0x00FF0000) |
@@ -1597,7 +1596,7 @@ int aice_read_mem(uint8_t target_id, uint32_t address, uint32_t *data)
 	return ERROR_OK;
 }
 
-int aice_batch_buffer_read(uint8_t buf_index, uint32_t *word, uint32_t num_of_words)
+static int aice_batch_buffer_read(uint8_t buf_index, uint32_t *word, uint32_t num_of_words)
 {
 	int result;
 	int retry_times = 0;
@@ -1643,7 +1642,7 @@ int aice_batch_buffer_read(uint8_t buf_index, uint32_t *word, uint32_t num_of_wo
 	return ERROR_OK;
 }
 
-int aice_batch_buffer_write(uint8_t buf_index, const uint32_t *word, uint32_t num_of_words)
+static int aice_batch_buffer_write(uint8_t buf_index, const uint8_t *word, uint32_t num_of_words)
 {
 	int result;
 	int retry_times = 0;
@@ -2021,9 +2020,11 @@ static int aice_usb_write_reg(uint32_t coreid, uint32_t num, uint32_t val)
 	return ERROR_OK;
 }
 
-int aice_usb_open(uint16_t vids, uint16_t pids)
+int aice_usb_open(uint16_t vid, uint16_t pid)
 {
-	struct usb_dev_handle *devh;
+	const uint16_t vids[] = { vid, 0 };
+	const uint16_t pids[] = { pid, 0 };
+	struct jtag_libusb_device_handle *devh;
 
 	if (jtag_libusb_open(vids, pids, &devh) != ERROR_OK)
 		return ERROR_FAIL;
@@ -2039,7 +2040,7 @@ int aice_usb_open(uint16_t vids, uint16_t pids)
 	 * committing them!
 	 */
 
-#if IS_WIN32 == 0
+#ifndef __MINGW32__
 
 	jtag_libusb_reset_device(devh);
 
@@ -2063,7 +2064,7 @@ int aice_usb_open(uint16_t vids, uint16_t pids)
 
 	/* usb_set_configuration required under win32 */
 	struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
-	int result = jtag_libusb_set_configuration(devh, 0);
+	jtag_libusb_set_configuration(devh, 0);
 	jtag_libusb_claim_interface(devh, 0);
 
 	unsigned int aice_read_ep;
@@ -2500,11 +2501,10 @@ static int aice_core_init(uint32_t coreid)
 static int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode)
 {
 	int retval;
-	int i;
 
 	retval = aice_scan_chain(idcode, num_of_idcode);
 	if (ERROR_OK == retval) {
-		for (i = 0; i < *num_of_idcode; i++) {
+		for (int i = 0; i < *num_of_idcode; i++) {
 			aice_core_init(i);
 			aice_edm_init(i);
 		}
@@ -2805,7 +2805,6 @@ static int aice_issue_reset_hold(uint32_t coreid)
 static int aice_issue_reset_hold_multi(void)
 {
 	uint32_t write_ctrl_value = 0;
-	uint8_t i;
 
 	/* set SRST */
 	write_ctrl_value = AICE_CUSTOM_DELAY_SET_SRST;
@@ -2814,7 +2813,7 @@ static int aice_issue_reset_hold_multi(void)
 				write_ctrl_value) != ERROR_OK)
 		return ERROR_FAIL;
 
-	for (i = 0 ; i < total_num_of_core ; i++)
+	for (uint8_t i = 0 ; i < total_num_of_core ; i++)
 		aice_write_misc(i, NDS_EDM_MISC_EDM_CMDR, 0);
 
 	/* clear SRST */
@@ -2824,7 +2823,7 @@ static int aice_issue_reset_hold_multi(void)
 				write_ctrl_value) != ERROR_OK)
 		return ERROR_FAIL;
 
-	for (i = 0; i < total_num_of_core; i++)
+	for (uint8_t i = 0; i < total_num_of_core; i++)
 		aice_edm_init(i);
 
 	return ERROR_FAIL;
@@ -3884,7 +3883,7 @@ static int fill_profiling_batch_commands(uint32_t coreid, uint32_t reg_no)
 
 	/* use BATCH_BUFFER_WRITE to fill command-batch-buffer */
 	if (aice_batch_buffer_write(AICE_BATCH_COMMAND_BUFFER_0,
-				(const uint32_t *)usb_out_packets_buffer,
+				usb_out_packets_buffer,
 				(usb_out_packets_buffer_length + 3) / 4) != ERROR_OK)
 		return ERROR_FAIL;
 

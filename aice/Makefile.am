@@ -9,9 +9,11 @@ libaice_a_SOURCES = aice_port.h \
 		    nds32_reg.h \
 		    log.c \
 		    log.h \
-		    aice_usb_patch.h
+		    libusb0_common.h \
+		    libusb0_common.c \
+		    aice_usb_helper.h
 
-libaice_a_CFLAGS = -Wall -Wextra -Wno-unused -D__LIBAICE__
+libaice_a_CFLAGS = -std=gnu99 -Wall -Wextra -Wno-unused
 if BUILD_MINGW_BINARY
 libaice_a_CFLAGS += -mno-cygwin -DCYG
 else
