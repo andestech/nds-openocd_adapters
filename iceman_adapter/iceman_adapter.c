@@ -688,7 +688,6 @@ static void update_openocd_cfg(void)
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
-	fprintf(openocd_cfg, "tcl_port %d\n", telnet_port+1);
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
 	if (virtual_hosting)
