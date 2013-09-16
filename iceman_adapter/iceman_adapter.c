@@ -164,7 +164,7 @@ static void show_usage(void) {
 	printf("\t\t\t15: 375 KHz\n");
 	printf("\t\t\tAICE2 only supports 8 ~ 15\n");
 	printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
-	printf("-T, --boot-time:\tBoot time of target board\n");
+	printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
 	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
 	printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
 	printf("\t\tUsage: --stop-seq \"address:data\"\n");
