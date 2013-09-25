@@ -20,3 +20,40 @@ $_TARGETNAME configure -event gdb-detach {
 		set connected 0
 	}
 }
+
+proc dma_mww {args} {
+	nds mem_access bus
+	eval mww $args
+	nds mem_access cpu
+}
+
+proc dma_mwh {args} {
+	nds mem_access bus
+	eval mwh $args
+	nds mem_access cpu
+}
+
+proc dma_mwb {args} {
+	nds mem_access bus
+	eval mwb $args
+	nds mem_access cpu
+}
+
+proc dma_mdw {args} {
+	nds mem_access bus
+	eval mdw $args
+	nds mem_access cpu
+}
+
+proc dma_mdh {args} {
+	nds mem_access bus
+	eval mdh $args
+	nds mem_access cpu
+}
+
+proc dma_mdb {args} {
+	nds mem_access bus
+	eval mdb $args
+	nds mem_access cpu
+}
+
