@@ -34,7 +34,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "hBvDHKgjJGkd:S:R:p:b:c:T:r:C:P:F:O:l:L:N:z:t:";
+const char *opt_string = "hBvDHKgjJGkd:S:R:p:b:c:T:r:C:P:F:O:l:L:N:Z:t:z:";
 struct option long_option[] = {
 	{"help", no_argument, 0, 'h'},
 	{"boot", no_argument, 0, 'B'},
@@ -63,7 +63,8 @@ struct option long_option[] = {
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
 	{"custom-restart", required_argument, 0, 'N'},
-	{"target", required_argument, 0, 'z'},
+	{"target", required_argument, 0, 'Z'},
+	{"aie-conf", required_argument, 0, 'z'},
 	{0, 0, 0, 0}
 };
 
@@ -123,6 +124,7 @@ static char *edm_passcode = NULL;
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
 static const char *custom_restart_script = NULL;
+static const char *aieconf_desc_list = NULL;
 
 static void show_version(void) {
 	printf ("Andes ICEman v3.0.0 (openocd-0.7.0)\n");
@@ -186,7 +188,10 @@ static void show_usage(void) {
 	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
 	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
 	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
-	printf("-z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
+	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
+	printf("-z, --aie-conf :\t\tSpecify aie file on each core\n");
+	printf("\t\tUsage: --aie-conf <core#id>=<aie_conf>[,<core#id>=<aie_conf>]*\n");
+	printf("\t\t\tExample: --aie-conf core0=core0.aieconf,core1=core1.aieconf\n");
 }
 
 static void parse_param(int a_argc, char **a_argv) {
@@ -264,7 +269,7 @@ static void parse_param(int a_argc, char **a_argv) {
 			case 'k':
 				word_access_mem = 1;
 				break;
-			case 'z':
+			case 'Z':
 				optarg_len = strlen(optarg);
 				if (strncmp(optarg, "v2", optarg_len) == 0) {
 					target_type = TARGET_V2;
@@ -300,6 +305,9 @@ static void parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'C':
 				count_to_check_dbger = strtoul(optarg, NULL, 0);
+				break;
+			case 'z':
+				aieconf_desc_list = optarg;
 				break;
 			case 'v':
 					show_version();
@@ -378,7 +386,7 @@ static void target_probe(void)
 
 }
 
-#define LINE_BUFFER_SIZE 1024
+#define LINE_BUFFER_SIZE 2048
 
 static char *clock_hz[] = {
 	"30000",
@@ -738,9 +746,16 @@ static void update_target_cfg(void)
 {
 }
 
+#define MAX_LEN_AIECONF_NAME 2048
+#define TOSTR(x)	#x
+#define XTOSTR(x)	TOSTR(x)
 static void update_board_cfg(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
+	const char *aieconf_desc;
+	unsigned int core_id =0, read_byte = 0;
+	char aieconf[MAX_LEN_AIECONF_NAME + 1];
+	int ret;
 
 	/* update nds32_xc5.cfg */
 	char *find_pos;
@@ -772,6 +787,31 @@ static void update_board_cfg(void)
 				strcpy(line_buffer, "nds soft_reset_halt on\n");
 			} else {
 				strcpy(line_buffer, "nds soft_reset_halt off\n");
+			}
+		} else if ((find_pos = strstr(line_buffer, "--aie-conf")) != NULL) {
+			strcpy(line_buffer, "set _AIE_CONF \"\"\n");
+			if (aieconf_desc_list) {
+				aieconf_desc = aieconf_desc_list;
+				while (1) {
+					aieconf[0] = '\0';
+					core_id = 0;
+					ret = 0;
+
+					ret = sscanf(aieconf_desc, "core%u=%" XTOSTR(MAX_LEN_AIECONF_NAME) "[^,]%n",
+									&core_id, aieconf, &read_byte);
+					if (ret != 2) {
+						printf("<-- Can not parse --aie-conf argument '%s'\n. -->", aieconf_desc);
+						break;
+					}
+
+					/* TODO: support multi core */
+					sprintf(line_buffer, "set _AIE_CONF %s\n", aieconf);
+					aieconf_desc += read_byte;	/* aieconf points to ',' or '\0' */
+					if (*aieconf_desc == '\0')
+						break;
+					else
+						aieconf_desc += 1;	/* point to the one next to ',' */
+				}
 			}
 		}
 
