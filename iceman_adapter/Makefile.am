@@ -1,5 +1,5 @@
-bin_PROGRAMS = iceman
-iceman_SOURCES = iceman_adapter.c
+bin_PROGRAMS = ICEman
+ICEman_SOURCES = iceman_adapter.c
 
 openocd_cfgdir = $(bindir)
 dist_openocd_cfg_DATA = openocd.cfg.tpl sw-reset-seq.tpl
@@ -15,11 +15,11 @@ dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 			      target/nds32v3.cfg \
 			      target/nds32v3m.cfg
 
-iceman_LDADD = ../aice/libaice.a $(USBLIB)
+ICEman_LDADD = ../aice/libaice.a $(USBLIB)
 
-iceman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra
+ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra
 if BUILD_MINGW_BINARY
-iceman_CFLAGS += -mno-cygwin -DCYG
+ICEman_CFLAGS += -mno-cygwin -DCYG
 else
-iceman_CFLAGS +=
+ICEman_CFLAGS +=
 endif
