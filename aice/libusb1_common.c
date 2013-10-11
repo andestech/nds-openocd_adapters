@@ -23,15 +23,21 @@
 
 #include <errno.h>
 #include "log.h"
-#include "libusb0_common.h"
+#include "libusb1_common.h"
+
+static struct libusb_context *jtag_libusb_context; /**< Libusb context **/
+static libusb_device **devs; /**< The usb device list **/
 
 static bool jtag_libusb_match(struct jtag_libusb_device *dev,
 		const uint16_t vids[], const uint16_t pids[])
 {
+	struct libusb_device_descriptor dev_desc;
+
 	for (unsigned i = 0; vids[i]; i++) {
-		if (dev->descriptor.idVendor == vids[i] &&
-			dev->descriptor.idProduct == pids[i]) {
-			return true;
+		if (libusb_get_device_descriptor(dev, &dev_desc) == 0) {
+			if (dev_desc.idVendor == vids[i] &&
+				dev_desc.idProduct == pids[i])
+				return true;
 		}
 	}
 	return false;
@@ -40,23 +46,28 @@ static bool jtag_libusb_match(struct jtag_libusb_device *dev,
 int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 		struct jtag_libusb_device_handle **out)
 {
-	usb_init();
+	int cnt, idx, errCode;
 
-	usb_find_busses();
-	usb_find_devices();
+	if (libusb_init(&jtag_libusb_context) < 0)
+		return -ENODEV;
 
-	struct usb_bus *busses = usb_get_busses();
-	for (struct usb_bus *bus = busses; bus; bus = bus->next) {
-		for (struct usb_device *dev = bus->devices;
-				dev; dev = dev->next) {
-			if (!jtag_libusb_match(dev, vids, pids))
-				continue;
+	cnt = libusb_get_device_list(jtag_libusb_context, &devs);
 
-			*out = usb_open(dev);
-			if (NULL == *out)
-				return -errno;
-			return 0;
+	for (idx = 0; idx < cnt; idx++) {
+		if (!jtag_libusb_match(devs[idx], vids, pids))
+			continue;
+
+		errCode = libusb_open(devs[idx], out);
+
+		/** Free the device list **/
+		libusb_free_device_list(devs, 1);
+
+		if (errCode) {
+			LOG_ERROR("libusb_open() failed with %s",
+				  libusb_error_name(errCode));
+			return errCode;
 		}
+		return 0;
 	}
 	return -ENODEV;
 }
@@ -64,7 +75,9 @@ int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 void jtag_libusb_close(jtag_libusb_device_handle *dev)
 {
 	/* Close device */
-	usb_close(dev);
+	libusb_close(dev);
+
+	libusb_exit(jtag_libusb_context);
 }
 
 int jtag_libusb_control_transfer(jtag_libusb_device_handle *dev, uint8_t requestType,
@@ -73,8 +86,8 @@ int jtag_libusb_control_transfer(jtag_libusb_device_handle *dev, uint8_t request
 {
 	int transferred = 0;
 
-	transferred = usb_control_msg(dev, requestType, request, wValue, wIndex,
-				bytes, size, timeout);
+	transferred = libusb_control_transfer(dev, requestType, request, wValue, wIndex,
+				(unsigned char *)bytes, size, timeout);
 
 	if (transferred < 0)
 		transferred = 0;
@@ -85,40 +98,71 @@ int jtag_libusb_control_transfer(jtag_libusb_device_handle *dev, uint8_t request
 int jtag_libusb_bulk_write(jtag_libusb_device_handle *dev, int ep, char *bytes,
 		int size, int timeout)
 {
-	return usb_bulk_write(dev, ep, bytes, size, timeout);
+	int transferred = 0;
+
+	libusb_bulk_transfer(dev, ep, (unsigned char *)bytes, size,
+			     &transferred, timeout);
+	return transferred;
 }
 
 int jtag_libusb_bulk_read(jtag_libusb_device_handle *dev, int ep, char *bytes,
 		int size, int timeout)
 {
-	return usb_bulk_read(dev, ep, bytes, size, timeout);
+	int transferred = 0;
+
+	libusb_bulk_transfer(dev, ep, (unsigned char *)bytes, size,
+			     &transferred, timeout);
+	return transferred;
 }
 
 int jtag_libusb_set_configuration(jtag_libusb_device_handle *devh,
 		int configuration)
 {
 	struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
+	int retCode = -99;
 
-	return usb_set_configuration(devh,
-			udev->config[configuration].bConfigurationValue);
+	struct libusb_config_descriptor *config = NULL;
+
+	libusb_get_config_descriptor(udev, configuration, &config);
+	retCode = libusb_set_configuration(devh, config->bConfigurationValue);
+
+	libusb_free_config_descriptor(config);
+
+	return retCode;
 }
 
 int jtag_libusb_get_endpoints(struct jtag_libusb_device *udev,
 		unsigned int *usb_read_ep,
 		unsigned int *usb_write_ep)
 {
-	struct usb_interface *iface = udev->config->interface;
-	struct usb_interface_descriptor *desc = iface->altsetting;
+	const struct libusb_interface *inter;
+	const struct libusb_interface_descriptor *interdesc;
+	const struct libusb_endpoint_descriptor *epdesc;
+	struct libusb_config_descriptor *config;
 
-	for (int i = 0; i < desc->bNumEndpoints; i++) {
-		uint8_t epnum = desc->endpoint[i].bEndpointAddress;
-		bool is_input = epnum & 0x80;
-		LOG_DEBUG("usb ep %s %02x", is_input ? "in" : "out", epnum);
-		if (is_input)
-			*usb_read_ep = epnum;
-		else
-			*usb_write_ep = epnum;
+	libusb_get_config_descriptor(udev, 0, &config);
+	for (int i = 0; i < (int)config->bNumInterfaces; i++) {
+		inter = &config->interface[i];
+
+		for (int j = 0; j < inter->num_altsetting; j++) {
+			interdesc = &inter->altsetting[j];
+			for (int k = 0;
+				k < (int)interdesc->bNumEndpoints; k++) {
+				epdesc = &interdesc->endpoint[k];
+
+				uint8_t epnum = epdesc->bEndpointAddress;
+				bool is_input = epnum & 0x80;
+				LOG_DEBUG("usb ep %s %02x",
+					is_input ? "in" : "out", epnum);
+
+				if (is_input)
+					*usb_read_ep = epnum;
+				else
+					*usb_write_ep = epnum;
+			}
+		}
 	}
+	libusb_free_config_descriptor(config);
 
 	return 0;
 }

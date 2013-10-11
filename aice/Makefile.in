@@ -15,6 +15,7 @@
 
 @SET_MAKE@
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -35,7 +36,8 @@ POST_UNINSTALL = :
 @BUILD_MINGW_BINARY_TRUE@am__append_1 = -mno-cygwin -DCYG
 @BUILD_MINGW_BINARY_FALSE@am__append_2 = 
 subdir = aice
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -48,9 +50,13 @@ AR = ar
 ARFLAGS = cru
 libaice_a_AR = $(AR) $(ARFLAGS)
 libaice_a_LIBADD =
+am__libaice_a_SOURCES_DIST = aice_usb.c nds32_reg.c log.c \
+	libusb0_common.c libusb1_common.c
+@USE_LIBUSB0_FALSE@@USE_LIBUSB1_TRUE@am__objects_1 = libaice_a-libusb1_common.$(OBJEXT)
+@USE_LIBUSB0_TRUE@am__objects_1 = libaice_a-libusb0_common.$(OBJEXT)
 am_libaice_a_OBJECTS = libaice_a-aice_usb.$(OBJEXT) \
 	libaice_a-nds32_reg.$(OBJEXT) libaice_a-log.$(OBJEXT) \
-	libaice_a-libusb0_common.$(OBJEXT)
+	$(am__objects_1)
 libaice_a_OBJECTS = $(am_libaice_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -61,7 +67,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libaice_a_SOURCES)
-DIST_SOURCES = $(libaice_a_SOURCES)
+DIST_SOURCES = $(am__libaice_a_SOURCES_DIST)
+HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -90,6 +97,10 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBUSB0_CFLAGS = @LIBUSB0_CFLAGS@
+LIBUSB0_LIBS = @LIBUSB0_LIBS@
+LIBUSB1_CFLAGS = @LIBUSB1_CFLAGS@
+LIBUSB1_LIBS = @LIBUSB1_LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -102,11 +113,13 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
-USBLIB = @USBLIB@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -151,22 +164,31 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libaice.a
-libaice_a_SOURCES = aice_port.h \
-		    aice_usb.c \
-		    aice_usb.h \
-		    config.h \
-		    nds32_edm.h \
-		    nds32_insn.h \
-		    nds32_reg.c \
-		    nds32_reg.h \
-		    log.c \
-		    log.h \
-		    libusb0_common.h \
-		    libusb0_common.c \
-		    aice_usb_helper.h
+libaice_a_SOURCES = \
+	aice_usb.c \
+	nds32_reg.c \
+	log.c \
+	$(DRIVERFILES)
 
+noinst_HEADERS = \
+	aice_port.h \
+	aice_usb.h \
+	config.h \
+	nds32_edm.h \
+	nds32_insn.h \
+	nds32_reg.h \
+	aice_usb_helper.h \
+	log.h \
+	libusb0_common.h \
+	libusb1_common.h \
+	libusb_common.h
+
+@USE_LIBUSB0_TRUE@DRIVERFILES = libusb0_common.c
+@USE_LIBUSB1_TRUE@DRIVERFILES = libusb1_common.c
+@USE_LIBUSB0_TRUE@DRIVERCFLAGS = $(LIBUSB0_CFLAGS)
+@USE_LIBUSB1_TRUE@DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 libaice_a_CFLAGS = -std=gnu99 -Wall -Wextra -Wno-unused \
-	$(am__append_1) $(am__append_2)
+	$(DRIVERCFLAGS) $(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
@@ -217,6 +239,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-aice_usb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-libusb0_common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-libusb1_common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-log.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libaice_a-nds32_reg.Po@am__quote@
 
@@ -289,6 +312,20 @@ libaice_a-libusb0_common.obj: libusb0_common.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libusb0_common.c' object='libaice_a-libusb0_common.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-libusb0_common.obj `if test -f 'libusb0_common.c'; then $(CYGPATH_W) 'libusb0_common.c'; else $(CYGPATH_W) '$(srcdir)/libusb0_common.c'; fi`
+
+libaice_a-libusb1_common.o: libusb1_common.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-libusb1_common.o -MD -MP -MF $(DEPDIR)/libaice_a-libusb1_common.Tpo -c -o libaice_a-libusb1_common.o `test -f 'libusb1_common.c' || echo '$(srcdir)/'`libusb1_common.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-libusb1_common.Tpo $(DEPDIR)/libaice_a-libusb1_common.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libusb1_common.c' object='libaice_a-libusb1_common.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-libusb1_common.o `test -f 'libusb1_common.c' || echo '$(srcdir)/'`libusb1_common.c
+
+libaice_a-libusb1_common.obj: libusb1_common.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -MT libaice_a-libusb1_common.obj -MD -MP -MF $(DEPDIR)/libaice_a-libusb1_common.Tpo -c -o libaice_a-libusb1_common.obj `if test -f 'libusb1_common.c'; then $(CYGPATH_W) 'libusb1_common.c'; else $(CYGPATH_W) '$(srcdir)/libusb1_common.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libaice_a-libusb1_common.Tpo $(DEPDIR)/libaice_a-libusb1_common.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='libusb1_common.c' object='libaice_a-libusb1_common.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libaice_a_CFLAGS) $(CFLAGS) -c -o libaice_a-libusb1_common.obj `if test -f 'libusb1_common.c'; then $(CYGPATH_W) 'libusb1_common.c'; else $(CYGPATH_W) '$(srcdir)/libusb1_common.c'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -374,7 +411,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES)
+all-am: Makefile $(LIBRARIES) $(HEADERS)
 installdirs:
 install: install-am
 install-exec: install-exec-am

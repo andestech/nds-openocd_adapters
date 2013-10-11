@@ -49,7 +49,10 @@ PROGRAMS = $(bin_PROGRAMS)
 am_aice_adapter_OBJECTS = aice_adapter-adapter.$(OBJEXT)
 aice_adapter_OBJECTS = $(am_aice_adapter_OBJECTS)
 am__DEPENDENCIES_1 =
-aice_adapter_DEPENDENCIES = ../aice/libaice.a $(am__DEPENDENCIES_1)
+@USE_LIBUSB0_FALSE@@USE_LIBUSB1_TRUE@am__DEPENDENCIES_2 =  \
+@USE_LIBUSB0_FALSE@@USE_LIBUSB1_TRUE@	$(am__DEPENDENCIES_1)
+@USE_LIBUSB0_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+aice_adapter_DEPENDENCIES = ../aice/libaice.a $(am__DEPENDENCIES_2)
 aice_adapter_LINK = $(CCLD) $(aice_adapter_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -90,6 +93,10 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBUSB0_CFLAGS = @LIBUSB0_CFLAGS@
+LIBUSB0_LIBS = @LIBUSB0_LIBS@
+LIBUSB1_CFLAGS = @LIBUSB1_CFLAGS@
+LIBUSB1_LIBS = @LIBUSB1_LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -102,11 +109,13 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
+PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
+PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
-USBLIB = @USBLIB@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -153,7 +162,9 @@ top_srcdir = @top_srcdir@
 aice_adapter_SOURCES = adapter.c \
 		       adapter.h
 
-aice_adapter_LDADD = ../aice/libaice.a $(USBLIB)
+@USE_LIBUSB0_TRUE@DRIVERLIBS = $(LIBUSB0_LIBS)
+@USE_LIBUSB1_TRUE@DRIVERLIBS = $(LIBUSB1_LIBS)
+aice_adapter_LDADD = ../aice/libaice.a $(DRIVERLIBS)
 aice_adapter_CFLAGS = -I$(srcdir)/../aice -Wall $(am__append_1) \
 	$(am__append_2)
 all: all-am

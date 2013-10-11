@@ -24,7 +24,7 @@
 #include <sys/time.h>
 #include "aice_port.h"
 #include "nds32_edm.h"
-#include "libusb0_common.h"
+#include "libusb_common.h"
 
 /* AICE USB timeout value */
 #define AICE_USB_TIMEOUT			5000

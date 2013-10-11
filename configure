@@ -568,9 +568,19 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+USE_LIBUSB0_FALSE
+USE_LIBUSB0_TRUE
+USE_LIBUSB1_FALSE
+USE_LIBUSB1_TRUE
 BUILD_MINGW_BINARY_FALSE
 BUILD_MINGW_BINARY_TRUE
-USBLIB
+LIBUSB0_LIBS
+LIBUSB0_CFLAGS
+LIBUSB1_LIBS
+LIBUSB1_CFLAGS
+PKG_CONFIG_LIBDIR
+PKG_CONFIG_PATH
+PKG_CONFIG
 RANLIB
 am__fastdepCC_FALSE
 am__fastdepCC_TRUE
@@ -662,7 +672,14 @@ CC
 CFLAGS
 LDFLAGS
 LIBS
-CPPFLAGS'
+CPPFLAGS
+PKG_CONFIG
+PKG_CONFIG_PATH
+PKG_CONFIG_LIBDIR
+LIBUSB1_CFLAGS
+LIBUSB1_LIBS
+LIBUSB0_CFLAGS
+LIBUSB0_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1290,6 +1307,19 @@ Some influential environment variables:
   LIBS        libraries to pass to the linker, e.g. -l<library>
   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
               you have headers in a nonstandard directory <include dir>
+  PKG_CONFIG  path to pkg-config utility
+  PKG_CONFIG_PATH
+              directories to add to pkg-config's search path
+  PKG_CONFIG_LIBDIR
+              path overriding pkg-config's built-in search path
+  LIBUSB1_CFLAGS
+              C compiler flags for LIBUSB1, overriding pkg-config
+  LIBUSB1_LIBS
+              linker flags for LIBUSB1, overriding pkg-config
+  LIBUSB0_CFLAGS
+              C compiler flags for LIBUSB0, overriding pkg-config
+  LIBUSB0_LIBS
+              linker flags for LIBUSB0, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -1408,52 +1438,6 @@ fi
   as_fn_set_status $ac_retval
 
 } # ac_fn_c_try_compile
-
-# ac_fn_c_try_link LINENO
-# -----------------------
-# Try to link conftest.$ac_ext, and return whether this succeeded.
-ac_fn_c_try_link ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  rm -f conftest.$ac_objext conftest$ac_exeext
-  if { { ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
-$as_echo "$ac_try_echo"; } >&5
-  (eval "$ac_link") 2>conftest.err
-  ac_status=$?
-  if test -s conftest.err; then
-    grep -v '^ *+' conftest.err >conftest.er1
-    cat conftest.er1 >&5
-    mv -f conftest.er1 conftest.err
-  fi
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext && {
-	 test "$cross_compiling" = yes ||
-	 $as_test_x conftest$ac_exeext
-       }; then :
-  ac_retval=0
-else
-  $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_retval=1
-fi
-  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
-  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
-  # interfere with the next link command; also delete a directory that is
-  # left behind by Apple's compiler.  We do this before executing the actions.
-  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-  as_fn_set_status $ac_retval
-
-} # ac_fn_c_try_link
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -3513,47 +3497,272 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for usb_open in -lusb" >&5
-$as_echo_n "checking for usb_open in -lusb... " >&6; }
-if ${ac_cv_lib_usb_usb_open+:} false; then :
+
+
+
+
+
+
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
+set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_PKG_CONFIG+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lusb  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+  case $PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char usb_open ();
-int
-main ()
-{
-return usb_open ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_usb_usb_open=yes
+  ;;
+esac
+fi
+PKG_CONFIG=$ac_cv_path_PKG_CONFIG
+if test -n "$PKG_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PKG_CONFIG" >&5
+$as_echo "$PKG_CONFIG" >&6; }
 else
-  ac_cv_lib_usb_usb_open=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_usb_usb_open" >&5
-$as_echo "$ac_cv_lib_usb_usb_open" >&6; }
-if test "x$ac_cv_lib_usb_usb_open" = xyes; then :
-  USBLIB=-lusb
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 
 
+fi
+if test -z "$ac_cv_path_PKG_CONFIG"; then
+  ac_pt_PKG_CONFIG=$PKG_CONFIG
+  # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ac_pt_PKG_CONFIG+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ac_pt_PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
+if test -n "$ac_pt_PKG_CONFIG"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PKG_CONFIG" >&5
+$as_echo "$ac_pt_PKG_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_pt_PKG_CONFIG" = x; then
+    PKG_CONFIG=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    PKG_CONFIG=$ac_pt_PKG_CONFIG
+  fi
+else
+  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
+fi
+
+fi
+if test -n "$PKG_CONFIG"; then
+	_pkg_min_version=0.23
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
+$as_echo_n "checking pkg-config is at least version $_pkg_min_version... " >&6; }
+	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		PKG_CONFIG=""
+	fi
+fi
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBUSB1" >&5
+$as_echo_n "checking for LIBUSB1... " >&6; }
+
+if test -n "$LIBUSB1_CFLAGS"; then
+    pkg_cv_LIBUSB1_CFLAGS="$LIBUSB1_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libusb-1.0 >= 1.0.9\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libusb-1.0 >= 1.0.9") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBUSB1_CFLAGS=`$PKG_CONFIG --cflags "libusb-1.0 >= 1.0.9" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBUSB1_LIBS"; then
+    pkg_cv_LIBUSB1_LIBS="$LIBUSB1_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libusb-1.0 >= 1.0.9\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libusb-1.0 >= 1.0.9") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBUSB1_LIBS=`$PKG_CONFIG --libs "libusb-1.0 >= 1.0.9" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        LIBUSB1_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libusb-1.0 >= 1.0.9" 2>&1`
+        else
+	        LIBUSB1_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libusb-1.0 >= 1.0.9" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$LIBUSB1_PKG_ERRORS" >&5
+
+	use_libusb1=no
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	use_libusb1=no
+else
+	LIBUSB1_CFLAGS=$pkg_cv_LIBUSB1_CFLAGS
+	LIBUSB1_LIBS=$pkg_cv_LIBUSB1_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	use_libusb1=yes
+fi
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBUSB0" >&5
+$as_echo_n "checking for LIBUSB0... " >&6; }
+
+if test -n "$LIBUSB0_CFLAGS"; then
+    pkg_cv_LIBUSB0_CFLAGS="$LIBUSB0_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libusb\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libusb") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBUSB0_CFLAGS=`$PKG_CONFIG --cflags "libusb" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LIBUSB0_LIBS"; then
+    pkg_cv_LIBUSB0_LIBS="$LIBUSB0_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libusb\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libusb") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LIBUSB0_LIBS=`$PKG_CONFIG --libs "libusb" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        LIBUSB0_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libusb" 2>&1`
+        else
+	        LIBUSB0_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libusb" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$LIBUSB0_PKG_ERRORS" >&5
+
+	use_libusb0=no
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	use_libusb0=no
+else
+	LIBUSB0_CFLAGS=$pkg_cv_LIBUSB0_CFLAGS
+	LIBUSB0_LIBS=$pkg_cv_LIBUSB0_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	use_libusb0=yes
+fi
+
+if test "$use_libusb1" = "no" -a "$usb_libusb0" = "no"; then
+    as_fn_error $? "Can not find libusb1-0 or libusb" "$LINENO" 5
+fi
 
 case $host in
   *-mingw*)
@@ -3571,6 +3780,23 @@ else
   BUILD_MINGW_BINARY_TRUE='#'
   BUILD_MINGW_BINARY_FALSE=
 fi
+
+ if test "$use_libusb1" = "yes"; then
+  USE_LIBUSB1_TRUE=
+  USE_LIBUSB1_FALSE='#'
+else
+  USE_LIBUSB1_TRUE='#'
+  USE_LIBUSB1_FALSE=
+fi
+
+ if test "$use_libusb1" = "no" -a "$use_libusb0" = "yes"; then
+  USE_LIBUSB0_TRUE=
+  USE_LIBUSB0_FALSE='#'
+else
+  USE_LIBUSB0_TRUE='#'
+  USE_LIBUSB0_FALSE=
+fi
+
 
 
 ac_config_files="$ac_config_files Makefile aice/Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile"
@@ -3738,6 +3964,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_MINGW_BINARY_TRUE}" && test -z "${BUILD_MINGW_BINARY_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_MINGW_BINARY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_LIBUSB1_TRUE}" && test -z "${USE_LIBUSB1_FALSE}"; then
+  as_fn_error $? "conditional \"USE_LIBUSB1\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_LIBUSB0_TRUE}" && test -z "${USE_LIBUSB0_FALSE}"; then
+  as_fn_error $? "conditional \"USE_LIBUSB0\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

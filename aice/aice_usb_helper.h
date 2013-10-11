@@ -1,5 +1,5 @@
-#ifndef __AICE_USB_PATCH_H__
-#define __AICE_USB_PATCH_H__
+#ifndef __AICE_USB_HELPER_H__
+#define __AICE_USB_HELPER_H__
 
 #include <sys/time.h>
 
@@ -23,4 +23,4 @@ static inline unsigned usleep(unsigned int usecs)
 }
 #endif
 
-#endif /* __AICE_USB_PATCH_H__ */
+#endif /* __AICE_USB_HELPER_H__ */

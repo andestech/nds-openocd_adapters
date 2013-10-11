@@ -14,8 +14,15 @@ openocd_targetcfgdir = $(bindir)/target
 dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 			      target/nds32v3.cfg \
 			      target/nds32v3m.cfg
+if USE_LIBUSB0
+DRIVERLIBS = $(LIBUSB0_LIBS)
+endif
 
-ICEman_LDADD = ../aice/libaice.a $(USBLIB)
+if USE_LIBUSB1
+DRIVERLIBS = $(LIBUSB1_LIBS)
+endif
+
+ICEman_LDADD = ../aice/libaice.a $(DRIVERLIBS)
 
 ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra
 if BUILD_MINGW_BINARY
