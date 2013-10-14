@@ -31,7 +31,7 @@ endif
 
 libaice_a_CFLAGS = -std=gnu99 -Wall -Wextra -Wno-unused $(DRIVERCFLAGS)
 if BUILD_MINGW_BINARY
-libaice_a_CFLAGS += -mno-cygwin -DCYG
+libaice_a_CFLAGS += -DCYG
 else
 libaice_a_CFLAGS +=
 endif

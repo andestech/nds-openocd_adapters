@@ -33,7 +33,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = aice_adapter$(EXEEXT)
-@BUILD_MINGW_BINARY_TRUE@am__append_1 = -mno-cygwin -DCYG
+@BUILD_MINGW_BINARY_TRUE@am__append_1 = -DCYG
 @BUILD_MINGW_BINARY_FALSE@am__append_2 = 
 subdir = aice_adapter
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -164,9 +164,11 @@ aice_adapter_SOURCES = adapter.c \
 
 @USE_LIBUSB0_TRUE@DRIVERLIBS = $(LIBUSB0_LIBS)
 @USE_LIBUSB1_TRUE@DRIVERLIBS = $(LIBUSB1_LIBS)
+@USE_LIBUSB0_TRUE@DRIVERCFLAGS = $(LIBUSB0_CFLAGS)
+@USE_LIBUSB1_TRUE@DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 aice_adapter_LDADD = ../aice/libaice.a $(DRIVERLIBS)
-aice_adapter_CFLAGS = -I$(srcdir)/../aice -Wall $(am__append_1) \
-	$(am__append_2)
+aice_adapter_CFLAGS = -I$(srcdir)/../aice -Wall $(DRIVERCFLAGS) \
+	$(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:

@@ -162,7 +162,7 @@ burner_adapter_SOURCES = burner_action.c \
 			 burner_socket.h
 
 @BUILD_MINGW_BINARY_FALSE@burner_adapter_CFLAGS = 
-@BUILD_MINGW_BINARY_TRUE@burner_adapter_CFLAGS = -mno-cygwin -DCYG
+@BUILD_MINGW_BINARY_TRUE@burner_adapter_CFLAGS = -DCYG
 @BUILD_MINGW_BINARY_FALSE@burner_adapter_LDADD = 
 @BUILD_MINGW_BINARY_TRUE@burner_adapter_LDADD = -lwsock32
 all: all-am

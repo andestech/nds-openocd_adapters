@@ -6,7 +6,7 @@ burner_adapter_SOURCES = burner_action.c \
 			 burner_socket.h
 
 if BUILD_MINGW_BINARY
-burner_adapter_CFLAGS = -mno-cygwin -DCYG
+burner_adapter_CFLAGS = -DCYG
 else
 burner_adapter_CFLAGS =
 endif

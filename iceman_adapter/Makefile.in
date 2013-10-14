@@ -34,7 +34,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = ICEman$(EXEEXT)
-@BUILD_MINGW_BINARY_TRUE@am__append_1 = -mno-cygwin -DCYG
+@BUILD_MINGW_BINARY_TRUE@am__append_1 = -DCYG
 @BUILD_MINGW_BINARY_FALSE@am__append_2 = 
 subdir = iceman_adapter
 DIST_COMMON = $(dist_openocd_boardcfg_DATA) $(dist_openocd_cfg_DATA) \
@@ -211,9 +211,11 @@ dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
 
 @USE_LIBUSB0_TRUE@DRIVERLIBS = $(LIBUSB0_LIBS)
 @USE_LIBUSB1_TRUE@DRIVERLIBS = $(LIBUSB1_LIBS)
+@USE_LIBUSB0_TRUE@DRIVERCFLAGS = $(LIBUSB0_CFLAGS)
+@USE_LIBUSB1_TRUE@DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 ICEman_LDADD = ../aice/libaice.a $(DRIVERLIBS)
-ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(am__append_1) \
-	$(am__append_2)
+ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(DRIVERCFLAGS) \
+	$(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
