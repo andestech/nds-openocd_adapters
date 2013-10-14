@@ -20,7 +20,6 @@
 #ifndef __AICE_USB_H__
 #define __AICE_USB_H__
 
-#include <usb.h>
 #include <sys/time.h>
 #include "aice_port.h"
 #include "nds32_edm.h"

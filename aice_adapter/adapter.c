@@ -14,6 +14,18 @@
 
 #define MAXLINE 8192
 
+static const char *AICE_MEMORY_ACCESS_NAME[] = {
+	"BUS",
+	"CPU",
+};
+
+static const char *AICE_MEMORY_MODE_NAME[] = {
+	"AUTO",
+	"MEM",
+	"ILM",
+	"DLM",
+};
+
 static uint32_t jtag_clock;
 static uint8_t current_target_id = 0;
 static uint32_t r0_backup;

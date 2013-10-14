@@ -109,7 +109,7 @@ static int debug_level = 2;
 static int boot_code_debug;
 static int gdb_port = 1111;
 static int burner_port = 2354;
-static int telnet_port = 6666;
+static int telnet_port = 4444;
 static int virtual_hosting = 0;
 static int startup_reset_halt;
 static int soft_reset_halt;
@@ -543,6 +543,9 @@ static void sig_int(int UNUSED(signo))
 	CloseHandle(openocd_proc_info.hProcess);
 	CloseHandle(openocd_proc_info.hThread);
 
+	if (!unlimited_log)
+		dump_debug_log();
+
 	exit(0);
 }
 #else
@@ -598,7 +601,7 @@ static void process_openocd_message(void)
 	char buffer[LINE_BUFFER_SIZE];
 	char *newline_pos;
 	DWORD line_buffer_index;
-	DWORD unprocessed_len;
+	long long unprocessed_len;
 	char *unprocessed_buf;
 
 	/* init unprocessed buffer */

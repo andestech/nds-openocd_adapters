@@ -142,19 +142,6 @@ enum aice_memory_mode {
 	AICE_MEMORY_MODE_DLM = 3,
 };
 
-
-static const char *AICE_MEMORY_ACCESS_NAME[] = {
-	"BUS",
-	"CPU",
-};
-
-static const char *AICE_MEMORY_MODE_NAME[] = {
-	"AUTO",
-	"MEM",
-	"ILM",
-	"DLM",
-};
-
 static inline void set_u32(void *_buffer, uint32_t value)
 {
 	uint8_t *buffer = (uint8_t *)_buffer;
