@@ -1709,8 +1709,8 @@ static char *custom_trst_script;
 static char *custom_restart_script;
 static uint32_t aice_count_to_check_dbger = 30;
 
-static int aice_read_reg(uint32_t coreid, uint32_t num, uint32_t *val);
-static int aice_write_reg(uint32_t coreid, uint32_t num, uint32_t val);
+int aice_read_reg(uint32_t coreid, uint32_t num, uint32_t *val);
+int aice_write_reg(uint32_t coreid, uint32_t num, uint32_t val);
 
 static int check_suppressed_exception(uint32_t coreid, uint32_t dbger_value)
 {
@@ -1829,7 +1829,7 @@ static int aice_execute_dim(uint32_t coreid, uint32_t *insts, uint8_t n_inst)
 	return ERROR_OK;
 }
 
-static int aice_read_reg(uint32_t coreid, uint32_t num, uint32_t *val)
+int aice_read_reg(uint32_t coreid, uint32_t num, uint32_t *val)
 {
 	LOG_DEBUG("aice_read_reg, reg_no: 0x%08x", num);
 
@@ -1930,7 +1930,7 @@ int aice_usb_read_reg(uint32_t coreid, uint32_t num, uint32_t *val)
 	return ERROR_OK;
 }
 
-static int aice_write_reg(uint32_t coreid, uint32_t num, uint32_t val)
+int aice_write_reg(uint32_t coreid, uint32_t num, uint32_t val)
 {
 	LOG_DEBUG("aice_write_reg, reg_no: 0x%08x, value: 0x%08x", num, val);
 
@@ -2120,7 +2120,7 @@ static int aice_usb_write_reg_64(uint32_t coreid, uint32_t num, uint64_t val)
 	return aice_write_reg(coreid, num, value);
 }
 
-static int aice_get_version_info(void)
+int aice_get_version_info(void)
 {
 	uint32_t hardware_version;
 	uint32_t firmware_version;
@@ -2212,7 +2212,7 @@ get_delay:
 	return ERROR_OK;
 }
 
-static int aice_usb_set_clock(int set_clock)
+int aice_usb_set_clock(int set_clock)
 {
 	if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL,
 				AICE_TCK_CONTROL_TCK_SCAN) != ERROR_OK)
@@ -2243,7 +2243,7 @@ static int aice_usb_set_clock(int set_clock)
 	scan_freq = scan_base_freq >> (scan_clock & 0x7);
 
 	if (scan_freq < set_freq) {
-		LOG_ERROR("User specifies higher jtag clock than TCK_SCAN clock");
+		printf("User specifies higher jtag clock than TCK_SCAN clock\n");
 		return ERROR_FAIL;
 	}
 
@@ -2489,7 +2489,7 @@ int aice_usb_close(void)
 	return ERROR_OK;
 }
 
-static int aice_core_init(uint32_t coreid)
+int aice_core_init(uint32_t coreid)
 {
 	core_info[coreid].access_channel = NDS_MEMORY_ACC_CPU;
 	core_info[coreid].memory_select = NDS_MEMORY_SELECT_AUTO;
@@ -2742,7 +2742,7 @@ static int aice_issue_srst(uint32_t coreid)
 	return ERROR_OK;
 }
 
-static int aice_issue_reset_hold(uint32_t coreid)
+int aice_issue_reset_hold(uint32_t coreid)
 {
 	LOG_DEBUG("aice_issue_reset_hold");
 
@@ -3039,7 +3039,7 @@ static int aice_usb_set_address_dim(uint32_t coreid, uint32_t address)
 	return aice_execute_dim(coreid, instructions, 4);
 }
 
-static int aice_usb_read_memory_unit(uint32_t coreid, uint32_t addr, uint32_t size,
+int aice_usb_read_memory_unit(uint32_t coreid, uint32_t addr, uint32_t size,
 		uint32_t count, uint8_t *buffer)
 {
 	LOG_DEBUG("aice_usb_read_memory_unit, addr: 0x%08x, size: %d, count: %d",
@@ -3157,7 +3157,7 @@ static int aice_usb_write_mem_w_dim(uint32_t coreid, uint32_t address, uint32_t 
 	return ERROR_OK;
 }
 
-static int aice_usb_write_memory_unit(uint32_t coreid, uint32_t addr, uint32_t size,
+int aice_usb_write_memory_unit(uint32_t coreid, uint32_t addr, uint32_t size,
 		uint32_t count, const uint8_t *buffer)
 {
 	LOG_DEBUG("aice_usb_write_memory_unit, addr: 0x%08x, size: %d, count: %d",
@@ -3267,7 +3267,7 @@ static int aice_bulk_write_mem(uint32_t coreid, uint32_t addr, uint32_t count,
 	return ERROR_OK;
 }
 
-static int aice_usb_bulk_read_mem(uint32_t coreid, uint32_t addr,
+int aice_usb_bulk_read_mem(uint32_t coreid, uint32_t addr,
 		uint32_t length, uint8_t *buffer)
 {
 	LOG_DEBUG("aice_usb_bulk_read_mem, addr: 0x%08x, length: 0x%08x", addr, length);
@@ -3285,7 +3285,7 @@ static int aice_usb_bulk_read_mem(uint32_t coreid, uint32_t addr,
 	return retval;
 }
 
-static int aice_usb_bulk_write_mem(uint32_t coreid, uint32_t addr,
+int aice_usb_bulk_write_mem(uint32_t coreid, uint32_t addr,
 		uint32_t length, const uint8_t *buffer)
 {
 	LOG_DEBUG("aice_usb_bulk_write_mem, addr: 0x%08x, length: 0x%08x", addr, length);
@@ -3336,7 +3336,7 @@ static int aice_usb_write_debug_reg(uint32_t coreid, uint32_t addr, const uint32
 	return aice_write_edmsr(coreid, addr, val);
 }
 
-static int aice_usb_memory_access(uint32_t coreid, enum nds_memory_access channel)
+int aice_usb_memory_access(uint32_t coreid, enum nds_memory_access channel)
 {
 	LOG_DEBUG("aice_usb_memory_access, access channel: %d", channel);
 
