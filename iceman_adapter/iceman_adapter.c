@@ -265,6 +265,7 @@ static void parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'D':
 				unlimited_log = 1;
+				debug_level = 3;
 				break;
 			case 'T':
 				boot_time = strtol(optarg, NULL, 0);
