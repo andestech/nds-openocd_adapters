@@ -483,7 +483,7 @@ static void do_diagnosis(void){
 
 	/* 2. Report JTAG frequency detected */
 	if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
-		return ERROR_FAIL;
+		return;
 
 	scan_clock &= 0x0F;
 	if (scan_clock & 0x8)

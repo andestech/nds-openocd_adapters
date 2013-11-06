@@ -2,6 +2,7 @@
 #define __AICE_USB_HELPER_H__
 
 #include <sys/time.h>
+#include <unistd.h>
 
 #define alive_sleep	usleep
 #define keep_alive()	do {} while(0)
