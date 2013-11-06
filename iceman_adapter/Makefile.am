@@ -24,7 +24,7 @@ DRIVERLIBS = $(LIBUSB1_LIBS)
 DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 endif
 
-ICEman_LDADD = ../aice/libaice.a $(DRIVERLIBS)
+ICEman_LDADD = ../aice/libaice.la $(DRIVERLIBS)
 
 ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(DRIVERCFLAGS)
 if BUILD_MINGW_BINARY
@@ -32,3 +32,5 @@ ICEman_CFLAGS += -DCYG
 else
 ICEman_CFLAGS +=
 endif
+
+ICEman_LDFLAGS = -all-static

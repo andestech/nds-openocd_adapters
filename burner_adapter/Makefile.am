@@ -17,3 +17,5 @@ else
 burner_adapter_LDADD =
 endif
 
+burner_adapter_LDFLAGS = -all-static
+

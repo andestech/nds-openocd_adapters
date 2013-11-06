@@ -1,6 +1,6 @@
-noinst_LIBRARIES = libaice.a
+noinst_LTLIBRARIES = libaice.la
 
-libaice_a_SOURCES = \
+libaice_la_SOURCES = \
 	aice_usb.c \
 	nds32_reg.c \
 	log.c \
@@ -29,9 +29,11 @@ DRIVERFILES = libusb0_common.c
 DRIVERCFLAGS = $(LIBUSB0_CFLAGS)
 endif
 
-libaice_a_CFLAGS = -std=gnu99 -Wall -Wextra -Wno-unused $(DRIVERCFLAGS)
+libaice_la_CFLAGS = -std=gnu99 -Wall -Wextra -Wno-unused $(DRIVERCFLAGS)
 if BUILD_MINGW_BINARY
-libaice_a_CFLAGS += -DCYG
+libaice_la_CFLAGS += -DCYG
 else
-libaice_a_CFLAGS +=
+libaice_la_CFLAGS +=
 endif
+
+libaice_la_LDFLAGS = -static
