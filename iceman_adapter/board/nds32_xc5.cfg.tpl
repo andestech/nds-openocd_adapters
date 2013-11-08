@@ -58,6 +58,18 @@ proc dma_mdb {args} {
 	nds mem_access cpu
 }
 
+proc dma_read_buffer {args} {
+	nds mem_access bus
+	eval nds read_buffer $args
+	nds mem_access cpu
+}
+
+proc dma_write_buffer {args} {
+	nds mem_access bus
+	eval nds write_buffer $args
+	nds mem_access cpu
+}
+
 proc dma_mdb_w {args} {
 	nds mem_access bus
 
