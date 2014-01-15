@@ -292,8 +292,24 @@ static int usb_bulk_with_retries(
 
 	while (tries && (count < size)) {
 		int result = f(dev, ep, bytes + count, size - count, timeout);
-		if (result > 0)
+		if (result > 0){
+			/*
+			 * The length of SCAN_CHAIN and FASTREAD_MEM are variable,
+			 * we should determine the real length by check LENGTH byte.
+			 */
+			if(!count && (ep & LIBUSB_ENDPOINT_IN) && result > 3){
+				switch(bytes[0]){
+					case AICE_CMD_FASTREAD_MEM:
+					case AICE_CMD_SCAN_CHAIN:
+						size = AICE_FORMAT_DTHA + 4*bytes[1];
+						break;
+					case AICE_CMD_T_FASTREAD_MEM:
+						size = AICE_FORMAT_DTHMA + 4*bytes[2];
+						break;
+				}
+			}
 			count += result;
+		}
 		else if ((-ETIMEDOUT != result) || !--tries)
 			return result;
 	}
@@ -490,16 +506,16 @@ int aice_scan_chain(uint32_t *id_codes, uint8_t *num_of_ids)
 		LOG_DEBUG("SCAN_CHAIN, length: 0x0F");
 
 		/** TODO: modify receive length */
-		result = aice_usb_read(usb_in_buffer, AICE_FORMAT_DTHA);
-		if (AICE_FORMAT_DTHA != result) {
+		result = aice_usb_read(usb_in_buffer, AICE_FORMAT_DTHA + (AICE_MAX_NUM_CORE-1)*4);
+		if (AICE_FORMAT_DTHA + usb_in_buffer[1] != result) {
 			LOG_ERROR("aice_usb_read failed (requested=%d, result=%d)",
-					AICE_FORMAT_DTHA, result);
+					AICE_FORMAT_DTHA + usb_in_buffer[1], result);
 			return ERROR_FAIL;
 		}
 
 		uint8_t cmd_ack_code;
 		aice_unpack_dtha_multiple_data(&cmd_ack_code, num_of_ids, id_codes,
-				0x10, AICE_LITTLE_ENDIAN);
+				AICE_MAX_NUM_CORE, AICE_LITTLE_ENDIAN);
 
 		if (cmd_ack_code != AICE_CMD_SCAN_CHAIN) {
 
