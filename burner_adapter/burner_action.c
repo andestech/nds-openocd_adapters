@@ -10,7 +10,11 @@ static const char *command_string[TARGET_CMD_NUMBER] =
 	"reset halt\x1a",
 	"halt\x1a",
 	"mem2array tcl_data 32 0x%08x 1\x1a",
+	"mem2array tcl_data 16 0x%04x 1\x1a",
+	"mem2array tcl_data 8  0x%02x 1\x1a",
 	"mww 0x%08x 0x%08x 1\x1a",
+	"mwh 0x%08x 0x%04hx 1\x1a",
+	"mwb 0x%08x 0x%02hhx 1\x1a",
 	"nds32.cpu nds mem_access bus\x1a",
 	"nds32.cpu nds mem_access cpu\x1a",
 	"poll off\x1a",
@@ -68,7 +72,52 @@ void write_word (const char *packet, char *packet_response, int *response_len) {
 		packet_response[0] = WRITE_WORD;
 	else
 		packet_response[0] = WRITE_WORD | 0x80;
-		
+
+	packet_response[1] = 0;
+	*response_len = 2;
+}
+
+void write_half (const char *packet, char *packet_response, int *response_len) {
+	unsigned int address;
+	unsigned short data;
+	char command[MAX_COMMAND_LEN];
+	char response[MAX_RESPONSE_LEN];
+
+	address = ((((unsigned int)packet[5]<< 24) & 0xFF000000) |
+			(((unsigned int)packet[4]<< 16) & 0x00FF0000) |
+			(((unsigned int)packet[3]<< 8) & 0x0000FF00) |
+			(((unsigned int)packet[2]<< 0) & 0x000000FF));
+	data =((((unsigned int)packet[7]<< 8) & 0x0000FF00) |
+			(((unsigned int)packet[6]<< 0) & 0x000000FF));
+
+	sprintf (command, command_string[TARGET_CMD_WRITE_HALF], address, data);
+	if (issue_command(command, response) == 0)
+		packet_response[0] = WRITE_HALF;
+	else
+		packet_response[0] = WRITE_HALF | 0x80;
+
+	packet_response[1] = 0;
+	*response_len = 2;
+}
+
+void write_byte (const char *packet, char *packet_response, int *response_len) {
+	unsigned int address;
+	unsigned char data;
+	char command[MAX_COMMAND_LEN];
+	char response[MAX_RESPONSE_LEN];
+
+	address = ((((unsigned int)packet[5]<< 24) & 0xFF000000) |
+			(((unsigned int)packet[4]<< 16) & 0x00FF0000) |
+			(((unsigned int)packet[3]<< 8) & 0x0000FF00) |
+			(((unsigned int)packet[2]<< 0) & 0x000000FF));
+	data =(((unsigned int)packet[6]<< 0) & 0x000000FF);
+
+	sprintf (command, command_string[TARGET_CMD_WRITE_BYTE], address, data);
+	if (issue_command(command, response) == 0)
+		packet_response[0] = WRITE_BYTE;
+	else
+		packet_response[0] = WRITE_BYTE | 0x80;
+
 	packet_response[1] = 0;
 	*response_len = 2;
 }
@@ -171,6 +220,72 @@ void read_word(const char *packet, char *packet_response, int *response_len) {
 		packet_response[4] = 0xFF;
 		packet_response[5] = 0xFF;
 		*response_len = 6;
+	}
+}
+
+void read_half(const char *packet, char *packet_response, int *response_len) {
+	unsigned int address;
+	unsigned short data;
+	char command[MAX_COMMAND_LEN];
+	char response[MAX_RESPONSE_LEN];
+
+	address = ((((unsigned int)packet[5]<< 24) & 0xFF000000) |
+			(((unsigned int)packet[4]<< 16) & 0x00FF0000) |
+			(((unsigned int)packet[3]<< 8) & 0x0000FF00) |
+			(((unsigned int)packet[2]<< 0) & 0x000000FF));
+
+	sprintf (command, command_string[TARGET_CMD_READ_HALF], address);
+	issue_command(command, response);
+
+	sprintf (command, "expr $tcl_data(0)\x1a");
+	if (0 == issue_command(command, response))
+	{
+		data = strtoul(response, NULL, 0);
+		packet_response[0] = READ_HALF;
+		packet_response[1] = 0;
+		packet_response[2] = (char)((data & 0x0000FF00) >> 8);
+		packet_response[3] = (char)((data & 0x000000FF) >> 0);
+		*response_len = 4;
+	}
+	else
+	{
+		packet_response[0] = READ_HALF | 0x80;
+		packet_response[1] = 0;
+		packet_response[2] = 0xFF;
+		packet_response[3] = 0xFF;
+		*response_len = 4;
+	}
+}
+
+void read_byte(const char *packet, char *packet_response, int *response_len) {
+	unsigned int address;
+	unsigned char data;
+	char command[MAX_COMMAND_LEN];
+	char response[MAX_RESPONSE_LEN];
+
+	address = ((((unsigned int)packet[5]<< 24) & 0xFF000000) |
+			(((unsigned int)packet[4]<< 16) & 0x00FF0000) |
+			(((unsigned int)packet[3]<< 8) & 0x0000FF00) |
+			(((unsigned int)packet[2]<< 0) & 0x000000FF));
+
+	sprintf (command, command_string[TARGET_CMD_READ_BYTE], address);
+	issue_command(command, response);
+
+	sprintf (command, "expr $tcl_data(0)\x1a");
+	if (0 == issue_command(command, response))
+	{
+		data = strtoul(response, NULL, 0);
+		packet_response[0] = READ_BYTE;
+		packet_response[1] = 0;
+		packet_response[2] = (char)((data & 0x000000FF) >> 0);
+		*response_len = 3;
+	}
+	else
+	{
+		packet_response[0] = READ_BYTE | 0x80;
+		packet_response[1] = 0;
+		packet_response[2] = 0xFF;
+		*response_len = 3;
 	}
 }
 
@@ -426,8 +541,20 @@ int handle_packet(const char *packet, int length) {
 		case WRITE_WORD:
 			write_word(packet, res_buf, &res_length);
 			break; 
+		case WRITE_HALF:
+			write_half(packet, res_buf, &res_length);
+			break;
+		case WRITE_BYTE:
+			write_byte(packet, res_buf, &res_length);
+			break;
 		case READ_WORD:
 			read_word(packet, res_buf, &res_length);
+			break;
+		case READ_HALF:
+			read_half(packet, res_buf, &res_length);
+			break;
+		case READ_BYTE:
+			read_byte(packet, res_buf, &res_length);
 			break; 
 		case FAST_READ:
 			fast_read(packet, res_buf, &res_length);
