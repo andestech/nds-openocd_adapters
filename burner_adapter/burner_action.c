@@ -23,7 +23,7 @@ static const char *command_string[TARGET_CMD_NUMBER] =
 	"nds32.cpu nds bulk_read 0x%08x %d\x1a",
 	"nds32.cpu nds read_edmsr %s\x1a",
 	"nds32.cpu nds write_edmsr %s 0x%08x\x1a",
-	"nds32.cpu nds multi_write %d ",
+	"nds32.cpu nds multi_write %s %d ",
 };
 
 static int issue_command(const char *command, char *response)
@@ -127,36 +127,52 @@ void multiple_write (const char *packet, char *packet_response, int *response_le
 	char response[MAX_RESPONSE_LEN];
 	char data_str[16];
 	int command_length;
+	unsigned int multiple_write_type = (unsigned int)packet[0];
 	unsigned int num_of_pairs = (unsigned int)packet[1];
 	const unsigned int *data_ptr = (unsigned int *)(packet + 2);
 	unsigned int i;
 
 	if (num_of_pairs > MAX_MULTI_WRITE_PAIR)
 	{
-		packet_response[0] = MULTIPLE_WRITE | 0x80;
+		packet_response[0] = multiple_write_type | 0x80;
 		packet_response[1] = 0;
 		*response_len = 2;
 
 		return;
 	}
 
-	sprintf(command, command_string[TARGET_CMD_MULTI_WRITE], num_of_pairs);
+	char *PRTYPE;
+	switch(multiple_write_type){
+		case MULTIPLE_WRITE_W:
+			PRTYPE = "0x%08x ";
+			sprintf(command, command_string[TARGET_CMD_MULTI_WRITE], "w", num_of_pairs);
+			break;
+		case MULTIPLE_WRITE_H:
+			PRTYPE = "0x%04hx ";
+			sprintf(command, command_string[TARGET_CMD_MULTI_WRITE], "h", num_of_pairs);
+			break;
+		case MULTIPLE_WRITE_B:
+			PRTYPE = "0x%02hhx ";
+			sprintf(command, command_string[TARGET_CMD_MULTI_WRITE], "b", num_of_pairs);
+			break;
+	}
+
 	for (i = 0 ; i < num_of_pairs ; i++)
 	{
 		/* append address */
 		sprintf(data_str, "0x%08x ", data_ptr[2*i]);
 		strcat(command, data_str);
 		/* append data */
-		sprintf(data_str, "0x%08x ", data_ptr[2*i+1]);
+		sprintf(data_str, PRTYPE, data_ptr[2*i+1]);
 		strcat(command, data_str);
 	}
 	command_length = strlen(command);
 	command[command_length - 1] = '\x1a';
 
 	if (issue_command(command, response) == 0)
-		packet_response[0] = MULTIPLE_WRITE;
+		packet_response[0] = multiple_write_type;
 	else
-		packet_response[0] = MULTIPLE_WRITE | 0x80;
+		packet_response[0] = multiple_write_type | 0x80;
 
 	packet_response[1] = 0;
 	*response_len = 2;
@@ -582,7 +598,9 @@ int handle_packet(const char *packet, int length) {
 			break;
 		case BURNER_QUIT:
 			return -1;
-		case MULTIPLE_WRITE:
+		case MULTIPLE_WRITE_W:
+		case MULTIPLE_WRITE_H:
+		case MULTIPLE_WRITE_B:
 			multiple_write(packet, res_buf, &res_length);
 			break;
 		case READ_EDM_SR:

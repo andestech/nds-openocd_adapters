@@ -15,7 +15,9 @@
 #define RESET_HOLD 	0x3b
 #define RESET_AICE 	0x3c
 #define BURNER_QUIT 	0x04
-#define MULTIPLE_WRITE 	0x5a
+#define MULTIPLE_WRITE_W 	0x5a
+#define MULTIPLE_WRITE_H 	0x5b
+#define MULTIPLE_WRITE_B 	0x5c
 #define READ_EDM_SR 	0x60
 #define WRITE_EDM_SR 	0x61
 #define BURNER_INIT 	0x01
