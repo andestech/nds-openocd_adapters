@@ -507,9 +507,9 @@ int aice_scan_chain(uint32_t *id_codes, uint8_t *num_of_ids)
 
 		/** TODO: modify receive length */
 		result = aice_usb_read(usb_in_buffer, AICE_FORMAT_DTHA + (AICE_MAX_NUM_CORE-1)*4);
-		if (AICE_FORMAT_DTHA + usb_in_buffer[1] != result) {
+		if (AICE_FORMAT_DTHA + usb_in_buffer[1] * 4 != result) {
 			LOG_ERROR("aice_usb_read failed (requested=%d, result=%d)",
-					AICE_FORMAT_DTHA + usb_in_buffer[1], result);
+					AICE_FORMAT_DTHA + usb_in_buffer[1] * 4, result);
 			return ERROR_FAIL;
 		}
 
