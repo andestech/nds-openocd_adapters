@@ -549,6 +549,46 @@ int aice_scan_chain(uint32_t *id_codes, uint8_t *num_of_ids)
 	return ERROR_OK;
 }
 
+int aice_select_target(uint32_t address, uint32_t data)
+{
+	int result;
+
+	if (AICE_COMMAND_MODE_PACK == aice_command_mode) {
+		aice_usb_packet_flush();
+	} else if (AICE_COMMAND_MODE_BATCH == aice_command_mode) {
+		aice_pack_htdc(AICE_CMD_SELECT_TARGET, 0, address, data, AICE_LITTLE_ENDIAN);
+		return aice_usb_packet_append(usb_out_buffer, AICE_FORMAT_HTDC,
+				AICE_FORMAT_DTHB);
+	}
+
+	aice_pack_htdc(AICE_CMD_SELECT_TARGET, 0, address, data, AICE_LITTLE_ENDIAN);
+
+	aice_usb_write(usb_out_buffer, AICE_FORMAT_HTDC);
+
+	LOG_DEBUG("SELECT_TARGET, address: 0x%x, data: 0x%x", address, data);
+
+	result = aice_usb_read(usb_in_buffer, AICE_FORMAT_DTHB);
+	if (AICE_FORMAT_DTHB != result) {
+		LOG_ERROR("aice_usb_read failed (requested=%d, result=%d)",
+				AICE_FORMAT_DTHB, result);
+		return ERROR_FAIL;
+	}
+
+	uint8_t cmd_ack_code;
+	uint8_t extra_length;
+	aice_unpack_dthb(&cmd_ack_code, &extra_length);
+
+	LOG_DEBUG("SELECT_TARGET response");
+
+	if (cmd_ack_code != AICE_CMD_SELECT_TARGET) {
+		LOG_ERROR("aice command error (command=0x%x, response=0x%x)",
+				AICE_CMD_SELECT_TARGET, cmd_ack_code);
+		return ERROR_FAIL;
+	}
+
+	return ERROR_OK;
+}
+
 int aice_read_ctrl(uint32_t address, uint32_t *data)
 {
 	int result;
@@ -2515,7 +2555,7 @@ int aice_core_init(uint32_t coreid)
 	return ERROR_OK;
 }
 
-static int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode)
+int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode)
 {
 	int retval;
 

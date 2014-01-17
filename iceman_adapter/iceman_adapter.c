@@ -129,6 +129,9 @@ static const char *aieconf_desc_list = NULL;
 static int diagnosis = 0;
 static int diagnosis_memory = 0;
 static unsigned int diagnosis_address = 0;
+static int total_num_of_core = 1;
+static unsigned int id_codes[AICE_MAX_NUM_CORE];
+extern struct aice_nds32_info core_info[];
 
 static void show_version(void) {
 	printf ("Andes ICEman v3.0.0 (openocd-0.7.0)\n");
@@ -416,11 +419,10 @@ static void do_diagnosis(void){
 	uint16_t pid = 0x0;
 	int last_fail_item, item;
 	uint32_t value, backup_value, test_value;
-	uint32_t id_codes, selected_core;
+	uint32_t selected_core;
 	uint32_t hardware_version, firmware_version, fpga_version;
 	uint32_t scan_clock, scan_base_freq, scan_freq;
-	uint8_t num_of_ids, test_memory_value, memory_value, backup_memory_value;
-	extern struct aice_nds32_info core_info[];
+	uint8_t test_memory_value, memory_value, backup_memory_value;
 
 	enum{
 		CONFIRM_USB_CONNECTION,
@@ -431,7 +433,7 @@ static void do_diagnosis(void){
 		CONFIRM_JTAG_DOMAIN,
 		CONFIRM_TRST_WORKING,
 		CONFIRM_SRST_NOT_AFFECT_JTAG,
-		CONFIRM_SELECT_FIRST_CORE,
+		CONFIRM_SELECT_CORE,
 		CONFIRM_RESET_HOLD,
 		CONFIRM_DIM_AND_CPU_DOMAIN,
 		CONFIRM_MEMORY_ON_BUS,
@@ -448,7 +450,7 @@ static void do_diagnosis(void){
 		[CONFIRM_JTAG_DOMAIN] = "confirm JTAGS domain working ...",
 		[CONFIRM_TRST_WORKING] = "confirm TRST working ...",
 		[CONFIRM_SRST_NOT_AFFECT_JTAG] = "confirm SRST not affect JTAG domain ...",
-		[CONFIRM_SELECT_FIRST_CORE] = "confirm Select first core success ...",
+		[CONFIRM_SELECT_CORE] = "confirm Select core success ...",
 		[CONFIRM_RESET_HOLD] = "confirm Reset and debug success ...",
 		[CONFIRM_DIM_AND_CPU_DOMAIN] = "confirm DIM and CPU domain operational ...",
 		[CONFIRM_MEMORY_ON_BUS] = "confirm memory access on BUS mode ...",
@@ -469,6 +471,19 @@ static void do_diagnosis(void){
 	if (ERROR_OK != aice_usb_open(vid, pid))
 		goto report;
 
+	/* clear timeout status */
+	if (aice_write_ctrl(AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS, 0x1) != ERROR_OK)
+		goto report;
+
+	/* clear NO_DBGI_PIN */
+	uint32_t pin_status;
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_JTAG_PIN_STATUS, &pin_status) != ERROR_OK)
+		goto report;
+
+	if (aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_STATUS, pin_status & (~0x02)) != ERROR_OK)
+		goto report;
+
+	/* get hardware and firmware version */
 	if (aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &hardware_version) != ERROR_OK)
 		goto report;
 
@@ -483,7 +498,7 @@ static void do_diagnosis(void){
 
 	/* 2. Report JTAG frequency detected */
 	if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
-		return;
+		goto report;
 
 	scan_clock &= 0x0F;
 	if (scan_clock & 0x8)
@@ -499,106 +514,111 @@ static void do_diagnosis(void){
 	if (ERROR_OK != aice_usb_set_clock(9))
 		goto report;
 
+	printf("ice_state = %08x\n", scan_clock);
 	/* 4. Report JTAG scan chain (confirm JTAG connectivity) */
 	last_fail_item = CONFIRM_JTAG_CONNECTIVITY;
-	if (ERROR_OK != aice_scan_chain(&id_codes, &num_of_ids))
+	if (ERROR_OK != aice_usb_idcode(&id_codes, &total_num_of_core))
 		goto report;
-	printf("There is %u core in target\n", num_of_ids);
-	selected_core = 0;
+	printf("There %s %u %s in target\n", total_num_of_core > 1 ? "are":"is", total_num_of_core, total_num_of_core > 1 ? "cores":"core");
+	int i;
+	for(i = 0; i < total_num_of_core; i++){
+		selected_core = i;
+		aice_select_target(i,id_codes[i]);
 
-	/* 5. Read/write SBAR: confirm JTAG domain working */
-	last_fail_item = CONFIRM_JTAG_DOMAIN;
-	test_value = rand() & 0xFFFFFD;
+		/* 5. Read/write SBAR: confirm JTAG domain working */
+		last_fail_item = CONFIRM_JTAG_DOMAIN;
+		test_value = rand() & 0xFFFFFD;
 
-	aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &backup_value);
-	aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, test_value);
-	aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
-	if (value != test_value)
-		goto report;
-
-	/* 5.a */
-	last_fail_item = CONFIRM_TRST_WORKING;
-	aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, 0);
-	aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_CONTROL, AICE_JTAG_PIN_CONTROL_TRST);
-	aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
-	if(value != 0x1)
-		goto report;
-
-	/* 5.b */
-	last_fail_item = CONFIRM_SRST_NOT_AFFECT_JTAG;
-	aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, 0);
-	aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_CONTROL, AICE_JTAG_PIN_CONTROL_SRST);
-	aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
-	if(value != 0x0)
-		goto report;
-
-	/* restore SBAR */
-	aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, backup_value);
-
-	/* 6. Select first Andes core based on scan chain */
-	last_fail_item = CONFIRM_SELECT_FIRST_CORE;
-	aice_core_init(selected_core);
-	if (ERROR_OK != aice_edm_init(selected_core))
-		goto report;
-	printf("Core #%u: EDM version 0x%x\n", selected_core+1, core_info[selected_core].edm_version);
-
-	/* 7. Restart target (debug and reset)*/
-	last_fail_item = CONFIRM_RESET_HOLD;
-	/* clear DBGER */
-	if (aice_write_misc(selected_core, NDS_EDM_MISC_DBGER, NDS_DBGER_CLEAR_ALL) != ERROR_OK)
-		goto report;
-
-	if (ERROR_OK != aice_issue_reset_hold(selected_core))
-		goto report;
-	printf("hardware reset-and-hold success\n");
-
-	/* 8. Test read/write R0: confirm DIM and CPU domain operational */
-	last_fail_item = CONFIRM_DIM_AND_CPU_DOMAIN;
-	test_value = rand();
-	aice_read_reg(selected_core, R0, &backup_value);
-	aice_write_reg(selected_core, R0, test_value);
-	aice_read_reg(selected_core, R0, &value);
-	if (value != test_value)
-		goto report;
-
-	aice_write_reg(selected_core, R0, backup_value);
-
-	if(diagnosis_memory){
-		/* 9. Test direct memory access (bus view) confirm BUS working */
-		last_fail_item = CONFIRM_MEMORY_ON_BUS;
-		test_memory_value = rand();
-		aice_usb_memory_access(selected_core, NDS_MEMORY_ACC_BUS);
-		aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
-		aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &test_memory_value);
-		aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &memory_value);
-		if (memory_value != test_memory_value)
+		aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &backup_value);
+		aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, test_value);
+		aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
+		if (value != test_value)
 			goto report;
 
-		/* 10. Test memory access through DIM (CPU view) reconfirm CPU working */
-		last_fail_item = CONFIRM_MEMORY_ON_CPU;
-		test_memory_value = rand();
-		aice_usb_memory_access(selected_core, NDS_MEMORY_ACC_CPU);
-		aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
-		aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &test_memory_value);
-		aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &memory_value);
-		if (memory_value != test_memory_value)
+		/* 5.a */
+		last_fail_item = CONFIRM_TRST_WORKING;
+		aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, 0);
+		aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_CONTROL, AICE_JTAG_PIN_CONTROL_TRST);
+		aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
+		if(value != 0x1)
 			goto report;
 
-		aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
-	}
+		/* 5.b */
+		last_fail_item = CONFIRM_SRST_NOT_AFFECT_JTAG;
+		aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, 0);
+		aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_CONTROL, AICE_JTAG_PIN_CONTROL_SRST);
+		aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
+		if(value != 0x0)
+			goto report;
 
-	last_fail_item = CONFIRM_END;
+		/* restore SBAR */
+		aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, backup_value);
 
-report:
-	printf("********************\n");
-	for (item = CONFIRM_USB_CONNECTION; item < last_fail_item; item++){
-		if(!diagnosis_memory && (item == CONFIRM_MEMORY_ON_BUS || item == CONFIRM_MEMORY_ON_CPU))
-			continue;
-		printf("[PASS] %s\n", confirm_messages[item]);
+		/* 6. Select first Andes core based on scan chain */
+		last_fail_item = CONFIRM_SELECT_CORE;
+		aice_core_init(selected_core);
+		if (ERROR_OK != aice_edm_init(selected_core))
+			goto report;
+		printf("Core #%u: EDM version 0x%x\n", selected_core, core_info[selected_core].edm_version);
+
+		/* 7. Restart target (debug and reset)*/
+		last_fail_item = CONFIRM_RESET_HOLD;
+		/* clear DBGER */
+		if (aice_write_misc(selected_core, NDS_EDM_MISC_DBGER, NDS_DBGER_CLEAR_ALL) != ERROR_OK)
+			goto report;
+
+		if (ERROR_OK != aice_issue_reset_hold(selected_core))
+			goto report;
+		printf("hardware reset-and-hold success\n");
+
+		/* 8. Test read/write R0: confirm DIM and CPU domain operational */
+		last_fail_item = CONFIRM_DIM_AND_CPU_DOMAIN;
+		test_value = rand();
+		aice_read_reg(selected_core, R0, &backup_value);
+		aice_write_reg(selected_core, R0, test_value);
+		aice_read_reg(selected_core, R0, &value);
+		if (value != test_value)
+			goto report;
+
+		aice_write_reg(selected_core, R0, backup_value);
+
+		if(diagnosis_memory){
+			/* 9. Test direct memory access (bus view) confirm BUS working */
+			last_fail_item = CONFIRM_MEMORY_ON_BUS;
+			test_memory_value = rand();
+			aice_usb_memory_access(selected_core, NDS_MEMORY_ACC_BUS);
+			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
+			aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &test_memory_value);
+			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &memory_value);
+			if (memory_value != test_memory_value)
+				goto report;
+
+			/* 10. Test memory access through DIM (CPU view) reconfirm CPU working */
+			last_fail_item = CONFIRM_MEMORY_ON_CPU;
+			test_memory_value = rand();
+			aice_usb_memory_access(selected_core, NDS_MEMORY_ACC_CPU);
+			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
+			aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &test_memory_value);
+			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &memory_value);
+			if (memory_value != test_memory_value)
+				goto report;
+
+			aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
+		}
+
+		last_fail_item = CONFIRM_END;
+
+	report:
+		printf("********************\n");
+		for (item = CONFIRM_USB_CONNECTION; item < last_fail_item; item++){
+			if(!diagnosis_memory && (item == CONFIRM_MEMORY_ON_BUS || item == CONFIRM_MEMORY_ON_CPU))
+				continue;
+			printf("[PASS] %s\n", confirm_messages[item]);
+		}
+		if(last_fail_item != CONFIRM_END)
+			printf("[FAIL] %s\n", confirm_messages[last_fail_item]);
+		printf("********************\n");
 	}
-	if(last_fail_item != CONFIRM_END)
-		printf("[FAIL] %s\n", confirm_messages[last_fail_item]);
-	printf("********************\n");
 	aice_usb_close();
 }
 
