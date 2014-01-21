@@ -1,4 +1,5 @@
 set _CPUTAPID 0x1000063d
+set _TARGETID 0
 set _CHIPNAME nds32
 #--aie-conf
 #--target
@@ -6,21 +7,6 @@ set _CHIPNAME nds32
 jtag init
 #--edm-passcode
 #--soft-reset-halt
-
-set connected 0
-
-$_TARGETNAME configure -event gdb-attach {
-	if  {$connected == 0} {
-		#--boot [reset halt]
-		set connected 1
-	}
-}
-
-$_TARGETNAME configure -event gdb-detach {
-	if {$connected == 1} {
-		set connected 0
-	}
-}
 
 proc dma_mww {args} {
 	nds mem_access bus

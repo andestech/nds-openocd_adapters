@@ -108,7 +108,8 @@ static int aice_retry_time = 50;
 static int clock_setting = 9;
 static int debug_level = 2;
 static int boot_code_debug;
-static int gdb_port = 1111;
+static int gdb_port[AICE_MAX_NUM_CORE];
+static char *gdb_port_str = NULL;
 static int burner_port = 2354;
 static int telnet_port = 4444;
 static int virtual_hosting = 0;
@@ -120,7 +121,7 @@ static int boot_time = 2500;
 static unsigned int count_to_check_dbger = 30;
 static int global_stop;
 static int word_access_mem;
-static enum TARGET_TYPE target_type = TARGET_INVALID;
+static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_INVALID};
 static char *edm_passcode = NULL;
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
@@ -249,7 +250,9 @@ static void parse_param(int a_argc, char **a_argv) {
 				telnet_port = strtol(optarg, NULL, 0);
 				break;
 			case 'p':
-				gdb_port = strtol(optarg, NULL, 0);
+				optarg_len = strlen(optarg);
+				gdb_port_str = malloc(AICE_MAX_NUM_CORE * 6);
+				memcpy(gdb_port_str, optarg, optarg_len + 1);
 				break;
 			case 'j':
 				virtual_hosting = 1;
@@ -282,13 +285,13 @@ static void parse_param(int a_argc, char **a_argv) {
 			case 'Z':
 				optarg_len = strlen(optarg);
 				if (strncmp(optarg, "v2", optarg_len) == 0) {
-					target_type = TARGET_V2;
+					target_type[0] = TARGET_V2;
 				} else if (strncmp(optarg, "v3", optarg_len) == 0) {
-					target_type = TARGET_V3;
+					target_type[0] = TARGET_V3;
 				} else if (strncmp(optarg, "v3m", optarg_len) == 0) {
-					target_type = TARGET_V3m;
+					target_type[0] = TARGET_V3m;
 				} else {
-					target_type = TARGET_INVALID;
+					target_type[0] = TARGET_INVALID;
 				}
 				break;
 			case 'P':
@@ -356,7 +359,7 @@ static void target_probe(void)
 	uint32_t version = 0;
 	uint32_t coreid = 0;
 
-	if (target_type != TARGET_INVALID)
+	if (target_type[0] != TARGET_INVALID)
 		return;
 
 	nds32_reg_init ();
@@ -366,38 +369,40 @@ static void target_probe(void)
 		return;
 	}
 
-	if (ERROR_OK != aice_edm_init(coreid)) {
-		printf("<-- Can not init EDM -->\n");
+	if (ERROR_OK != aice_usb_idcode(&id_codes, &total_num_of_core)){
+		printf("<-- scan target error -->\n");
 		return;
 	}
 
-	if (ERROR_OK != aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CFG, &value_edmcfg)) {
-		printf("<-- Can not read EDMSR -->\n");
-		return;
-	}
-	version = (value_edmcfg >> 16) & 0xFFFF;
-	if ((version & 0x1000) == 0) {
-		/* edm v2 */
-		target_type = TARGET_V2;
-	} else {
-		/* edm v3 */
-		/* halt cpu to check whether cpu belongs to mcu not */
-		if (ERROR_OK != aice_usb_halt(coreid)) {
-			printf("<-- Can not halt cpu -->\n");
+	for (coreid = 0; coreid < total_num_of_core; coreid++){
+		if (ERROR_OK != aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CFG, &value_edmcfg)) {
+			printf("<-- Can not read EDMSR -->\n");
 			return;
 		}
-		if (ERROR_OK != aice_usb_read_reg(coreid, CR4, &value_cr4)) {
-			printf("<-- Can not read register -->\n");
-			return;
-		}
-		if ((value_cr4 & 0x100000) == 0x100000) {
-			target_type = TARGET_V3m;
+		version = (value_edmcfg >> 16) & 0xFFFF;
+		if ((version & 0x1000) == 0) {
+			/* edm v2 */
+			target_type[coreid] = TARGET_V2;
 		} else {
-			target_type = TARGET_V3;
-		}
-		if (ERROR_OK != aice_usb_run(coreid)) {
-			printf("<-- Can not release cpu -->\n");
-			return;
+			/* edm v3 */
+			/* halt cpu to check whether cpu belongs to mcu not */
+			if (ERROR_OK != aice_usb_halt(coreid)) {
+				printf("<-- Can not halt cpu -->\n");
+				return;
+			}
+			if (ERROR_OK != aice_usb_read_reg(coreid, CR4, &value_cr4)) {
+				printf("<-- Can not read register -->\n");
+				return;
+			}
+			if ((value_cr4 & 0x100000) == 0x100000) {
+				target_type[coreid] = TARGET_V3m;
+			} else {
+				target_type[coreid] = TARGET_V3;
+			}
+			if (ERROR_OK != aice_usb_run(coreid)) {
+				printf("<-- Can not release cpu -->\n");
+				return;
+			}
 		}
 	}
 	aice_usb_close();
@@ -457,7 +462,7 @@ static void do_diagnosis(void){
 		[CONFIRM_MEMORY_ON_CPU] = "confirm memory access on CPU mode ..."
 	};
 
-	if (target_type != TARGET_INVALID)
+	if (target_type[0] != TARGET_INVALID)
 		return;
 
 	nds32_reg_init();
@@ -816,6 +821,7 @@ static void process_openocd_message(void)
 	FILE *debug_log = NULL;
 	int is_ready = 0;
 	unsigned int line_buffer_len, log_buffer_remain;
+	int coreid;
 
 	if (unlimited_log) {
 		debug_log =  fopen("iceman_debug.log", "w+");
@@ -828,9 +834,19 @@ static void process_openocd_message(void)
 	}
 
 	printf("Andes ICEman V3.0.0 (OpenOCD)\n");
-	printf("The core #0 listens on %d.\n", gdb_port);
+	printf("There are %d cores in target\n", total_num_of_core);
+
+	for(coreid = 0; coreid < total_num_of_core; coreid++){
+		printf("Core #%u: EDM version 0x%x\n", coreid, core_info[coreid].edm_version);
+	}
+
+	for(coreid = 0; coreid < total_num_of_core; coreid++){
+		printf("The core #%d listens on %d.\n", coreid, gdb_port[coreid]);
+	}
+
 	printf("Burner listens on %d\n", burner_port);
 	printf("Telnet port: %d\n", telnet_port);
+//	printf("core_info[coreid].access_channel = %d\n", core_info[0].access_channel);
 #ifdef __MINGW32__
 	/* ReadFile from pipe is not LINE_BUFFERED. So, we process newline ourselves. */
 	DWORD had_read;
@@ -882,7 +898,6 @@ static void process_openocd_message(void)
 				printf("JTAG frequency %s", search_str + 12);
 				fflush(stdout);
 			} else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
-				printf("Core #0: EDM version %s", search_str + 12);
 				printf("ICEman is ready to use.\n");
 				fflush(stdout);
 				is_ready = 1;
@@ -928,12 +943,27 @@ static void process_openocd_message(void)
 static void update_openocd_cfg(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
+	int port_num = 0;
 
 	/* update openocd.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
 		fputs(line_buffer, openocd_cfg);
 
-	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port);
+	if(gdb_port_str) {
+		char *port = strtok(gdb_port_str, ":");
+		while (port != NULL) {
+			gdb_port[port_num] = strtol(port, NULL, 0);
+			port = strtok (NULL, ":");
+			port_num++;
+		}
+	}else{
+		gdb_port[0] = 1111;
+	}
+
+	if (port_num < total_num_of_core)
+		total_num_of_core = port_num;
+
+	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
@@ -995,20 +1025,29 @@ static void update_board_cfg(void)
 	unsigned int core_id =0, read_byte = 0;
 	char aieconf[MAX_LEN_AIECONF_NAME + 1];
 	int ret;
+	int coreid;
 
 	/* update nds32_xc5.cfg */
 	char *find_pos;
+	char *target_str = NULL;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
-			if (target_type == TARGET_V3) {
-				strcpy(line_buffer, "source [find target/nds32v3.cfg]\n");
-			} else if (target_type == TARGET_V2) {
-				strcpy(line_buffer, "source [find target/nds32v2.cfg]\n");
-			} else if (target_type == TARGET_V3m) {
-				strcpy(line_buffer, "source [find target/nds32v3m.cfg]\n");
-			} else {
-				fprintf(stderr, "No target specified\n");
-				exit(0);
+			for (coreid = 0; coreid < total_num_of_core; coreid++){
+				if(target_str)
+					fputs(line_buffer, board_cfg);
+				if (target_type[coreid] == TARGET_V3) {
+					target_str = "source [find target/nds32v3.cfg]\n";
+					strcpy(line_buffer, target_str);
+				} else if (target_type[coreid] == TARGET_V2) {
+					target_str = "source [find target/nds32v2.cfg]\n";
+					strcpy(line_buffer, target_str);
+				} else if (target_type[coreid] == TARGET_V3m) {
+					target_str = "source [find target/nds32v3m.cfg]\n";
+					strcpy(line_buffer, target_str);
+				} else {
+					fprintf(stderr, "No target specified\n");
+					exit(0);
+				}
 			}
 		} else if ((find_pos = strstr(line_buffer, "--boot")) != NULL) {
 			if (boot_code_debug)
@@ -1075,7 +1114,7 @@ static void update_board_cfg(void)
 
 	if (edm_operations_num > 0) {
 		for (i = 0 ; i < edm_operations_num ; i++) {
-			fprintf(board_cfg, "nds32.cpu nds login_edm_operation 0x%x 0x%x\n", edm_operations[i].reg_no, edm_operations[i].data);
+			fprintf(board_cfg, "nds32.cpu0 nds login_edm_operation 0x%x 0x%x\n", edm_operations[i].reg_no, edm_operations[i].data);
 		}
 	}
 
@@ -1101,7 +1140,7 @@ static void update_board_cfg(void)
 
 	if (stop_sequences_num > 0) {
 		fputs("$_TARGETNAME configure -event halted {\n", board_cfg);
-		fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
+		fputs("\tnds32.cpu0 nds mem_access bus\n", board_cfg);
 		for (i = 0 ; i < stop_sequences_num ; i++) {
 			int stop_addr, stop_mask, stop_data;
 			stop_addr = stop_sequences[i].address;
@@ -1113,13 +1152,13 @@ static void update_board_cfg(void)
 
 			fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
 		}
-		fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
+		fputs("\tnds32.cpu0 nds mem_access cpu\n", board_cfg);
 		fputs("}\n", board_cfg);
 	}
 
 	if (resume_sequences_num > 0) {
 		fputs("$_TARGETNAME configure -event resumed {\n", board_cfg);
-		fputs("\tnds32.cpu nds mem_access bus\n", board_cfg);
+		fputs("\tnds32.cpu0 nds mem_access bus\n", board_cfg);
 		for (i = 0 ; i < resume_sequences_num ; i++) {
 			int resume_addr, resume_mask, resume_data;
 			resume_addr = resume_sequences[i].address;
@@ -1134,7 +1173,7 @@ static void update_board_cfg(void)
 				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
 			}
 		}
-		fputs("\tnds32.cpu nds mem_access cpu\n", board_cfg);
+		fputs("\tnds32.cpu0 nds mem_access cpu\n", board_cfg);
 		fputs("}\n", board_cfg);
 	}
 

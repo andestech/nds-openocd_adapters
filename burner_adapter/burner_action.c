@@ -15,15 +15,15 @@ static const char *command_string[TARGET_CMD_NUMBER] =
 	"mww 0x%08x 0x%08x 1\x1a",
 	"mwh 0x%08x 0x%04hx 1\x1a",
 	"mwb 0x%08x 0x%02hhx 1\x1a",
-	"nds32.cpu nds mem_access bus\x1a",
-	"nds32.cpu nds mem_access cpu\x1a",
+	"nds32.cpu0 nds mem_access bus\x1a",
+	"nds32.cpu0 nds mem_access cpu\x1a",
 	"poll off\x1a",
 	"poll on\x1a",
-	"nds32.cpu nds bulk_write 0x%08x %d ",
-	"nds32.cpu nds bulk_read 0x%08x %d\x1a",
-	"nds32.cpu nds read_edmsr %s\x1a",
-	"nds32.cpu nds write_edmsr %s 0x%08x\x1a",
-	"nds32.cpu nds multi_write %s %d ",
+	"nds32.cpu0 nds bulk_write 0x%08x %d ",
+	"nds32.cpu0 nds bulk_read 0x%08x %d\x1a",
+	"nds32.cpu0 nds read_edmsr %s\x1a",
+	"nds32.cpu0 nds write_edmsr %s 0x%08x\x1a",
+	"nds32.cpu0 nds multi_write %s %d ",
 };
 
 static int issue_command(const char *command, char *response)
