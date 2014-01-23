@@ -1,5 +1,4 @@
 set _CPUTAPID 0x1000063d
-set _TARGETID 0
 set _CHIPNAME nds32
 #--aie-conf
 #--target
