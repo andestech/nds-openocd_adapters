@@ -11,9 +11,8 @@ openocd_interfacecfgdir = $(bindir)/interface
 dist_openocd_interfacecfg_DATA = interface/nds32-aice.cfg.tpl
 
 openocd_targetcfgdir = $(bindir)/target
-dist_openocd_targetcfg_DATA = target/nds32v2.cfg \
-			      target/nds32v3.cfg \
-			      target/nds32v3m.cfg
+dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl
+
 if USE_LIBUSB0
 DRIVERLIBS = $(LIBUSB0_LIBS)
 DRIVERCFLAGS = $(LIBUSB0_CFLAGS)
