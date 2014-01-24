@@ -118,7 +118,7 @@ static int soft_reset_halt;
 static int force_debug;
 static int unlimited_log;
 static int boot_time = 2500;
-static unsigned int count_to_check_dbger = 30;
+static char *count_to_check_dbger = NULL;
 static int global_stop;
 static int word_access_mem;
 static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_INVALID};
@@ -182,6 +182,9 @@ static void show_usage(void) {
 	printf("\t\tExample: --stop-seq \"0x200800:0x80\"\n");
 	printf("\t\t\t--resume-seq \"0x200800:rst\"\n\n");
 	printf("-C, --check-times:\tCount to check DBGER\n");
+	printf("\t\tExample:\n");
+	printf("\t\t\t1. -C 100 to check 100 times\n");
+	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n");
 	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
 	printf("-O, --edm-port-operation: EDM port0/1 operations\n");
 	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678;\"\n");
@@ -317,7 +320,9 @@ static void parse_param(int a_argc, char **a_argv) {
 				custom_restart_script = optarg;
 				break;
 			case 'C':
-				count_to_check_dbger = strtoul(optarg, NULL, 0);
+				optarg_len = strlen(optarg);
+				count_to_check_dbger = malloc(optarg_len + 1);
+				memcpy(count_to_check_dbger, optarg, optarg_len + 1);
 				break;
 			case 'z':
 				aieconf_desc_list = optarg;
@@ -1052,7 +1057,11 @@ static void update_interface_cfg(void)
 
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
-	fprintf(interface_cfg, "aice count_to_check_dbger %d\n", count_to_check_dbger);
+
+	if (count_to_check_dbger)
+		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);
+	else
+		fprintf(interface_cfg, "aice count_to_check_dbger 30\n");
 
 	/* custom srst/trst/restart scripts */
 	if (custom_srst_script) {
