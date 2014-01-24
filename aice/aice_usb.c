@@ -2319,6 +2319,35 @@ int aice_usb_set_clock(int set_clock)
 	return ERROR_OK;
 }
 
+int aice_usb_set_edm_passcode(uint32_t coreid, char *edm_passcode)
+{
+	uint32_t passcode_length;
+	uint32_t i;
+	uint32_t copy_length;
+	uint32_t code;
+	char code_str[9];
+
+	if (!edm_passcode)
+		return ERROR_OK;
+
+	passcode_length = strlen(edm_passcode);
+	for (i = 0; i < passcode_length; i += 8) {
+		if (passcode_length - i < 8)
+			copy_length = passcode_length - i;
+		else
+			copy_length = 8;
+
+		strncpy(code_str, edm_passcode + i, copy_length);
+		code_str[copy_length] = '\0';
+		code = strtoul(code_str, NULL, 16);
+		if (aice_write_misc(coreid,	NDS_EDM_MISC_GEN_PORT0, code) != ERROR_OK)
+			return ERROR_FAIL;
+	}
+
+	core_info[coreid].edm_passcode = edm_passcode;
+	return ERROR_OK;
+}
+
 int aice_edm_init(uint32_t coreid)
 {
 	aice_write_edmsr(coreid, NDS_EDM_SR_DIMBR, 0xFFFF0000);

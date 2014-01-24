@@ -379,11 +379,18 @@ static void target_probe(void)
 		return;
 	}
 
+	/* clear timeout status */
+	aice_write_ctrl(AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS, 0x1);
+
+	if(edm_passcode)
+		aice_usb_set_edm_passcode(0, edm_passcode);
+
 	for (coreid = 0; coreid < total_num_of_core; coreid++){
 		if (ERROR_OK != aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CFG, &value_edmcfg)) {
 			printf("<-- Can not read EDMSR -->\n");
 			return;
 		}
+
 		version = (value_edmcfg >> 16) & 0xFFFF;
 		if ((version & 0x1000) == 0) {
 			/* edm v2 */
@@ -391,6 +398,7 @@ static void target_probe(void)
 		} else {
 			/* edm v3 */
 			/* halt cpu to check whether cpu belongs to mcu not */
+
 			if (ERROR_OK != aice_usb_halt(coreid)) {
 				printf("<-- Can not halt cpu -->\n");
 				return;

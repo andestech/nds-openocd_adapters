@@ -170,6 +170,7 @@ struct cache_info {
 
 struct aice_nds32_info {
 	uint32_t edm_version;
+	char *edm_passcode;
 	uint32_t r0_backup;
 	uint32_t r1_backup;
 	uint32_t host_dtr_backup;
