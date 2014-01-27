@@ -112,7 +112,6 @@ static int gdb_port[AICE_MAX_NUM_CORE];
 static char *gdb_port_str = NULL;
 static int burner_port = 2354;
 static int telnet_port = 4444;
-static int virtual_hosting = 0;
 static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
@@ -149,8 +148,6 @@ static void show_usage(void) {
 	printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
 	printf("\t\t\t(default: 6666)\n");
 	printf("-v, --version:\t\tVersion of ICEman\n");
-	printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
-	printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
 	printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
 	printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
@@ -256,12 +253,6 @@ static void parse_param(int a_argc, char **a_argv) {
 				optarg_len = strlen(optarg);
 				gdb_port_str = malloc(AICE_MAX_NUM_CORE * 6);
 				memcpy(gdb_port_str, optarg, optarg_len + 1);
-				break;
-			case 'j':
-				virtual_hosting = 1;
-				break;
-			case 'J':
-				virtual_hosting = 0;
 				break;
 			case 'H':
 				startup_reset_halt = 1;
@@ -1035,11 +1026,6 @@ static void update_openocd_cfg(void)
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
-
-	if (virtual_hosting)
-		fprintf(openocd_cfg, "nds virtual_hosting on\n");
-	else
-		fprintf(openocd_cfg, "nds virtual_hosting off\n");
 
 	if (global_stop)
 		fprintf(openocd_cfg, "nds global_stop on\n");
