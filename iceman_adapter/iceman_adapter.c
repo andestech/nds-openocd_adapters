@@ -134,7 +134,7 @@ static unsigned int id_codes[AICE_MAX_NUM_CORE];
 extern struct aice_nds32_info core_info[];
 
 static void show_version(void) {
-	printf ("Andes ICEman v3.0.0 (openocd-0.7.0)\n");
+	printf ("Andes ICEman v3.0.0 (openocd)\n");
 	printf ("Copyright (C) 2007-2013 Andes Technology Corporation\n");
 }
 
@@ -888,22 +888,35 @@ static void process_openocd_message(void)
 	char *unprocessed_buf;
 
 	/* init unprocessed buffer */
-	if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) == 0)
-		return;
+	while(1)
+	{
+	  if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) != 0)
+	  {
+	  		if(had_read > 0)
+	        break;
+	  }
+	}
 	buffer[had_read] = '\0';
 	unprocessed_buf = buffer;
 	unprocessed_len = had_read;
 	line_buffer_index = 0;
 
-	while (unprocessed_len >= 0) {
+	/*while (unprocessed_len >= 0) {*/
+	while (1) {
 		/* find '\n' */
 		newline_pos = strchr(unprocessed_buf, '\n');
 		if (newline_pos == NULL) {
 			/* cannot find '\n', copy whole buffer to line_buffer */
 			strcpy(line_buffer + line_buffer_index, unprocessed_buf);
 			line_buffer_index += strlen(unprocessed_buf);
-			if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) == 0)
-				return;
+			while(1)
+			{
+			  if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) != 0)
+			  {
+			    if(had_read > 0)
+	          break;
+	      }
+			}
 			buffer[had_read] = '\0';
 			unprocessed_buf = buffer;
 			unprocessed_len = had_read;
@@ -922,7 +935,12 @@ static void process_openocd_message(void)
 			unprocessed_len = (buffer + had_read) - unprocessed_buf;
 		}
 #else
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, stdin) != NULL) {
+	/*while (fgets(line_buffer, LINE_BUFFER_SIZE, stdin) != NULL) {*/
+	while (1) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, stdin) == NULL)
+		{
+			;
+		}
 #endif
 		if (is_ready == 0) {
 			if ((search_str = strstr(line_buffer, "clock speed")) != NULL) {
@@ -1445,8 +1463,10 @@ int main(int argc, char **argv) {
 PROCESS_CLEANUP:
 	/* openocd process exits. kill burner_adapter process */
 #ifdef __MINGW32__
+	TerminateProcess(openocd_proc_info.hProcess, 0);
 	TerminateProcess(burner_proc_info.hProcess, 0);
 #else
+	kill(openocd_pid, SIGTERM);
 	kill(burner_adapter_pid, SIGTERM);
 #endif
 
