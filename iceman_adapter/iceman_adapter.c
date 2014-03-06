@@ -13,6 +13,10 @@
 #include "nds32_insn.h"
 #include "log.h"
 
+#define PORTNUM_BURNER     2354
+#define PORTNUM_TELNET     4444
+#define PORTNUM_GDB        1111
+
 #ifdef __MINGW32__
 # include <windows.h>
 # include <process.h>
@@ -110,8 +114,8 @@ static int debug_level = 2;
 static int boot_code_debug;
 static int gdb_port[AICE_MAX_NUM_CORE];
 static char *gdb_port_str = NULL;
-static int burner_port = 2354;
-static int telnet_port = 4444;
+static int burner_port = PORTNUM_BURNER;
+static int telnet_port = PORTNUM_TELNET;
 static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
@@ -129,9 +133,13 @@ static const char *aieconf_desc_list = NULL;
 static int diagnosis = 0;
 static int diagnosis_memory = 0;
 static unsigned int diagnosis_address = 0;
-static int total_num_of_core = 1;
+static uint8_t total_num_of_core = 1;
 static unsigned int id_codes[AICE_MAX_NUM_CORE];
 extern struct aice_nds32_info core_info[];
+extern int nds32_registry_portnum(int port_num);
+extern int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode);
+extern int aice_usb_set_edm_passcode(uint32_t coreid, char *edm_passcode);
+extern int aice_select_target(uint32_t address, uint32_t data);
 
 static void show_version(void) {
 	printf ("Andes ICEman v3.0.0 (openocd)\n");
@@ -365,7 +373,7 @@ static void target_probe(void)
 		return;
 	}
 
-	if (ERROR_OK != aice_usb_idcode(&id_codes, &total_num_of_core)){
+	if (ERROR_OK != aice_usb_idcode(&id_codes[0], &total_num_of_core)){
 		printf("<-- scan target error -->\n");
 		return;
 	}
@@ -526,10 +534,10 @@ static void do_diagnosis(void){
 	printf("ice_state = %08x\n", scan_clock);
 	/* 4. Report JTAG scan chain (confirm JTAG connectivity) */
 	last_fail_item = CONFIRM_JTAG_CONNECTIVITY;
-	if (ERROR_OK != aice_usb_idcode(&id_codes, &total_num_of_core))
+	if (ERROR_OK != aice_usb_idcode(&id_codes[0], &total_num_of_core))
 		goto report;
 	printf("There %s %u %s in target\n", total_num_of_core > 1 ? "are":"is", total_num_of_core, total_num_of_core > 1 ? "cores":"core");
-	int i;
+	int i=0;
 	for(i = 0; i < total_num_of_core; i++){
 		selected_core = i;
 		aice_select_target(i,id_codes[i]);
@@ -1018,14 +1026,9 @@ char *str_replace ( const char *string, const char *substr, const char *replacem
 	return newstr;
 }
 
-static void update_openocd_cfg(void)
+static void update_gdb_port_num(void)
 {
-	char line_buffer[LINE_BUFFER_SIZE];
 	int port_num = 0;
-
-	/* update openocd.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
-		fputs(line_buffer, openocd_cfg);
 
 	if(gdb_port_str) {
 		char *port = strtok(gdb_port_str, ":");
@@ -1035,11 +1038,19 @@ static void update_openocd_cfg(void)
 			port_num++;
 		}
 	}else{
-		gdb_port[0] = 1111;
+		gdb_port[0] = PORTNUM_GDB;
 	}
-
 	if (port_num < total_num_of_core)
 		total_num_of_core = port_num;
+}
+
+static void update_openocd_cfg(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
+
+	/* update openocd.cfg */
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
+		fputs(line_buffer, openocd_cfg);
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
@@ -1426,6 +1437,7 @@ int create_openocd(void) {
 }
 
 int main(int argc, char **argv) {
+	int i;
 	parse_param(argc, argv);
 
 	if(diagnosis){
@@ -1436,6 +1448,34 @@ int main(int argc, char **argv) {
 	target_probe();
 	open_config_files();
 
+	/* prepare all valid port num */
+	update_gdb_port_num();
+	
+	for(i = 0; i < total_num_of_core; i++)
+	{
+	  gdb_port[i] = nds32_registry_portnum(gdb_port[i]);
+	  if(gdb_port[i] < 0)
+		{
+			printf("gdb port num error\n");
+			goto PROCESS_CLEANUP;	
+		}
+	}
+	
+	burner_port = nds32_registry_portnum(burner_port);
+	if(burner_port < 0)
+	{
+		printf("burner port num error\n");
+		goto PROCESS_CLEANUP;
+	}
+
+	telnet_port = nds32_registry_portnum(telnet_port);
+	if(telnet_port < 0)
+	{
+		printf("telnet port num error\n");
+		goto PROCESS_CLEANUP;
+	}
+	/*printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d .\n", gdb_port[0], burner_port, telnet_port);*/
+	
 	update_openocd_cfg();
 	update_interface_cfg();
 	update_target_cfg();

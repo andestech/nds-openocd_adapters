@@ -1,5 +1,7 @@
 bin_PROGRAMS = ICEman
-ICEman_SOURCES = iceman_adapter.c
+ICEman_SOURCES = iceman_adapter.c \
+                 iceman_socket.c \
+                 iceman_socket.h
 
 openocd_cfgdir = $(bindir)
 dist_openocd_cfg_DATA = openocd.cfg.tpl sw-reset-seq.tpl
@@ -24,6 +26,12 @@ DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 endif
 
 ICEman_LDADD = ../aice/libaice.la $(DRIVERLIBS)
+if BUILD_MINGW_BINARY
+ICEman_LDADD += -lwsock32
+else
+ICEman_LDADD +=
+endif
+
 
 ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(DRIVERCFLAGS)
 if BUILD_MINGW_BINARY
