@@ -440,7 +440,8 @@ static void do_diagnosis(void){
 	uint32_t hardware_version, firmware_version, fpga_version;
 	uint32_t scan_clock, scan_base_freq, scan_freq;
 	uint8_t test_memory_value, memory_value, backup_memory_value;
-
+	int aice_is_open=0;
+	
 	enum{
 		CONFIRM_USB_CONNECTION,
 		CONFIRM_AICE_VERSIONS,
@@ -487,6 +488,7 @@ static void do_diagnosis(void){
 	last_fail_item = CONFIRM_USB_CONNECTION;
 	if (ERROR_OK != aice_usb_open(vid, pid))
 		goto report;
+	aice_is_open=1;
 
 	/* clear timeout status */
 	if (aice_write_ctrl(AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS, 0x1) != ERROR_OK)
@@ -636,7 +638,8 @@ static void do_diagnosis(void){
 			printf("[FAIL] %s\n", confirm_messages[last_fail_item]);
 		printf("********************\n");
 	}
-	aice_usb_close();
+	if(aice_is_open)
+	  aice_usb_close();
 }
 
 #define LINE_BUFFER_SIZE 2048
@@ -1457,7 +1460,7 @@ int main(int argc, char **argv) {
 	  if(gdb_port[i] < 0)
 		{
 			printf("gdb port num error\n");
-			goto PROCESS_CLEANUP;	
+			goto PROCESS_CLEANUP;
 		}
 	}
 	
