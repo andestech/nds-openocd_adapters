@@ -40,7 +40,7 @@ static int aice_max_retry_times = 50;
 /* Default endian is little endian. */
 static enum aice_target_endian data_endian;
 
-
+int aice_usb_makesure_DBGI(uint32_t coreid);
 /***************************************************************************/
 /* AICE commands' pack/unpack functions */
 static void aice_pack_htda(uint8_t cmd_code, uint8_t extra_word_length,
@@ -2650,7 +2650,9 @@ int aice_usb_halt(uint32_t coreid)
 		if (dbger & NDS_DBGER_AT_MAX)
 			aice_write_misc(coreid, NDS_EDM_MISC_DBGER, NDS_DBGER_AT_MAX);
 	}
-
+  /* FixBug - Can not halt cpu */
+	aice_usb_makesure_DBGI(coreid);
+	
 	if (aice_check_dbger(coreid, NDS_DBGER_DEX) != ERROR_OK) {
 		LOG_ERROR("<-- TARGET ERROR! Unable to stop the debug target through DBGI. -->");
 		return ERROR_FAIL;
@@ -4074,4 +4076,59 @@ end_profiling:
 	*num_samples = iteration_count;
 
 	return retval;
+}
+
+int aice_usb_makesure_DBGI(uint32_t coreid)
+{
+	uint32_t reason, val_itype, target_is_v2=0;
+	
+	//if ( !( (coreid == 0xC) && (core_info[coreid].edm_version < 0x48) ) )
+	if ((core_info[coreid].edm_version & 0x1000) == 0)
+	{
+		/* edm v2 */
+		target_is_v2=1;
+	}
+
+	while(1)
+	{
+		/* backup r0 & r1 */
+		aice_backup_tmp_registers(coreid);
+	  /* read PSW-DEX */
+	  //aice_read_reg(coreid, IR0, &val_ir0);
+	  
+		/* read reason */
+		//nds32->get_debug_reason(nds32, &reason);
+		if(target_is_v2 == 1)
+		{
+			aice_read_reg(coreid, IR6, &val_itype);
+		  reason = (val_itype & 0x0F);
+		}
+		else
+		{
+	    aice_read_edmsr(coreid, NDS_EDM_SR_EDMSW, &val_itype);
+	    reason = ((val_itype >> 12) & 0x0F);
+	  }
+	  LOG_DEBUG("aice_usb_makesure_DBGI coreid=%x, ver=%x, reason=%x", coreid, core_info[coreid].edm_version, reason);
+	  
+	  /* restore r0 & r1 */
+		aice_restore_tmp_registers(coreid);
+		
+	  if(reason == 6)  // 6->NDS32_DEBUG_DEBUG_INTERRUPT
+	    break;
+	  
+	  /** execute instructions in DIM */
+		uint32_t instructions[4] = {
+			NOP,
+			NOP,
+			NOP,
+			IRET
+		};
+		int result = aice_execute_dim(coreid, instructions, 4);
+		if(result != ERROR_OK)
+		{
+			LOG_ERROR("aice_execute_dim-fail");
+			return ERROR_FAIL;
+		}
+	
+	}
 }
