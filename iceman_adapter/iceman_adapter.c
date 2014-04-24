@@ -858,7 +858,7 @@ static void sig_int(int UNUSED(signo))
 
 static void process_openocd_message(void)
 {
-	char line_buffer[LINE_BUFFER_SIZE];
+	char line_buffer[LINE_BUFFER_SIZE+2];
 	char *search_str;
 	FILE *debug_log = NULL;
 	int is_ready = 0;
@@ -892,7 +892,7 @@ static void process_openocd_message(void)
 #ifdef __MINGW32__
 	/* ReadFile from pipe is not LINE_BUFFERED. So, we process newline ourselves. */
 	DWORD had_read;
-	char buffer[LINE_BUFFER_SIZE];
+	char buffer[LINE_BUFFER_SIZE+2];
 	char *newline_pos;
 	DWORD line_buffer_index;
 	long long unprocessed_len;
@@ -917,9 +917,14 @@ static void process_openocd_message(void)
 		/* find '\n' */
 		newline_pos = strchr(unprocessed_buf, '\n');
 		if (newline_pos == NULL) {
-			/* cannot find '\n', copy whole buffer to line_buffer */
-			strcpy(line_buffer + line_buffer_index, unprocessed_buf);
-			line_buffer_index += strlen(unprocessed_buf);
+			/* if line_buffer is full, skip data */
+			if ((line_buffer_index + strlen(unprocessed_buf)) > LINE_BUFFER_SIZE) {
+			}
+			else {
+				/* cannot find '\n', copy whole buffer to line_buffer */
+				strcpy(line_buffer + line_buffer_index, unprocessed_buf);
+				line_buffer_index += strlen(unprocessed_buf);
+			}
 			while(1)
 			{
 			  if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) != 0)
