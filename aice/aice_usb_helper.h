@@ -6,7 +6,7 @@
 #include <unistd.h>
 #endif
 
-#define alive_sleep	usleep
+#define alive_sleep(x)	usleep(x*1000)
 #define keep_alive()	do {} while(0)
 
 static int64_t timeval_ms()
