@@ -148,6 +148,7 @@ extern int nds32_registry_portnum(int port_num);
 extern int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode);
 extern int aice_usb_set_edm_passcode(uint32_t coreid, char *edm_passcode);
 extern int aice_select_target(uint32_t address, uint32_t data);
+extern int aice_reset_aice_as_startup(void);
 //extern int force_turnon_V3_EDM;
 //extern char *BRANCH_NAME, *COMMIT_ID;
 
@@ -423,6 +424,9 @@ static void target_probe(void)
 	if (ERROR_OK != aice_usb_open(vid, pid)) {
 		printf("<-- Can not open usb -->\n");
 		return;
+	}
+	if (reset_aice_as_startup == 1) {
+		aice_reset_aice_as_startup();
 	}
 
 	if (ERROR_OK != aice_usb_idcode(&id_codes[0], &total_num_of_core)){

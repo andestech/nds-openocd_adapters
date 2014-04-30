@@ -46,6 +46,7 @@ static enum aice_target_endian data_endian;
 
 int aice_usb_run(uint32_t coreid);
 int aice_usb_makesure_DBGI(uint32_t coreid);
+int aice_reset_aice_as_startup(void);
 /***************************************************************************/
 /* AICE commands' pack/unpack functions */
 static void aice_pack_htda(uint8_t cmd_code, uint8_t extra_word_length,
@@ -4234,5 +4235,32 @@ int aice_usb_makesure_DBGI(uint32_t coreid)
 			return ERROR_FAIL;
 		}
 	}
+	return ERROR_OK;
+}
+
+// reset c51 through ep0
+// The reset sequence is as following.
+// 1. send ep0 packet: bmRequestType 0x40, bRequest 0xA0, wValue 0xe600, index 0x0, byte 1, length 1
+// 2. delay several milliseconds
+// 3. send ep0 packet: bmRequestType 0x40, bRequest 0xA0, wValue 0xe600, index 0x0, byte 0, length 1
+// 4. wait c51 reload FPGA
+// The reset sequence can work on AICE 1.6.6 or above.
+// Bug 7568 - AICE could not be reset by ICEman
+int aice_reset_aice_as_startup(void)
+{
+	int ret;
+	unsigned char reset_bit;
+	jtag_libusb_device_handle *dev = aice_handler.usb_handle;
+
+	reset_bit = 1;
+	ret = jtag_libusb_control_transfer(dev, 0x40, 0xa0, 0xe600, 0x00, &reset_bit, 1, AICE_USB_TIMEOUT);
+	alive_sleep(100);
+	reset_bit = 0;
+	ret = jtag_libusb_control_transfer(dev, 0x40, 0xa0, 0xe600, 0x00, &reset_bit, 1, AICE_USB_TIMEOUT);
+	alive_sleep(1500);
+	/* usb_control_msg() returns the number of bytes transferred during the
+	 * DATA stage of the control transfer - must be exactly 1 in this case! */
+	if (ret != 1)
+		return ERROR_FAIL;
 	return ERROR_OK;
 }
