@@ -38,38 +38,44 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "hBvDHKgjJGkd:S:R:p:b:c:T:r:C:P:F:O:l:L:N:Z:t:z:x::";
+const char *opt_string = "aAb:Bc:C:d:DF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx:Xz:Z::";
 struct option long_option[] = {
-	{"help", no_argument, 0, 'h'},
-	{"boot", no_argument, 0, 'B'},
-	{"version", no_argument, 0, 'v'},
-	{"unlimited-log", no_argument, 0, 'D'},
-	{"reset-hold", no_argument, 0, 'H'},
-	{"soft-reset-hold", no_argument, 0, 'K'},
-	{"force-debug", no_argument, 0, 'g'},
-	{"enable-virtual-hosting", no_argument, 0, 'j'},
-	{"disable-virtual-hosting", no_argument, 0, 'J'},
-	{"enable-global-stop", no_argument, 0, 'G'},
-	{"word-access-mem", no_argument, 0, 'k'},
-	{"debug", required_argument, 0, 'd'},
-	{"stop-seq", required_argument, 0, 'S'},
-	{"resume-seq", required_argument, 0, 'R'},
-	{"port", required_argument, 0, 'p'},
+	{"reset-aice", no_argument, 0, 'a'},
+	{"no-crst-detect", no_argument, 0, 'A'},
 	{"bport", required_argument, 0, 'b'},
-	{"tport", required_argument, 0, 't'},
+	{"boot", no_argument, 0, 'B'},
 	{"clock", required_argument, 0, 'c'},
-	{"boot-time", required_argument, 0, 'T'},
-	{"ice-retry", required_argument, 0, 'r'},
 	{"check-times", required_argument, 0, 'C'},
-	{"passcode", required_argument, 0, 'P'},
+	{"debug", required_argument, 0, 'd'},
+	{"unlimited-log", no_argument, 0, 'D'},
+	//{"edmv2", no_argument, 0, 'E'},
 	{"edm-port-file", required_argument, 0, 'F'},
-	{"edm-port-operation", required_argument, 0, 'O'},
+	{"force-debug", no_argument, 0, 'g'},
+	{"enable-global-stop", no_argument, 0, 'G'},
+	{"help", no_argument, 0, 'h'},
+	{"reset-hold", no_argument, 0, 'H'},
+	//{"enable-virtual-hosting", no_argument, 0, 'j'},
+	//{"disable-virtual-hosting", no_argument, 0, 'J'},
+	{"word-access-mem", no_argument, 0, 'k'},
+	{"soft-reset-hold", no_argument, 0, 'K'},
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
 	{"custom-restart", required_argument, 0, 'N'},
-	{"target", required_argument, 0, 'Z'},
-	{"aie-conf", required_argument, 0, 'z'},
+	{"reset-time", required_argument, 0, 'o'},
+	{"edm-port-operation", required_argument, 0, 'O'},
+	{"port", required_argument, 0, 'p'},
+	{"passcode", required_argument, 0, 'P'},
+	{"ice-retry", required_argument, 0, 'r'},
+	{"resume-seq", required_argument, 0, 'R'},
+	{"source", no_argument, 0, 's'},
+	{"stop-seq", required_argument, 0, 'S'},
+	{"tport", required_argument, 0, 't'},
+	{"boot-time", required_argument, 0, 'T'},
+	{"version", no_argument, 0, 'v'},
 	{"diagnosis", optional_argument, 0, 'x'},
+	{"uncnd-reset-hold", no_argument, 0, 'X'},
+	{"aie-conf", required_argument, 0, 'z'},
+	{"target", required_argument, 0, 'Z'},
 	{0, 0, 0, 0}
 };
 
@@ -120,7 +126,9 @@ static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
 static int unlimited_log;
-static int boot_time = 2500;
+static int boot_time = 3000;
+static int reset_time = 1000;
+static int reset_aice_as_startup = 0;
 static char *count_to_check_dbger = NULL;
 static int global_stop;
 static int word_access_mem;
@@ -140,76 +148,101 @@ extern int nds32_registry_portnum(int port_num);
 extern int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode);
 extern int aice_usb_set_edm_passcode(uint32_t coreid, char *edm_passcode);
 extern int aice_select_target(uint32_t address, uint32_t data);
+//extern int force_turnon_V3_EDM;
+//extern char *BRANCH_NAME, *COMMIT_ID;
 
 static void show_version(void) {
-	printf ("Andes ICEman v3.0.0 (openocd)\n");
-	printf ("Copyright (C) 2007-2013 Andes Technology Corporation\n");
+	printf("Andes ICEman v3.0.0 (openocd)\n");
+	printf("Copyright (C) 2007-2013 Andes Technology Corporation\n");
+}
+
+static void show_srccode_ver(void) {
 }
 
 static void show_usage(void) {
-	printf("Usage:\niceman --port start_port_number [--help]\n");
-
-	printf("-h, --help:\t\tThe usage is for ICEman\n");
-	printf("-p, --port:\t\tSocket port number for gdb connection\n");
-	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
-	printf("\t\t\t(default: 2354)\n");
-	printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
-	printf("\t\t\t(default: 6666)\n");
-	printf("-v, --version:\t\tVersion of ICEman\n");
-	printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
-	printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
-	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
-	printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
-	printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
-	printf("\t\t\t0: 30 MHz\n");
-	printf("\t\t\t1: 15 MHz\n");
-	printf("\t\t\t2: 7.5 MHz\n");
-	printf("\t\t\t3: 3.75 MHz\n");
-	printf("\t\t\t4: 1.875 MHz\n");
-	printf("\t\t\t5: 937.5 KHz\n");
-	printf("\t\t\t6: 468.75 KHz\n");
-	printf("\t\t\t7: 234.375 KHz\n");
-	printf("\t\t\t8: 48 MHz\n");
-	printf("\t\t\t9: 24 MHz\n");
-	printf("\t\t\t10: 12 MHz\n");
-	printf("\t\t\t11: 6 MHz\n");
-	printf("\t\t\t12: 3 MHz\n");
-	printf("\t\t\t13: 1.5 MHz\n");
-	printf("\t\t\t14: 750 KHz\n");
-	printf("\t\t\t15: 375 KHz\n");
-	printf("\t\t\tAICE2 only supports 8 ~ 15\n");
-	printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
-	printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
-	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
-	printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
-	printf("\t\tUsage: --stop-seq \"address:data\"\n");
-	printf("\t\t\t--resume-seq \"address:{data|rst}\"\n");
-	printf("\t\tExample: --stop-seq \"0x200800:0x80\"\n");
-	printf("\t\t\t--resume-seq \"0x200800:rst\"\n\n");
-	printf("-C, --check-times:\tCount to check DBGER\n");
-	printf("\t\tExample:\n");
-	printf("\t\t\t1. -C 100 to check 100 times\n");
-	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n");
-	printf("-P, --passcode:\t\tPASSCODE of secure MPU\n");
-	printf("-O, --edm-port-operation: EDM port0/1 operations\n");
-	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678;\"\n");
-	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n");
-	printf("-F, --edm-port-file:\tEDM port0/1 operations file name\n");
-	printf("\t\tFile format:\n");
-	printf("\t\t\twrite_edm 6:0x1234,7:0x1234);\n");
-	printf("\t\t\twrite_edm 6:0x1111);\n");
-	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n");
-	printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
-	printf("-k, --word-access-mem:\tAlways use word-aligned address to access memory device\n");
-	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
-	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
-	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
-	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
-	printf("-z, --aie-conf :\t\tSpecify aie file on each core\n");
-	printf("\t\tUsage: --aie-conf <core#id>=<aie_conf>[,<core#id>=<aie_conf>]*\n");
-	printf("\t\t\tExample: --aie-conf core0=core0.aieconf,core1=core1.aieconf\n");
-	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
-	printf("\t\tUsage: --diagnosis[=address]\n");
+	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
+  printf("-a, --reset-aice:\tReset AICE as ICEman startup\n");
+  printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
+  printf("-b, --bport:\t\tSocket port number for Burner connection\n");
+  printf("\t\t\t(default: 2354)\n");
+  printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
+  printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
+  printf("\t\tUsage: -c num\n");
+  printf("\t\t\tnum should be the following:\n");
+  printf("\t\t\t0: 30 MHz\n");
+  printf("\t\t\t1: 15 MHz\n");
+  printf("\t\t\t2: 7.5 MHz\n");
+  printf("\t\t\t3: 3.75 MHz\n");
+  printf("\t\t\t4: 1.875 MHz\n");
+  printf("\t\t\t5: 937.5 KHz\n");
+  printf("\t\t\t6: 468.75 KHz\n");
+  printf("\t\t\t7: 234.375 KHz\n");
+  printf("\t\t\t8: 48 MHz\n");
+  printf("\t\t\t9: 24 MHz\n");
+  printf("\t\t\t10: 12 MHz\n");
+  printf("\t\t\t11: 6 MHz\n");
+  printf("\t\t\t12: 3 MHz\n");
+  printf("\t\t\t13: 1.5 MHz\n");
+  printf("\t\t\t14: 750 KHz\n");
+  printf("\t\t\t15: 375 KHz\n");
+  printf("\t\t\tAICE-MCU only supports 8 ~ 15\n\n");
+  printf("-C, --check-times:\tCount/Second to check DBGER\n");
+  printf("\t\t\t(default: 30 times)\n");
+  printf("\t\tExample:\n");
+  printf("\t\t\t1. -C 100 to check 100 times\n");
+  printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
+  printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
+  //printf("-e, --edm-retry:\tRetry count of getting EDM version as ICEman startup\n");
+  printf("-F, --edm-port-file (Only for Secure MPU):\tEDM port0/1 operations file name\n");
+  printf("\t\tFile format:\n");
+  printf("\t\t\twrite_edm 6:0x1234,7:0x1234;\n");
+  printf("\t\t\twrite_edm 6:0x1111;\n");
+  printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
+  //printf("-g, --force-debug: \n");
+  printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
+  printf("-h, --help:\t\tThe usage is for ICEman\n");
+  printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
+  //printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
+  //printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
+  printf("-k, --word-access-mem:\tAlways use word-aligned address to access device\n");
+  printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
+  printf("-l, --custom-srst:\tUse custom script to do SRST\n");
+  printf("-L, --custom-trst:\tUse custom script to do TRST\n");
+  printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
+  //printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
+  printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
+  printf("\t\t\t(default: 1000 milliseconds)\n");
+  printf("-O, --edm-port-operation (Only for Secure MPU): EDM port0/1 operations\n");
+  printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678;\"\n");
+  printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
+  printf("-p, --port:\t\tSocket port number for gdb connection\n");
+  printf("-P, --passcode (Only for Secure MPU):\t\tPASSCODE of secure MPU\n");
+  printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
+  printf("\t\t\t(default: 50 times)\n");
+  printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
+  printf("-s, --source:\t\tShow commit ID of this version\n");
+  printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
+  printf("\t\tUsage: --stop-seq A1:D1[:M1],A2:D2[:M2]\n");
+  printf("\t\t\t--resume-seq A3:D3[:M3],A2:rst\n");
+  printf("\t\t\tA*:address, D*:data, [:M*]:optional mask, rst:restore\n");
+  printf("\t\t\tA*,D*,[M*] should be hex as following example\n\n");
+  printf("\t\tExample: --stop-seq 0x500000:0x80,0x600000:0x20\n");
+  printf("\t\t\t--resume-seq 0x500000:0x80,0x600000:rst\n\n");
+  printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
+  printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
+  printf("\t\t\t(default: 3000 milliseconds)\n");
+  //printf("-u, --update-fw:\tUpdate AICE F/W\n");
+  //printf("-U, --update-fpga:\tUpdate AICE FPGA\n");
+  printf("-v, --version:\t\tVersion of ICEman\n");
+  //printf("-w, --backup-fw:\tBackup AICE F/W\n");
+  //printf("-W, --backup-fpga:\tBackup AICE FPGA\n");
+  printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
+  printf("\t\tUsage: --diagnosis[=address]\n\n");
+  printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
+  printf("-z, --aie-conf :\t\tSpecify aie file on each core\n");
+  printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
+  printf("\t\tUsage: --aie-conf <core#id>=<aie_conf>[,<core#id>=<aie_conf>]*\n");
+  printf("\t\t\tExample: --aie-conf core0=core0.aieconf,core1=core1.aieconf\n");
 }
 
 static void parse_param(int a_argc, char **a_argv) {
@@ -223,20 +256,17 @@ static void parse_param(int a_argc, char **a_argv) {
 			break;
 
 		switch (c) {
-			case 'S':
-				optarg_len = strlen(optarg);
-				memory_stop_sequence = malloc(optarg_len + 1 + 9);  /* +9 for stop-seq */
-				memcpy(memory_stop_sequence, "stop-seq ", 9);
-				memcpy(memory_stop_sequence + 9, optarg, optarg_len + 1);
+			case 'a': /* reset-aice */
+				reset_aice_as_startup = 1;
 				break;
-			case 'R':
-				optarg_len = strlen(optarg);
-				memory_resume_sequence = malloc(optarg_len + 1 + 11); /* +11 for resume-seq */
-				memcpy(memory_resume_sequence, "resume-seq ", 11);
-				memcpy(memory_resume_sequence + 11, optarg, optarg_len + 1);
+			case 'A': /* no-crst-detect */
+				
 				break;
-			case 'r':
-				aice_retry_time = strtol(optarg, NULL, 0);
+			case 'b':
+				burner_port = strtol(optarg, NULL, 0);
+				break;
+			case 'B':
+				boot_code_debug = 1;
 				break;
 			case 'c':
 				clock_setting = strtol(optarg, NULL, 0);
@@ -245,44 +275,107 @@ static void parse_param(int a_argc, char **a_argv) {
 				if (15 < clock_setting)
 					clock_setting = 15;
 				break;
+			case 'C':
+				optarg_len = strlen(optarg);
+				count_to_check_dbger = malloc(optarg_len + 1);
+				memcpy(count_to_check_dbger, optarg, optarg_len + 1);
+				break;
 			case 'd':
 				debug_level = strtol(optarg, NULL, 0);
 				break;
-			case 'B':
-				boot_code_debug = 1;
+			case 'D':
+				unlimited_log = 1;
+				debug_level = 3;
 				break;
-			case 'b':
-				burner_port = strtol(optarg, NULL, 0);
+			/*case 'E':
+				printf("force_turnon_V3_EDM off \n");
+				force_turnon_V3_EDM = 0;
+				break;*/
+			case 'F':
+				edm_port_op_file = optarg;
 				break;
-			case 't':
-				telnet_port = strtol(optarg, NULL, 0);
+			case 'g':
+				force_debug = 1;
+				break;
+			case 'G':
+				global_stop = 1;
+				break;
+			case 'H':
+				startup_reset_halt = 1;
+				break;
+			case 'k':
+				word_access_mem = 1;
+				break;
+			case 'K':
+				soft_reset_halt = 1;
+				break;
+			case 'l': /* customer-srst */
+				custom_srst_script = optarg;
+				break;
+			case 'L': /* customer-trst */
+				custom_trst_script = optarg;
+				break;
+			case 'N': /* customer-restart */
+				custom_restart_script = optarg;
+				break;
+			case 'o': /* reset-time */
+				reset_time = strtol(optarg, NULL, 0);
+				break;
+			case 'O':
+				optarg_len = strlen(optarg);
+				edm_port_operations = malloc(optarg_len + 1);
+				memcpy(edm_port_operations, optarg, optarg_len + 1);
 				break;
 			case 'p':
 				optarg_len = strlen(optarg);
 				gdb_port_str = malloc(AICE_MAX_NUM_CORE * 6);
 				memcpy(gdb_port_str, optarg, optarg_len + 1);
 				break;
-			case 'H':
-				startup_reset_halt = 1;
+			case 'P':
+				optarg_len = strlen(optarg);
+				edm_passcode = malloc(optarg_len + 1);
+				memcpy(edm_passcode, optarg, optarg_len + 1);
 				break;
-			case 'K':
-				soft_reset_halt = 1;
+			case 'r':
+				aice_retry_time = strtol(optarg, NULL, 0);
 				break;
-			case 'g':
-				force_debug = 1;
+			case 'R':
+				optarg_len = strlen(optarg);
+				memory_resume_sequence = malloc(optarg_len + 1 + 11); /* +11 for resume-seq */
+				memcpy(memory_resume_sequence, "resume-seq ", 11);
+				memcpy(memory_resume_sequence + 11, optarg, optarg_len + 1);
 				break;
-			case 'D':
-				unlimited_log = 1;
-				debug_level = 3;
+			case 's': /* source */
+				show_srccode_ver();
+				exit(0);
+			case 'S':
+				optarg_len = strlen(optarg);
+				memory_stop_sequence = malloc(optarg_len + 1 + 9);  /* +9 for stop-seq */
+				memcpy(memory_stop_sequence, "stop-seq ", 9);
+				memcpy(memory_stop_sequence + 9, optarg, optarg_len + 1);
+				break;
+			case 't':
+				telnet_port = strtol(optarg, NULL, 0);
 				break;
 			case 'T':
 				boot_time = strtol(optarg, NULL, 0);
 				break;
-			case 'G':
-				global_stop = 1;
+			case 'v':
+					show_version();
+					exit(0);
+			case 'x':
+				diagnosis = 1;
+				if (optarg != NULL){
+					diagnosis_memory = 1;
+					sscanf(optarg, "0x%x", &diagnosis_address);
+				}else
+					diagnosis_memory = 0;
 				break;
-			case 'k':
-				word_access_mem = 1;
+			case 'X': /* uncnd-reset-hold */
+				
+				break;
+			case 'z':
+				aieconf_desc_list = optarg;
 				break;
 			case 'Z':
 				optarg_len = strlen(optarg);
@@ -296,47 +389,6 @@ static void parse_param(int a_argc, char **a_argv) {
 					target_type[0] = TARGET_INVALID;
 				}
 				break;
-			case 'P':
-				optarg_len = strlen(optarg);
-				edm_passcode = malloc(optarg_len + 1);
-				memcpy(edm_passcode, optarg, optarg_len + 1);
-				break;
-			case 'O':
-				optarg_len = strlen(optarg);
-				edm_port_operations = malloc(optarg_len + 1);
-				memcpy(edm_port_operations, optarg, optarg_len + 1);
-				break;
-			case 'F':
-				edm_port_op_file = optarg;
-				break;
-			case 'l': /* customer-srst */
-				custom_srst_script = optarg;
-				break;
-			case 'L': /* customer-trst */
-				custom_trst_script = optarg;
-				break;
-			case 'N': /* customer-restart */
-				custom_restart_script = optarg;
-				break;
-			case 'C':
-				optarg_len = strlen(optarg);
-				count_to_check_dbger = malloc(optarg_len + 1);
-				memcpy(count_to_check_dbger, optarg, optarg_len + 1);
-				break;
-			case 'z':
-				aieconf_desc_list = optarg;
-				break;
-			case 'x':
-				diagnosis = 1;
-				if (optarg != NULL){
-					diagnosis_memory = 1;
-					sscanf(optarg, "0x%x", &diagnosis_address);
-				}else
-					diagnosis_memory = 0;
-				break;
-			case 'v':
-					show_version();
-					exit(0);
 			case 'h':
 			case '?':
 			default:
@@ -359,7 +411,7 @@ static void target_probe(void)
 {
 	uint16_t vid = 0x1CFC;
 	uint16_t pid = 0x0;
-	uint32_t value_edmcfg, value_cr4;
+	uint32_t value_edmcfg=0, value_cr4=0;
 	uint32_t version = 0;
 	uint32_t coreid = 0;
 
@@ -1072,7 +1124,7 @@ static void update_openocd_cfg(void)
 	if (startup_reset_halt)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
 
-	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
+	fprintf(openocd_cfg, "nds boot_time %d %d\n", boot_time, reset_time);
 
 	if (word_access_mem)
 		fprintf(openocd_cfg, "nds word_access_mem on\n");
