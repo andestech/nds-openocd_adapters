@@ -29,7 +29,11 @@
 #include "aice_usb_helper.h"
 #include "log.h"
 
-
+int force_turnon_V3_EDM = 1;
+#define DIMBR_D4 (0xFFFF0000u)
+#define DTR_BUF (R0)
+#define CHK_DBGER_TIMEOUT    5000
+#define CHK_EDMCTL_TIMEOUT   5000
 /* Global USB buffers */
 static uint8_t usb_in_buffer[AICE_IN_BUFFER_SIZE];
 static uint8_t usb_out_buffer[AICE_OUT_BUFFER_SIZE];
@@ -40,6 +44,7 @@ static int aice_max_retry_times = 50;
 /* Default endian is little endian. */
 static enum aice_target_endian data_endian;
 
+int aice_usb_run(uint32_t coreid);
 int aice_usb_makesure_DBGI(uint32_t coreid);
 /***************************************************************************/
 /* AICE commands' pack/unpack functions */
@@ -1765,6 +1770,7 @@ static char *custom_srst_script;
 static char *custom_trst_script;
 static char *custom_restart_script;
 static uint32_t aice_count_to_check_dbger = 30;
+static uint32_t aice_count_to_check_edmctl = 30;
 
 int aice_read_reg(uint32_t coreid, uint32_t num, uint32_t *val);
 int aice_write_reg(uint32_t coreid, uint32_t num, uint32_t val);
@@ -1825,6 +1831,7 @@ static int check_privilege(uint32_t coreid, uint32_t dbger_value)
 
 static int aice_check_dbger(uint32_t coreid, uint32_t expect_status)
 {
+	long long then = 0;
 	uint32_t i = 0;
 	uint32_t value_dbger;
 
@@ -1842,13 +1849,52 @@ static int aice_check_dbger(uint32_t coreid, uint32_t expect_status)
 		if ((i % 30) == 0)
 			keep_alive();
 
-		long long then = 0;
 		if (i == aice_count_to_check_dbger)
 			then = timeval_ms();
 		if (i >= aice_count_to_check_dbger) {
-			if ((timeval_ms() - then) > 1000) {
-				LOG_ERROR("Timeout (1000ms) waiting for $DBGER status "
+			if ((timeval_ms() - then) > CHK_DBGER_TIMEOUT) {
+				LOG_ERROR("Timeout (5000ms) waiting for $DBGER status "
 						"being 0x%08x", expect_status);
+				if ((expect_status & NDS_DBGER_CRST) && !(value_dbger & NDS_DBGER_CRST))
+					LOG_ERROR("nSRST did not happen or TRST was	triggered unexpectedly");
+				if ((expect_status & NDS_DBGER_DEX) && !(value_dbger & NDS_DBGER_DEX))
+					LOG_ERROR("debug exception is not taken");
+				return ERROR_FAIL;
+			}
+		}
+
+		//if (retry_by_second)
+			alive_sleep(1000);
+
+		i++;
+	}
+
+	return ERROR_FAIL;
+}
+
+static int aice_check_edmctl(uint32_t coreid, uint32_t expect_status)
+{
+	long long then = 0;
+	uint32_t i = 0;
+	uint32_t edm_ctl_value;
+
+	while (1) {
+		aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CTL, &edm_ctl_value);
+
+		if ((edm_ctl_value & expect_status) == expect_status)
+			return ERROR_OK;
+
+		if ((i % 30) == 0)
+			keep_alive();
+
+		if (i == aice_count_to_check_edmctl)
+			then = timeval_ms();
+		if (i >= aice_count_to_check_edmctl) {
+			if ((timeval_ms() - then) > CHK_EDMCTL_TIMEOUT) {
+				LOG_ERROR("Timeout (5000ms) waiting for $EDMCTL status "
+						"being 0x%08x", expect_status);
+				if ((expect_status & NDS_EDMCTL_DEH_SEL) && !(edm_ctl_value & NDS_EDMCTL_DEH_SEL))
+					LOG_ERROR("debug memory is not activated");
 				return ERROR_FAIL;
 			}
 		}
@@ -2131,7 +2177,6 @@ int aice_usb_open(uint16_t vid, uint16_t pid)
 	aice_handler.usb_read_ep = aice_read_ep;
 	aice_handler.usb_write_ep = aice_write_ep;
 	aice_handler.usb_handle = devh;
-
 	return ERROR_OK;
 }
 
@@ -2354,10 +2399,16 @@ int aice_edm_init(uint32_t coreid)
 	aice_write_misc(coreid, NDS_EDM_MISC_DIMIR, 0);
 
 	/* unconditionally try to turn on V3_EDM_MODE */
-	uint32_t edm_ctl_value;
+	uint32_t edm_ctl_value=0;
 	aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CTL, &edm_ctl_value);
-	aice_write_edmsr(coreid, NDS_EDM_SR_EDM_CTL, edm_ctl_value | 0x00000040);
+	if (force_turnon_V3_EDM)
+		edm_ctl_value |= 0x00000040;
+	else
+		edm_ctl_value &= (~0x00000040);
+	aice_write_edmsr(coreid, NDS_EDM_SR_EDM_CTL, edm_ctl_value);
 
+	aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CTL, &edm_ctl_value);
+	printf("aice_edm_init %x %x \n", force_turnon_V3_EDM, edm_ctl_value);
 	/* clear DBGER */
 	aice_write_misc(coreid, NDS_EDM_MISC_DBGER,
 			NDS_DBGER_DPED | NDS_DBGER_CRST | NDS_DBGER_AT_MAX);
@@ -2561,6 +2612,11 @@ static int aice_usb_set_jtag_clock(uint32_t a_clock)
 
 int aice_usb_close(void)
 {
+	for (uint8_t i = 0 ; i < total_num_of_core ; i++) {
+		if (core_info[i].core_state == AICE_TARGET_HALTED)
+			aice_usb_run(i);
+	}
+
 	jtag_libusb_close(aice_handler.usb_handle);
 
 	if (custom_srst_script)
@@ -2836,9 +2892,19 @@ int aice_issue_reset_hold(uint32_t coreid)
 
 	/* set no_dbgi_pin to 0 */
 	uint32_t pin_status;
+	uint32_t value;
+
 	aice_read_ctrl(AICE_READ_CTRL_GET_JTAG_PIN_STATUS, &pin_status);
 	if (pin_status | 0x4)
 		aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_STATUS, pin_status & (~0x4));
+
+	if (aice_usb_set_edm_passcode(coreid, core_info[coreid].edm_passcode) != ERROR_OK)
+		return ERROR_FAIL;
+
+	/* When the last command before RESTART is READ/WRITE_MISC, the chip behavior is not
+	 * expected and subsequent READ/WRITE_MISC fails.
+	 */
+	aice_read_dtr(coreid, &value);
 
 	/* issue restart */
 	if (custom_restart_script == NULL) {
@@ -2851,6 +2917,19 @@ int aice_issue_reset_hold(uint32_t coreid)
 			return ERROR_FAIL;
 	}
 
+	if (aice_check_edmctl(coreid, NDS_EDMCTL_DEH_SEL) != ERROR_OK) {
+		/* When the NDS_EDMCTL_DEH_SEL error is encountered, ice could fall back to
+		 * debug-on-reset emulation by setting EDM_CTL and DIMBR properly, clear DBGER,
+		 * then perform soft-reset-halt.
+		 */
+		uint32_t edm_ctl_value;
+		aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CTL, &edm_ctl_value);
+		aice_write_edmsr(coreid, NDS_EDM_SR_EDM_CTL, edm_ctl_value | NDS_EDMCTL_DEH_SEL);
+		aice_write_edmsr(coreid, NDS_EDM_SR_DIMBR, DIMBR_D4);
+		aice_write_misc(coreid, NDS_EDM_MISC_DBGER,	NDS_DBGER_CLEAR_ALL);
+		goto soft_reset_halt;
+	}
+
 	if (aice_check_dbger(coreid, NDS_DBGER_CRST | NDS_DBGER_DEX) == ERROR_OK) {
 		aice_backup_tmp_registers(coreid);
 		core_info[coreid].core_state = AICE_TARGET_HALTED;
@@ -2859,6 +2938,11 @@ int aice_issue_reset_hold(uint32_t coreid)
 	} else {
 		/* set no_dbgi_pin to 1 */
 		aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_STATUS, pin_status | 0x4);
+
+		if (aice_usb_set_edm_passcode(coreid, core_info[coreid].edm_passcode) != ERROR_OK)
+			return ERROR_FAIL;
+
+		aice_read_dtr(coreid, &value);
 
 		/* issue restart again */
 		if (custom_restart_script == NULL) {
@@ -2874,17 +2958,17 @@ int aice_issue_reset_hold(uint32_t coreid)
 		if (aice_check_dbger(coreid, NDS_DBGER_CRST | NDS_DBGER_DEX) == ERROR_OK) {
 			aice_backup_tmp_registers(coreid);
 			core_info[coreid].core_state = AICE_TARGET_HALTED;
-
 			return ERROR_OK;
 		}
 
+soft_reset_halt:
 		/* do software reset-and-hold */
 		aice_issue_srst(coreid);
 		aice_usb_halt(coreid);
 
 		uint32_t value_ir3;
 		aice_read_reg(coreid, IR3, &value_ir3);
-		aice_write_reg(coreid, PC, value_ir3 & 0xFFFF0000);
+		aice_write_reg(coreid, IR11, value_ir3 & 0xFFFF0000);
 	}
 
 	return ERROR_FAIL;
@@ -2996,8 +3080,8 @@ int aice_usb_run(uint32_t coreid)
 static int aice_usb_step(uint32_t coreid)
 {
 	LOG_DEBUG("aice_usb_step");
-
-	uint32_t ir0_value;
+	long long then = 0;
+	uint32_t ir0_value=0;
 	uint32_t ir0_reg_num;
 
 	if (is_v2_edm(coreid) == true)
@@ -3017,7 +3101,7 @@ static int aice_usb_step(uint32_t coreid)
 	if (ERROR_FAIL == aice_usb_run(coreid))
 		return ERROR_FAIL;
 
-	int i = 0;
+	uint32_t i = 0;
 	enum aice_target_state_s state;
 	while (1) {
 		/* read DBGER */
@@ -3027,15 +3111,14 @@ static int aice_usb_step(uint32_t coreid)
 		if (AICE_TARGET_HALTED == state)
 			break;
 
-		long long then = 0;
-		if (i == 30)
+		if (i == aice_count_to_check_dbger)
 			then = timeval_ms();
 
-		if (i >= 30) {
-			if ((timeval_ms() - then) > 1000)
-				LOG_WARNING("Timeout (1000ms) waiting for halt to complete");
-
-			return ERROR_FAIL;
+		if (i >= aice_count_to_check_dbger) {
+			if ((timeval_ms() - then) > CHK_DBGER_TIMEOUT) {
+				LOG_WARNING("Timeout (5000ms) waiting for halt to complete");
+				return ERROR_FAIL;
+			}
 		}
 		i++;
 	}
@@ -4081,7 +4164,34 @@ end_profiling:
 int aice_usb_makesure_DBGI(uint32_t coreid)
 {
 	uint32_t reason, val_itype, target_is_v2=0;
-	
+	uint32_t value_dbger=0, val_ir0=0;
+	uint32_t instructions[4] = {NOP, NOP, NOP, IRET };
+	int result;
+
+  aice_read_misc(coreid, NDS_EDM_MISC_DBGER, &value_dbger);
+  if (!(value_dbger & NDS_DBGER_DEX))
+  {
+  	/* backup r0 & r1 */
+		aice_backup_tmp_registers(coreid);
+
+  	aice_read_reg(coreid, IR0, &val_ir0);
+
+  	/* restore r0 & r1 */
+		aice_restore_tmp_registers(coreid);
+
+    /* DBGI command is pending when PSW.DEX is set */
+    if(val_ir0 & 0x400) /* read PSW-DEX */
+    {
+      // clear DBGER
+      //aice_write_misc(coreid, NDS_EDM_MISC_DBGER, NDS_DBGER_CLEAR_ALL);
+	  	result = aice_execute_dim(coreid, instructions, 4);
+	  	if(result != ERROR_OK)
+	  	{
+      	printf("aice_usb_makesure_DBGI-nop \n");
+	  	}
+  	}
+  }
+
 	//if ( !( (coreid == 0xC) && (core_info[coreid].edm_version < 0x48) ) )
 	if ((core_info[coreid].edm_version & 0x1000) == 0)
 	{
@@ -4095,7 +4205,7 @@ int aice_usb_makesure_DBGI(uint32_t coreid)
 		aice_backup_tmp_registers(coreid);
 	  /* read PSW-DEX */
 	  //aice_read_reg(coreid, IR0, &val_ir0);
-	  
+
 		/* read reason */
 		//nds32->get_debug_reason(nds32, &reason);
 		if(target_is_v2 == 1)
@@ -4109,26 +4219,20 @@ int aice_usb_makesure_DBGI(uint32_t coreid)
 	    reason = ((val_itype >> 12) & 0x0F);
 	  }
 	  LOG_DEBUG("aice_usb_makesure_DBGI coreid=%x, ver=%x, reason=%x", coreid, core_info[coreid].edm_version, reason);
-	  
+
 	  /* restore r0 & r1 */
 		aice_restore_tmp_registers(coreid);
-		
+
 	  if(reason == 6)  // 6->NDS32_DEBUG_DEBUG_INTERRUPT
 	    break;
-	  
+
 	  /** execute instructions in DIM */
-		uint32_t instructions[4] = {
-			NOP,
-			NOP,
-			NOP,
-			IRET
-		};
-		int result = aice_execute_dim(coreid, instructions, 4);
+		result = aice_execute_dim(coreid, instructions, 4);
 		if(result != ERROR_OK)
 		{
 			LOG_ERROR("aice_execute_dim-fail");
 			return ERROR_FAIL;
 		}
-	
 	}
+	return ERROR_OK;
 }

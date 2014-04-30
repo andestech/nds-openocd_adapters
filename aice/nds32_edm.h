@@ -38,6 +38,7 @@ enum nds_edm_misc_reg {
 };
 
 /* EDM system registers */
+/* Address Encoding of EDM System Register and DIMIR */
 enum nds_edm_system_reg {
 	NDS_EDM_SR_BPC0 = 0x00,
 	NDS_EDM_SR_BPC1,
@@ -110,7 +111,33 @@ enum nds_memory_select {
 #define NDS_DBGER_RESACC	(0x80000000)
 #define NDS_DBGER_CLEAR_ALL	(0x1F)
 
+#define NDS_EDMSW_DETYPE_SHIFT (12)
+
 #define NDS_EDMSW_WDV		(1 << 0)
 #define NDS_EDMSW_RDV		(1 << 1)
+#define NDS_EDMSW_DETYPE    (0xf << NDS_EDMSW_DETYPE_SHIFT)
+
+#define NDS_EDMSW_DETYPE_BREAK      (0)
+#define NDS_EDMSW_DETYPE_BREAK16    (1)
+#define NDS_EDMSW_DETYPE_INSTBP     (2)
+#define NDS_EDMSW_DETYPE_DAWP       (3)
+#define NDS_EDMSW_DETYPE_DVWP       (4)
+#define NDS_EDMSW_DETYPE_DVWPI      (5)
+#define NDS_EDMSW_DETYPE_DBINT      (6)
+#define NDS_EDMSW_DETYPE_HWSIGSTEP  (7)
+#define NDS_EDMSW_DETYPE_DAWPN      (8)
+#define NDS_EDMSW_DETYPE_DVWPN      (9)
+#define NDS_EDMSW_DETYPE_LSINSTGSTP (10)
+
+#define NDS_EDMCTL_DBGIM	(1 << 0)
+#define NDS_EDMCTL_DBGACKM	(1 << 1)
+#define NDS_EDMCTL_LDBGIM	(1 << 2)
+#define NDS_EDMCTL_LDBGACKM	(1 << 3)
+#define NDS_EDMCTL_LDSTOP	(1 << 4)
+#define NDS_EDMCTL_STSTOP	(1 << 5)
+#define NDS_EDMCTL_EDM_MODE	(1 << 6)
+#define NDS_EDMCTL_MAX_STOP	(1 << 29)
+#define NDS_EDMCTL_DEX_USE_PSW	(1 << 30)
+#define NDS_EDMCTL_DEH_SEL	(1 << 31)
 
 #endif /* __NDS32_EDM_H__ */
