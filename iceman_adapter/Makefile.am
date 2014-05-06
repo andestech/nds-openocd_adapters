@@ -40,4 +40,8 @@ else
 ICEman_CFLAGS +=
 endif
 
+ICEman_CFLAGS += -DBUILD_ID=\"$(BUILD_ID)\" \
+	-DBRANCH_NAME=\"$(BRANCH_NAME)\" \
+	-DCOMMIT_ID=\"$(COMMIT_ID)\"
+
 ICEman_LDFLAGS = -all-static

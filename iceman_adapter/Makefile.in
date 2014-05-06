@@ -46,10 +46,7 @@ DIST_COMMON = $(dist_openocd_boardcfg_DATA) $(dist_openocd_cfg_DATA) \
 	$(dist_openocd_targetcfg_DATA) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -128,9 +125,12 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BRANCH_NAME = @BRANCH_NAME@
+BUILD_ID = @BUILD_ID@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+COMMIT_ID = @COMMIT_ID@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -260,7 +260,8 @@ dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl
 ICEman_LDADD = ../aice/libaice.la $(DRIVERLIBS) $(am__append_1) \
 	$(am__append_2)
 ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(DRIVERCFLAGS) \
-	$(am__append_3) $(am__append_4)
+	$(am__append_3) $(am__append_4) -DBUILD_ID=\"$(BUILD_ID)\" \
+	-DBRANCH_NAME=\"$(BRANCH_NAME)\" -DCOMMIT_ID=\"$(COMMIT_ID)\"
 ICEman_LDFLAGS = -all-static
 all: all-am
 

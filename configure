@@ -615,6 +615,9 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+COMMIT_ID
+BRANCH_NAME
+BUILD_ID
 USE_LIBUSB0_FALSE
 USE_LIBUSB0_TRUE
 USE_LIBUSB1_FALSE
@@ -7771,10 +7774,6 @@ _lt_linker_boilerplate=`cat conftest.err`
 $RM -r conftest*
 
 
-## CAVEAT EMPTOR:
-## There is no encapsulation within the following macros, do not change
-## the running order or otherwise move them around unless you know exactly
-## what you are doing...
 if test -n "$compiler"; then
 
 lt_prog_compiler_no_builtin_flag=
@@ -11631,6 +11630,13 @@ else
   USE_LIBUSB0_FALSE=
 fi
 
+
+# Define variables
+BUILD_ID=`date +%Y%m%d%H`
+
+BRANCH_NAME=`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`
+
+COMMIT_ID=`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`
 
 
 ac_config_files="$ac_config_files Makefile aice/Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile"

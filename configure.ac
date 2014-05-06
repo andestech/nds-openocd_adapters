@@ -26,6 +26,10 @@ AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
 AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB0], [test "$use_libusb1" = "no" -a "$use_libusb0" = "yes"])
 
+# Define variables
+AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
+AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`])
+AC_SUBST([COMMIT_ID], [`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`])
 
 AC_CONFIG_FILES([Makefile aice/Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile])
 AC_OUTPUT

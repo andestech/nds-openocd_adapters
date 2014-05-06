@@ -158,6 +158,8 @@ static void show_version(void) {
 }
 
 static void show_srccode_ver(void) {
+	printf("Branch: %s\n", BRANCH_NAME);
+	printf("Commit: %s\n", COMMIT_ID);
 }
 
 static void show_usage(void) {
