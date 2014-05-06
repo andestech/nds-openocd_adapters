@@ -1130,7 +1130,8 @@ static void update_openocd_cfg(void)
 	if (startup_reset_halt)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
 
-	fprintf(openocd_cfg, "nds boot_time %d %d\n", boot_time, reset_time);
+	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
+	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
 
 	if (word_access_mem)
 		fprintf(openocd_cfg, "nds word_access_mem on\n");
