@@ -115,6 +115,7 @@ static char *memory_resume_sequence = NULL;
 static char *edm_port_operations = NULL;
 static const char *edm_port_op_file = NULL;
 static int aice_retry_time = 50;
+static int aice_no_crst_detect = 0;
 static int clock_setting = 9;
 static int debug_level = 2;
 static int boot_code_debug;
@@ -263,7 +264,7 @@ static void parse_param(int a_argc, char **a_argv) {
 				reset_aice_as_startup = 1;
 				break;
 			case 'A': /* no-crst-detect */
-				
+				aice_no_crst_detect = 1;
 				break;
 			case 'b':
 				burner_port = strtol(optarg, NULL, 0);
@@ -1147,6 +1148,7 @@ static void update_interface_cfg(void)
 
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
+	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
 
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);

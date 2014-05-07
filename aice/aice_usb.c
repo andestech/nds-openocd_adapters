@@ -2409,7 +2409,7 @@ int aice_edm_init(uint32_t coreid)
 	aice_write_edmsr(coreid, NDS_EDM_SR_EDM_CTL, edm_ctl_value);
 
 	aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CTL, &edm_ctl_value);
-	printf("aice_edm_init %x %x \n", force_turnon_V3_EDM, edm_ctl_value);
+	//printf("aice_edm_init %x %x \n", force_turnon_V3_EDM, edm_ctl_value);
 	/* clear DBGER */
 	aice_write_misc(coreid, NDS_EDM_MISC_DBGER,
 			NDS_DBGER_DPED | NDS_DBGER_CRST | NDS_DBGER_AT_MAX);
