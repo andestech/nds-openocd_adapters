@@ -15,6 +15,7 @@
 
 #define PORTNUM_BURNER     2354
 #define PORTNUM_TELNET     4444
+#define PORTNUM_TCL        6666
 #define PORTNUM_GDB        1111
 
 #ifdef __MINGW32__
@@ -123,6 +124,7 @@ static int gdb_port[AICE_MAX_NUM_CORE];
 static char *gdb_port_str = NULL;
 static int burner_port = PORTNUM_BURNER;
 static int telnet_port = PORTNUM_TELNET;
+static int tcl_port = PORTNUM_TCL;
 static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
@@ -947,6 +949,7 @@ static void process_openocd_message(void)
 
 	printf("Burner listens on %d\n", burner_port);
 	printf("Telnet port: %d\n", telnet_port);
+	printf("TCL port: %d\n", tcl_port);
 //	printf("core_info[coreid].access_channel = %d\n", core_info[0].access_channel);
 #ifdef __MINGW32__
 	/* ReadFile from pipe is not LINE_BUFFERED. So, we process newline ourselves. */
@@ -1021,7 +1024,8 @@ static void process_openocd_message(void)
 			if ((search_str = strstr(line_buffer, "clock speed")) != NULL) {
 				printf("JTAG frequency %s", search_str + 12);
 				fflush(stdout);
-			} else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
+			} 
+			else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
 				printf("ICEman is ready to use.\n");
 				fflush(stdout);
 				is_ready = 1;
@@ -1121,6 +1125,7 @@ static void update_openocd_cfg(void)
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
+	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
 	if (global_stop)
@@ -1543,8 +1548,13 @@ int main(int argc, char **argv) {
 		printf("telnet port num error\n");
 		goto PROCESS_CLEANUP;
 	}
-	/*printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d .\n", gdb_port[0], burner_port, telnet_port);*/
-	
+	tcl_port = nds32_registry_portnum(tcl_port);
+	if(tcl_port < 0)
+	{
+		printf("tcl port num error\n");
+		goto PROCESS_CLEANUP;
+	}
+	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
 	update_openocd_cfg();
 	update_interface_cfg();
 	update_target_cfg();

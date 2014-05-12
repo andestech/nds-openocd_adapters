@@ -40,6 +40,7 @@ static bool jtag_libusb_match(struct jtag_libusb_device *dev,
 int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 		struct jtag_libusb_device_handle **out)
 {
+	int RetVal;
 	usb_init();
 
 	usb_find_busses();
@@ -55,6 +56,11 @@ int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 			*out = usb_open(dev);
 			if (NULL == *out)
 				return -errno;
+			/* claim usb interface, if fail, search the next device. (for multi-AICEs support) */
+			RetVal = jtag_libusb_claim_interface(*out, 0);
+			//jtag_libusb_release_interface(*out, 0);
+			//printf("<-- jtag_libusb_open devh %x, claim_interface %x -->\n", *out, RetVal);
+			if(RetVal == 0)
 			return 0;
 		}
 	}

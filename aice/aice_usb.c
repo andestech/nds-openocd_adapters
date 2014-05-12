@@ -2148,7 +2148,7 @@ int aice_usb_open(uint16_t vid, uint16_t pid)
 
 	jtag_libusb_reset_device(devh);
 
-#if IS_DARWIN == 0
+#if 0//IS_DARWIN == 0
 
 	int timeout = 5;
 	/* reopen jlink after usb_reset

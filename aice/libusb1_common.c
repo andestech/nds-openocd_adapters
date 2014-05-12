@@ -47,6 +47,7 @@ int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 		struct jtag_libusb_device_handle **out)
 {
 	int cnt, idx, errCode;
+	int RetVal;
 
 	if (libusb_init(&jtag_libusb_context) < 0)
 		return -ENODEV;
@@ -59,16 +60,22 @@ int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 
 		errCode = libusb_open(devs[idx], out);
 
-		/** Free the device list **/
-		libusb_free_device_list(devs, 1);
-
 		if (errCode) {
 			LOG_ERROR("libusb_open() failed with %s",
 				  libusb_error_name(errCode));
 			return errCode;
 		}
-		return 0;
+		/* claim usb interface, if fail, search the next device. (for multi-AICEs support) */
+		RetVal = jtag_libusb_claim_interface(*out, 0);
+		//jtag_libusb_release_interface(*out, 0);
+		if(RetVal == 0) {
+			/** Free the device list **/
+			libusb_free_device_list(devs, 1);
+			return 0;
+		}
 	}
+	/** Free the device list **/
+	libusb_free_device_list(devs, 1);
 	return -ENODEV;
 }
 
