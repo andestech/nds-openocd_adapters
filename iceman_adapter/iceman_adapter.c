@@ -1356,7 +1356,7 @@ int create_burner_adapter(void) {
 	BOOL success;
 	char cmd_string[256];
 
-	sprintf(cmd_string, "./burner_adapter.exe -p %d", burner_port);
+	sprintf(cmd_string, "./burner_adapter.exe -p %d -t %d", burner_port, tcl_port);
 
 	STARTUPINFO burner_start_info;
 
@@ -1381,19 +1381,21 @@ int create_burner_adapter(void) {
 		return -1;
 	}
 #else
-	char *burner_adapter_argv[4] = {0, 0, 0, 0};
+	char *burner_adapter_argv[6] = {0, 0, 0, 0, 0, 0};
 	burner_adapter_pid = fork();
 	if (burner_adapter_pid < 0) {
 		fprintf(stderr, "invoke burner_adapter failed\n");
 		return -1;
 	} else if (burner_adapter_pid == 0) {
 		/* invoke burner adapter */
-		char burner_port_num[12];
+		char burner_port_num[12], tcl_port_num[12];
 		burner_adapter_argv[0] = "burner_adapter";
 		burner_adapter_argv[1] = "-p";
 		sprintf(burner_port_num, "%d", burner_port);
 		burner_adapter_argv[2] = burner_port_num;
-
+		burner_adapter_argv[3] = "-t";
+		sprintf(tcl_port_num, "%d", tcl_port);
+		burner_adapter_argv[4] = tcl_port_num;
 		execv("./burner_adapter", burner_adapter_argv);
 	}
 #endif
