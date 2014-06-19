@@ -225,9 +225,9 @@ static void show_usage(void) {
   printf("-P, --passcode (Only for Secure MPU):\t\tPASSCODE of secure MPU\n");
   printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
   printf("\t\t\t(default: 50 times)\n");
-  printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
   printf("-s, --source:\t\tShow commit ID of this version\n");
   printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
+  printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
   printf("\t\tUsage: --stop-seq A1:D1[:M1],A2:D2[:M2]\n");
   printf("\t\t\t--resume-seq A3:D3[:M3],A2:rst\n");
   printf("\t\t\tA*:address, D*:data, [:M*]:optional mask, rst:restore\n");
@@ -1310,45 +1310,44 @@ static void update_board_cfg(void)
 		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
 	}
 
-	if (stop_sequences_num > 0) {
-		fputs("$_TARGETNAME configure -event halted {\n", board_cfg);
-		fputs("\tnds32.cpu0 nds mem_access bus\n", board_cfg);
-		for (i = 0 ; i < stop_sequences_num ; i++) {
-			int stop_addr, stop_mask, stop_data;
-			stop_addr = stop_sequences[i].address;
-			stop_mask = stop_sequences[i].mask;
-			stop_data = stop_sequences[i].data;
-			fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_addr);
-			fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_addr, stop_addr);
-			fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
-
-			fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
-		}
-		fputs("\tnds32.cpu0 nds mem_access cpu\n", board_cfg);
-		fputs("}\n", board_cfg);
-	}
-
-	if (resume_sequences_num > 0) {
-		fputs("$_TARGETNAME configure -event resumed {\n", board_cfg);
-		fputs("\tnds32.cpu0 nds mem_access bus\n", board_cfg);
-		for (i = 0 ; i < resume_sequences_num ; i++) {
-			int resume_addr, resume_mask, resume_data;
-			resume_addr = resume_sequences[i].address;
-			resume_mask = resume_sequences[i].mask;
-			resume_data = resume_sequences[i].data;
-			if (resume_sequences[i].restore) {
-				fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_addr);
-				fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_addr, resume_addr);
-			} else {
-				fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", resume_addr, resume_addr);
-				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
-				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
+	for (coreid = 0; coreid < total_num_of_core; coreid++) {
+		if (stop_sequences_num > 0) {
+			fprintf(board_cfg, "$_TARGETNAME%d configure -event halted {\n", coreid);
+			fprintf(board_cfg, "\t$_TARGETNAME%d nds mem_access bus\n", coreid);
+			for (i = 0 ; i < stop_sequences_num ; i++) {
+				int stop_addr, stop_mask, stop_data;
+				stop_addr = stop_sequences[i].address;
+				stop_mask = stop_sequences[i].mask;
+				stop_data = stop_sequences[i].data;
+				fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_addr);
+				fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_addr, stop_addr);
+				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
+				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
 			}
+			fprintf(board_cfg, "\t$_TARGETNAME%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
 		}
-		fputs("\tnds32.cpu0 nds mem_access cpu\n", board_cfg);
-		fputs("}\n", board_cfg);
+		if (resume_sequences_num > 0) {
+			fprintf(board_cfg, "$_TARGETNAME%d configure -event resumed {\n", coreid);
+			fprintf(board_cfg, "\t$_TARGETNAME%d nds mem_access bus\n", coreid);
+			for (i = 0 ; i < resume_sequences_num ; i++) {
+				int resume_addr, resume_mask, resume_data;
+				resume_addr = resume_sequences[i].address;
+				resume_mask = resume_sequences[i].mask;
+				resume_data = resume_sequences[i].data;
+				if (resume_sequences[i].restore) {
+					fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_addr);
+					fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_addr, resume_addr);
+				} else {
+					fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", resume_addr, resume_addr);
+					fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
+					fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
+				}
+			}
+			fprintf(board_cfg, "\t$_TARGETNAME%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
+		}
 	}
-
 }
 
 int create_burner_adapter(void) {
