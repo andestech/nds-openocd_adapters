@@ -125,7 +125,7 @@ static char *gdb_port_str = NULL;
 static int burner_port = PORTNUM_BURNER;
 static int telnet_port = PORTNUM_TELNET;
 static int tcl_port = PORTNUM_TCL;
-static int startup_reset_halt;
+static int startup_reset_halt = 0;
 static int soft_reset_halt;
 static int force_debug;
 static int unlimited_log;
@@ -378,7 +378,7 @@ static void parse_param(int a_argc, char **a_argv) {
 					diagnosis_memory = 0;
 				break;
 			case 'X': /* uncnd-reset-hold */
-				
+				startup_reset_halt = 2;
 				break;
 			case 'z':
 				aieconf_desc_list = optarg;
@@ -1145,8 +1145,10 @@ static void update_openocd_cfg(void)
 	else
 		fprintf(openocd_cfg, "nds global_stop off\n");
 
-	if (startup_reset_halt)
+	if (startup_reset_halt == 1)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
+	else if (startup_reset_halt == 2)
+		fprintf(openocd_cfg, "nds reset_halt_as_init uncnd\n");
 
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
 	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
