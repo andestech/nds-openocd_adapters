@@ -118,7 +118,7 @@ static const char *edm_port_op_file = NULL;
 static int aice_retry_time = 50;
 static int aice_no_crst_detect = 0;
 static int clock_setting = 9;
-static int debug_level = 2;
+static int debug_level = 3;
 static int boot_code_debug;
 static int gdb_port[AICE_MAX_NUM_CORE];
 static char *gdb_port_str = NULL;
@@ -1024,12 +1024,23 @@ static void process_openocd_message(void)
 			if ((search_str = strstr(line_buffer, "clock speed")) != NULL) {
 				printf("JTAG frequency %s", search_str + 12);
 				fflush(stdout);
-			} 
-			else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
-				printf("ICEman is ready to use.\n");
-				fflush(stdout);
-				is_ready = 1;
 			}
+			else if (startup_reset_halt) {
+				if (((search_str = strstr(line_buffer, "software reset-and-hold success")) != NULL) ||
+						((search_str = strstr(line_buffer, "hardware reset-and-hold success")) != NULL)) {
+					printf("%s", search_str);
+					fflush(stdout);
+					is_ready = 1;
+				}
+			}
+			else if ((search_str = strstr(line_buffer, "EDM version")) != NULL) {
+				fflush(stdout);
+				if (startup_reset_halt == 0)
+					is_ready = 1;
+			}
+			if (is_ready == 1)
+				printf("ICEman is ready to use.\n");
+
 		} else {
 			 if ((search_str = strstr(line_buffer, "<--")) != NULL) {
 				printf("%s", search_str);
