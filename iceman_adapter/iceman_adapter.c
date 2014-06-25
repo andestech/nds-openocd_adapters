@@ -1042,36 +1042,37 @@ static void process_openocd_message(void)
 				printf("ICEman is ready to use.\n");
 
 		} else {
-			 if ((search_str = strstr(line_buffer, "<--")) != NULL) {
+			if ((search_str = strstr(line_buffer, "<--")) != NULL) {
 				printf("%s", search_str);
 				fflush(stdout);
-			} else {
-				if (unlimited_log) {
-					/* output to debug log */
-					fprintf(debug_log, "%s", line_buffer);
-					fflush(debug_log);
-				} else {
-					line_buffer_len = strlen(line_buffer);
-					log_buffer_remain = LOG_BUFFER_SIZE - log_buffer_start;
-					if (line_buffer_len <= log_buffer_remain) {
-						/* there is enough space for this line */
-						strncpy(log_buffer + log_buffer_start, line_buffer, line_buffer_len);
-						log_buffer_start += line_buffer_len;
-						if (log_buffer_start == LOG_BUFFER_SIZE)
-						{
-							log_buffer_start = 0;
-							is_rewind = 1;
-						}
-					} else {
-						/* split this line into two part */
-						strncpy(log_buffer + log_buffer_start, line_buffer, log_buffer_remain);
-						strncpy(log_buffer, line_buffer + log_buffer_remain, line_buffer_len - log_buffer_remain);
-						log_buffer_start = 0 + line_buffer_len - log_buffer_remain;
-						is_rewind = 1;
-					}
-				}
 			}
 		}
+
+		if (unlimited_log) {
+			/* output to debug log */
+			fprintf(debug_log, "%s", line_buffer);
+			fflush(debug_log);
+		} else {
+			line_buffer_len = strlen(line_buffer);
+			log_buffer_remain = LOG_BUFFER_SIZE - log_buffer_start;
+			if (line_buffer_len <= log_buffer_remain) {
+				/* there is enough space for this line */
+				strncpy(log_buffer + log_buffer_start, line_buffer, line_buffer_len);
+				log_buffer_start += line_buffer_len;
+				if (log_buffer_start == LOG_BUFFER_SIZE)
+				{
+					log_buffer_start = 0;
+					is_rewind = 1;
+				}
+			} else {
+				/* split this line into two part */
+				strncpy(log_buffer + log_buffer_start, line_buffer, log_buffer_remain);
+				strncpy(log_buffer, line_buffer + log_buffer_remain, line_buffer_len - log_buffer_remain);
+				log_buffer_start = 0 + line_buffer_len - log_buffer_remain;
+				is_rewind = 1;
+			}
+		}
+
 #ifdef __MINGW32__
 		line_buffer_index = 0;
 #endif
