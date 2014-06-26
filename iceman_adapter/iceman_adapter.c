@@ -80,6 +80,26 @@ struct option long_option[] = {
 	{0, 0, 0, 0}
 };
 
+const char *aice_clk_string[] = {
+	"30 MHz",
+	"15 MHz",
+	"7.5 MHz",
+	"3.75 MHz",
+	"1.875 MHz",
+	"937.5 KHz",
+	"468.75 KHz",
+	"234.375 KHz",
+	"48 MHz",
+	"24 MHz",
+	"12 MHz",
+	"6 MHz",
+	"3 MHz",
+	"1.5 MHz",
+	"750 KHz",
+	"375 KHz",
+	""
+};
+
 enum TARGET_TYPE {
 	TARGET_V2 = 0,
 	TARGET_V3,
@@ -166,89 +186,77 @@ static void show_srccode_ver(void) {
 }
 
 static void show_usage(void) {
+	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
-  printf("-a, --reset-aice:\tReset AICE as ICEman startup\n");
-  printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
-  printf("-b, --bport:\t\tSocket port number for Burner connection\n");
-  printf("\t\t\t(default: 2354)\n");
-  printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
-  printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
-  printf("\t\tUsage: -c num\n");
-  printf("\t\t\tnum should be the following:\n");
-  printf("\t\t\t0: 30 MHz\n");
-  printf("\t\t\t1: 15 MHz\n");
-  printf("\t\t\t2: 7.5 MHz\n");
-  printf("\t\t\t3: 3.75 MHz\n");
-  printf("\t\t\t4: 1.875 MHz\n");
-  printf("\t\t\t5: 937.5 KHz\n");
-  printf("\t\t\t6: 468.75 KHz\n");
-  printf("\t\t\t7: 234.375 KHz\n");
-  printf("\t\t\t8: 48 MHz\n");
-  printf("\t\t\t9: 24 MHz\n");
-  printf("\t\t\t10: 12 MHz\n");
-  printf("\t\t\t11: 6 MHz\n");
-  printf("\t\t\t12: 3 MHz\n");
-  printf("\t\t\t13: 1.5 MHz\n");
-  printf("\t\t\t14: 750 KHz\n");
-  printf("\t\t\t15: 375 KHz\n");
-  printf("\t\t\tAICE-MCU only supports 8 ~ 15\n\n");
-  printf("-C, --check-times:\tCount/Second to check DBGER\n");
-  printf("\t\t\t(default: 30 times)\n");
-  printf("\t\tExample:\n");
-  printf("\t\t\t1. -C 100 to check 100 times\n");
-  printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
-  printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
-  //printf("-e, --edm-retry:\tRetry count of getting EDM version as ICEman startup\n");
-  printf("-F, --edm-port-file (Only for Secure MPU):\tEDM port0/1 operations file name\n");
-  printf("\t\tFile format:\n");
-  printf("\t\t\twrite_edm 6:0x1234,7:0x1234;\n");
-  printf("\t\t\twrite_edm 6:0x1111;\n");
-  printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
-  //printf("-g, --force-debug: \n");
-  printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
-  printf("-h, --help:\t\tThe usage is for ICEman\n");
-  printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
-  //printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
-  //printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
-  printf("-k, --word-access-mem:\tAlways use word-aligned address to access device\n");
-  printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
-  printf("-l, --custom-srst:\tUse custom script to do SRST\n");
-  printf("-L, --custom-trst:\tUse custom script to do TRST\n");
-  printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
-  //printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
-  printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
-  printf("\t\t\t(default: 1000 milliseconds)\n");
-  printf("-O, --edm-port-operation (Only for Secure MPU): EDM port0/1 operations\n");
-  printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678;\"\n");
-  printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
-  printf("-p, --port:\t\tSocket port number for gdb connection\n");
-  printf("-P, --passcode (Only for Secure MPU):\t\tPASSCODE of secure MPU\n");
-  printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
-  printf("\t\t\t(default: 50 times)\n");
-  printf("-s, --source:\t\tShow commit ID of this version\n");
-  printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
-  printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
-  printf("\t\tUsage: --stop-seq A1:D1[:M1],A2:D2[:M2]\n");
-  printf("\t\t\t--resume-seq A3:D3[:M3],A2:rst\n");
-  printf("\t\t\tA*:address, D*:data, [:M*]:optional mask, rst:restore\n");
-  printf("\t\t\tA*,D*,[M*] should be hex as following example\n\n");
-  printf("\t\tExample: --stop-seq 0x500000:0x80,0x600000:0x20\n");
-  printf("\t\t\t--resume-seq 0x500000:0x80,0x600000:rst\n\n");
-  printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
-  printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
-  printf("\t\t\t(default: 3000 milliseconds)\n");
-  //printf("-u, --update-fw:\tUpdate AICE F/W\n");
-  //printf("-U, --update-fpga:\tUpdate AICE FPGA\n");
-  printf("-v, --version:\t\tVersion of ICEman\n");
-  //printf("-w, --backup-fw:\tBackup AICE F/W\n");
-  //printf("-W, --backup-fpga:\tBackup AICE FPGA\n");
-  printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
-  printf("\t\tUsage: --diagnosis[=address]\n\n");
-  printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
-  printf("-z, --aie-conf :\t\tSpecify aie file on each core\n");
-  printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
-  printf("\t\tUsage: --aie-conf <core#id>=<aie_conf>[,<core#id>=<aie_conf>]*\n");
-  printf("\t\t\tExample: --aie-conf core0=core0.aieconf,core1=core1.aieconf\n");
+	printf("-a, --reset-aice:\tReset AICE as ICEman startup\n");
+	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
+	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
+	printf("\t\t\t(default: 2354)\n");
+	printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
+	printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
+	printf("\t\tUsage: -c num\n");
+	printf("\t\t\tnum should be the following:\n");
+	for (i=0; i<=15; i++)
+		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
+
+	printf("\t\t\tAICE-MCU only supports 8 ~ 15\n\n");
+	printf("-C, --check-times:\tCount/Second to check DBGER\n");
+	printf("\t\t\t(default: 30 times)\n");
+	printf("\t\tExample:\n");
+	printf("\t\t\t1. -C 100 to check 100 times\n");
+	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
+	printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
+	//printf("-e, --edm-retry:\tRetry count of getting EDM version as ICEman startup\n");
+	printf("-F, --edm-port-file (Only for Secure MPU):\tEDM port0/1 operations file name\n");
+	printf("\t\tFile format:\n");
+	printf("\t\t\twrite_edm 6:0x1234,7:0x1234;\n");
+	printf("\t\t\twrite_edm 6:0x1111;\n");
+	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
+	//printf("-g, --force-debug: \n");
+	printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
+	printf("-h, --help:\t\tThe usage is for ICEman\n");
+	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
+	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
+	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
+	printf("-k, --word-access-mem:\tAlways use word-aligned address to access device\n");
+	printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
+	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
+	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
+	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
+	//printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
+	printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
+	printf("\t\t\t(default: 1000 milliseconds)\n");
+	printf("-O, --edm-port-operation (Only for Secure MPU): EDM port0/1 operations\n");
+	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678;\"\n");
+	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
+	printf("-p, --port:\t\tSocket port number for gdb connection\n");
+	printf("-P, --passcode (Only for Secure MPU):\t\tPASSCODE of secure MPU\n");
+	printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
+	printf("\t\t\t(default: 50 times)\n");
+	printf("-s, --source:\t\tShow commit ID of this version\n");
+	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
+	printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
+	printf("\t\tUsage: --stop-seq A1:D1[:M1],A2:D2[:M2]\n");
+	printf("\t\t\t--resume-seq A3:D3[:M3],A2:rst\n");
+	printf("\t\t\tA*:address, D*:data, [:M*]:optional mask, rst:restore\n");
+	printf("\t\t\tA*,D*,[M*] should be hex as following example\n\n");
+	printf("\t\tExample: --stop-seq 0x500000:0x80,0x600000:0x20\n");
+	printf("\t\t\t--resume-seq 0x500000:0x80,0x600000:rst\n\n");
+	printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
+	printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
+	printf("\t\t\t(default: 3000 milliseconds)\n");
+	//printf("-u, --update-fw:\tUpdate AICE F/W\n");
+	//printf("-U, --update-fpga:\tUpdate AICE FPGA\n");
+	printf("-v, --version:\t\tVersion of ICEman\n");
+	//printf("-w, --backup-fw:\tBackup AICE F/W\n");
+	//printf("-W, --backup-fpga:\tBackup AICE FPGA\n");
+	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
+	printf("\t\tUsage: --diagnosis[=address]\n\n");
+	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
+	printf("-z, --aie-conf :\t\tSpecify aie file on each core\n");
+	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
+	printf("\t\tUsage: --aie-conf <core#id>=<aie_conf>[,<core#id>=<aie_conf>]*\n");
+	printf("\t\t\tExample: --aie-conf core0=core0.aieconf,core1=core1.aieconf\n");
 }
 
 static void parse_param(int a_argc, char **a_argv) {
@@ -925,6 +933,7 @@ static void process_openocd_message(void)
 	int is_ready = 0;
 	unsigned int line_buffer_len, log_buffer_remain;
 	int coreid;
+	int clock_index = 0;
 
 	if (unlimited_log) {
 		debug_log =  fopen("iceman_debug.log", "w+");
@@ -1021,9 +1030,17 @@ static void process_openocd_message(void)
 		}
 #endif
 		if (is_ready == 0) {
-			if ((search_str = strstr(line_buffer, "clock speed")) != NULL) {
-				printf("JTAG frequency %s", search_str + 12);
-				fflush(stdout);
+			if ((search_str = strstr(line_buffer, "AICE-clock-index")) != NULL) {
+				sscanf(search_str + 17, "%d", &clock_index);
+				if (clock_index < 0) {
+					printf("JTAG frequency %s cannot be correctly set.\n", aice_clk_string[clock_setting]);
+					fflush(stdout);
+					return;
+				}
+				else {
+					printf("JTAG frequency %s\n", aice_clk_string[clock_setting]);
+					fflush(stdout);
+				}
 			}
 			else if (startup_reset_halt) {
 				if (((search_str = strstr(line_buffer, "software reset-and-hold success")) != NULL) ||
