@@ -2128,7 +2128,7 @@ int aice_usb_open(uint16_t vid, uint16_t pid)
 {
 	const uint16_t vids[] = { vid, 0 };
 	const uint16_t pids[] = { pid, 0 };
-	struct jtag_libusb_device_handle *devh;
+	struct jtag_libusb_device_handle *devh = NULL;
 
 	if (jtag_libusb_open(vids, pids, &devh) != ERROR_OK)
 		return ERROR_FAIL;
@@ -2144,12 +2144,13 @@ int aice_usb_open(uint16_t vid, uint16_t pid)
 	 * committing them!
 	 */
 
-#ifndef __MINGW32__
-
+#if !defined(__MINGW32__) && !defined(__CYGWIN__)
 	jtag_libusb_reset_device(devh);
 
-#if 0//IS_DARWIN == 0
+#if IS_DARWIN == 0
 
+	if (devh)
+		jtag_libusb_close(devh);
 	int timeout = 5;
 	/* reopen jlink after usb_reset
 	 * on win32 this may take a second or two to re-enumerate */
