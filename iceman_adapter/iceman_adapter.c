@@ -174,6 +174,7 @@ extern int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode);
 extern int aice_usb_set_edm_passcode(uint32_t coreid, char *edm_passcode);
 extern int aice_select_target(uint32_t address, uint32_t data);
 extern int aice_reset_aice_as_startup(void);
+extern int aice_usb_set_count_to_check_dbger(uint32_t count_to_check);
 int aice_usb_set_edm_operations_passcode(uint32_t coreid);
 static void parse_edm_operation(const char *edm_operation);
 //extern int force_turnon_V3_EDM;
@@ -268,6 +269,8 @@ static void parse_param(int a_argc, char **a_argv) {
 		int c = 0;
 		int option_index;
 		int optarg_len;
+		char tmpchar = 0;
+		uint32_t ms_check_dbger = 0;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
 		if (c == EOF)
@@ -297,6 +300,11 @@ static void parse_param(int a_argc, char **a_argv) {
 				optarg_len = strlen(optarg);
 				count_to_check_dbger = malloc(optarg_len + 1);
 				memcpy(count_to_check_dbger, optarg, optarg_len + 1);
+				sscanf(count_to_check_dbger, "%u%c", &ms_check_dbger, &tmpchar);
+				if (tmpchar == 's' || tmpchar == 'S')
+					ms_check_dbger *= 1000;
+				aice_usb_set_count_to_check_dbger(ms_check_dbger);
+				//printf("aice_count_to_check_dbger %d \n", ms_check_dbger);
 				break;
 			case 'd':
 				debug_level = strtol(optarg, NULL, 0);

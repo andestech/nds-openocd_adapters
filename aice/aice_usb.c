@@ -1771,8 +1771,8 @@ static uint8_t total_num_of_core;
 static char *custom_srst_script;
 static char *custom_trst_script;
 static char *custom_restart_script;
-static uint32_t aice_count_to_check_dbger = 30;
-static uint32_t aice_count_to_check_edmctl = 30;
+static uint32_t aice_count_to_check_dbger = CHK_DBGER_TIMEOUT;
+static uint32_t aice_count_to_check_edmctl = CHK_EDMCTL_TIMEOUT;
 
 int aice_read_reg(uint32_t coreid, uint32_t num, uint32_t *val);
 int aice_write_reg(uint32_t coreid, uint32_t num, uint32_t val);
@@ -1848,15 +1848,12 @@ static int aice_check_dbger(uint32_t coreid, uint32_t expect_status)
 			return ERROR_OK;
 		}
 
-		if ((i % 30) == 0)
-			keep_alive();
-
-		if (i == aice_count_to_check_dbger)
+		if (i == 0)
 			then = timeval_ms();
-		if (i >= aice_count_to_check_dbger) {
-			if ((timeval_ms() - then) > CHK_DBGER_TIMEOUT) {
-				LOG_ERROR("Timeout (5000ms) waiting for $DBGER status "
-						"being 0x%08x", expect_status);
+		else {
+			if ((timeval_ms() - then) > aice_count_to_check_dbger) {
+				LOG_ERROR("Timeout (%dms) waiting for $DBGER status "
+						"being 0x%08x", aice_count_to_check_dbger, expect_status);
 				if ((expect_status & NDS_DBGER_CRST) && !(value_dbger & NDS_DBGER_CRST))
 					LOG_ERROR("nSRST did not happen or TRST was	triggered unexpectedly");
 				if ((expect_status & NDS_DBGER_DEX) && !(value_dbger & NDS_DBGER_DEX))
@@ -1864,10 +1861,7 @@ static int aice_check_dbger(uint32_t coreid, uint32_t expect_status)
 				return ERROR_FAIL;
 			}
 		}
-
-		//if (retry_by_second)
-			alive_sleep(1000);
-
+		alive_sleep(1);
 		i++;
 	}
 
@@ -1886,20 +1880,18 @@ static int aice_check_edmctl(uint32_t coreid, uint32_t expect_status)
 		if ((edm_ctl_value & expect_status) == expect_status)
 			return ERROR_OK;
 
-		if ((i % 30) == 0)
-			keep_alive();
-
-		if (i == aice_count_to_check_edmctl)
+		if (i == 0)
 			then = timeval_ms();
-		if (i >= aice_count_to_check_edmctl) {
-			if ((timeval_ms() - then) > CHK_EDMCTL_TIMEOUT) {
-				LOG_ERROR("Timeout (5000ms) waiting for $EDMCTL status "
-						"being 0x%08x", expect_status);
+		else {
+			if ((timeval_ms() - then) > aice_count_to_check_edmctl) {
+				LOG_ERROR("Timeout (%dms) waiting for $EDMCTL status "
+						"being 0x%08x", aice_count_to_check_edmctl, expect_status);
 				if ((expect_status & NDS_EDMCTL_DEH_SEL) && !(edm_ctl_value & NDS_EDMCTL_DEH_SEL))
 					LOG_ERROR("debug memory is not activated");
 				return ERROR_FAIL;
 			}
 		}
+		alive_sleep(1);
 		i++;
 	}
 
@@ -3117,15 +3109,15 @@ static int aice_usb_step(uint32_t coreid)
 		if (AICE_TARGET_HALTED == state)
 			break;
 
-		if (i == aice_count_to_check_dbger)
+		if (i == 0)
 			then = timeval_ms();
-
-		if (i >= aice_count_to_check_dbger) {
-			if ((timeval_ms() - then) > CHK_DBGER_TIMEOUT) {
-				LOG_WARNING("Timeout (5000ms) waiting for halt to complete");
+		else {
+			if ((timeval_ms() - then) > aice_count_to_check_dbger) {
+				LOG_WARNING("Timeout (%dms) waiting for halt to complete", aice_count_to_check_dbger);
 				return ERROR_FAIL;
 			}
 		}
+		alive_sleep(1);
 		i++;
 	}
 
@@ -3990,7 +3982,7 @@ static int aice_usb_set_custom_restart_script(const char *script)
 	return ERROR_OK;
 }
 
-static int aice_usb_set_count_to_check_dbger(uint32_t count_to_check)
+int aice_usb_set_count_to_check_dbger(uint32_t count_to_check)
 {
 	aice_count_to_check_dbger = count_to_check;
 
@@ -4272,6 +4264,7 @@ int aice_reset_aice_as_startup(void)
 
 int aice_usb_check_DBGSPL(uint32_t coreid)
 {
+	long long then = 0;
 	uint32_t value_edmsw = 0, value_dbger = 0, i = 0;
 	/* check Security Privilege Level (DBGSPL) */
 	aice_read_edmsr(coreid, NDS_EDM_SR_EDMSW, &value_edmsw);
@@ -4283,10 +4276,13 @@ int aice_usb_check_DBGSPL(uint32_t coreid)
 		if ((value_dbger & NDS_DBGER_DEX) == NDS_DBGER_DEX) {
 			return ERROR_OK;
 		}
-		if (i >= aice_count_to_check_dbger) {
+		if (i == 0)
+			then = timeval_ms();
+		else {
+			if ((timeval_ms() - then) > aice_count_to_check_dbger)
 				return ERROR_FAIL;
 		}
-		alive_sleep(1000);
+		alive_sleep(1);
 		i++;
 	}
 	return ERROR_FAIL;
