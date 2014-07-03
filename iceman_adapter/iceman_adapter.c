@@ -18,6 +18,8 @@
 #define PORTNUM_TCL        6666
 #define PORTNUM_GDB        1111
 
+#define LINE_BUFFER_SIZE 2048
+
 #ifdef __MINGW32__
 # include <windows.h>
 # include <process.h>
@@ -172,6 +174,8 @@ extern int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode);
 extern int aice_usb_set_edm_passcode(uint32_t coreid, char *edm_passcode);
 extern int aice_select_target(uint32_t address, uint32_t data);
 extern int aice_reset_aice_as_startup(void);
+int aice_usb_set_edm_operations_passcode(uint32_t coreid);
+static void parse_edm_operation(const char *edm_operation);
 //extern int force_turnon_V3_EDM;
 //extern char *BRANCH_NAME, *COMMIT_ID;
 
@@ -421,7 +425,7 @@ int aice_edm_init(uint32_t coreid);
 int aice_usb_halt(uint32_t coreid);
 int aice_usb_run(uint32_t coreid);
 
-static void target_probe(void)
+static int target_probe(void)
 {
 	uint16_t vid = 0x1CFC;
 	uint16_t pid = 0x0;
@@ -430,13 +434,13 @@ static void target_probe(void)
 	uint32_t coreid = 0;
 
 	if (target_type[0] != TARGET_INVALID)
-		return;
+		return ERROR_FAIL;
 
 	nds32_reg_init ();
 
 	if (ERROR_OK != aice_usb_open(vid, pid)) {
 		printf("<-- Can not open usb -->\n");
-		return;
+		return ERROR_FAIL;
 	}
 	if (reset_aice_as_startup == 1) {
 		aice_reset_aice_as_startup();
@@ -444,7 +448,7 @@ static void target_probe(void)
 
 	if (ERROR_OK != aice_usb_idcode(&id_codes[0], &total_num_of_core)){
 		printf("<-- scan target error -->\n");
-		return;
+		return ERROR_FAIL;
 	}
 
 	/* clear timeout status */
@@ -453,10 +457,27 @@ static void target_probe(void)
 	if(edm_passcode)
 		aice_usb_set_edm_passcode(0, edm_passcode);
 
+	/* login edm operations */
+	char line_buffer[LINE_BUFFER_SIZE];
+	FILE *edm_operation_fd = NULL;
+	if (edm_port_op_file != NULL)
+		edm_operation_fd = fopen(edm_port_op_file, "r");
+	if (edm_operation_fd != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd) != NULL) {
+			parse_edm_operation(line_buffer);
+		}
+		fclose(edm_operation_fd);
+	}
+	if (edm_port_operations) {
+		parse_edm_operation(edm_port_operations);
+	}
+	if (edm_operations_num)
+		aice_usb_set_edm_operations_passcode(0);
+
 	for (coreid = 0; coreid < total_num_of_core; coreid++){
 		if (ERROR_OK != aice_read_edmsr(coreid, NDS_EDM_SR_EDM_CFG, &value_edmcfg)) {
 			printf("<-- Can not read EDMSR -->\n");
-			return;
+			return ERROR_FAIL;
 		}
 
 		version = (value_edmcfg >> 16) & 0xFFFF;
@@ -469,11 +490,11 @@ static void target_probe(void)
 
 			if (ERROR_OK != aice_usb_halt(coreid)) {
 				printf("<-- Can not halt cpu -->\n");
-				return;
+				return ERROR_FAIL;
 			}
 			if (ERROR_OK != aice_usb_read_reg(coreid, CR4, &value_cr4)) {
 				printf("<-- Can not read register -->\n");
-				return;
+				return ERROR_FAIL;
 			}
 			if ((value_cr4 & 0x100000) == 0x100000) {
 				target_type[coreid] = TARGET_V3m;
@@ -482,11 +503,12 @@ static void target_probe(void)
 			}
 			if (ERROR_OK != aice_usb_run(coreid)) {
 				printf("<-- Can not release cpu -->\n");
-				return;
+				return ERROR_FAIL;
 			}
 		}
 	}
 	aice_usb_close();
+	return ERROR_OK;
 }
 
 int aice_usb_set_clock(int set_clock);
@@ -711,7 +733,6 @@ static void do_diagnosis(void){
 	  aice_usb_close();
 }
 
-#define LINE_BUFFER_SIZE 2048
 
 static char *clock_hz[] = {
 	"30000",
@@ -1552,7 +1573,8 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	target_probe();
+	if (target_probe() != ERROR_OK)
+		goto PROCESS_CLEANUP;
 	open_config_files();
 
 	/* prepare all valid port num */
@@ -1623,4 +1645,14 @@ PROCESS_CLEANUP:
 #endif
 
 	return 0;
+}
+
+int aice_usb_set_edm_operations_passcode(uint32_t coreid)
+{
+	int i;
+	for (i = 0 ; i < edm_operations_num ; i++) {
+		if (aice_write_misc(coreid,	edm_operations[i].reg_no, edm_operations[i].data) != ERROR_OK)
+			return ERROR_FAIL;
+	}
+	return ERROR_OK;
 }
