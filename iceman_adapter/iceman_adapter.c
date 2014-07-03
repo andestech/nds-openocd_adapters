@@ -1055,9 +1055,10 @@ static void process_openocd_message(void)
 				if (startup_reset_halt == 0)
 					is_ready = 1;
 			}
-			if (is_ready == 1)
+			if (is_ready == 1) {
 				printf("ICEman is ready to use.\n");
-
+				fflush(stdout);
+			}
 		} else {
 			if ((search_str = strstr(line_buffer, "<--")) != NULL) {
 				printf("%s", search_str);
