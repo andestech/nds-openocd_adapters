@@ -489,7 +489,10 @@ static int target_probe(void)
 			/* halt cpu to check whether cpu belongs to mcu not */
 
 			if (ERROR_OK != aice_usb_halt(coreid)) {
-				printf("<-- Can not halt cpu -->\n");
+				if ((edm_passcode) || (edm_operations_num))
+					printf("<-- Can not halt cpu or invalid passcode -->\n");
+				else
+					printf("<-- Can not halt cpu -->\n");
 				return ERROR_FAIL;
 			}
 			if (ERROR_OK != aice_usb_read_reg(coreid, CR4, &value_cr4)) {

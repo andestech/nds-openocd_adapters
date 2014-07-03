@@ -47,6 +47,7 @@ static enum aice_target_endian data_endian;
 int aice_usb_run(uint32_t coreid);
 int aice_usb_makesure_DBGI(uint32_t coreid);
 int aice_reset_aice_as_startup(void);
+int aice_usb_check_DBGSPL(uint32_t coreid);
 /***************************************************************************/
 /* AICE commands' pack/unpack functions */
 static void aice_pack_htda(uint8_t cmd_code, uint8_t extra_word_length,
@@ -2708,7 +2709,10 @@ int aice_usb_halt(uint32_t coreid)
 		if (dbger & NDS_DBGER_AT_MAX)
 			aice_write_misc(coreid, NDS_EDM_MISC_DBGER, NDS_DBGER_AT_MAX);
 	}
-  /* FixBug - Can not halt cpu */
+	/* check Security Privilege Level (DBGSPL) */
+	if (aice_usb_check_DBGSPL(coreid) != ERROR_OK)
+		return ERROR_FAIL;
+	/* FixBug - Can not halt cpu */
 	aice_usb_makesure_DBGI(coreid);
 	
 	if (aice_check_dbger(coreid, NDS_DBGER_DEX) != ERROR_OK) {
@@ -4264,4 +4268,26 @@ int aice_reset_aice_as_startup(void)
 	if (ret != 1)
 		return ERROR_FAIL;
 	return ERROR_OK;
+}
+
+int aice_usb_check_DBGSPL(uint32_t coreid)
+{
+	uint32_t value_edmsw = 0, value_dbger = 0, i = 0;
+	/* check Security Privilege Level (DBGSPL) */
+	aice_read_edmsr(coreid, NDS_EDM_SR_EDMSW, &value_edmsw);
+	if ((value_edmsw & 0x30000) == 0)
+		return ERROR_OK;
+
+	while (1) {
+		aice_read_misc(coreid, NDS_EDM_MISC_DBGER, &value_dbger);
+		if ((value_dbger & NDS_DBGER_DEX) == NDS_DBGER_DEX) {
+			return ERROR_OK;
+		}
+		if (i >= aice_count_to_check_dbger) {
+				return ERROR_FAIL;
+		}
+		alive_sleep(1000);
+		i++;
+	}
+	return ERROR_FAIL;
 }
