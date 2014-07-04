@@ -4287,3 +4287,61 @@ int aice_usb_check_DBGSPL(uint32_t coreid)
 	}
 	return ERROR_FAIL;
 }
+
+static const int NDS32_LM_SIZE_TABLE[16] = {
+	4 * 1024,
+	8 * 1024,
+	16 * 1024,
+	32 * 1024,
+	64 * 1024,
+	128 * 1024,
+	256 * 1024,
+	512 * 1024,
+	1024 * 1024,
+	1 * 1024,
+	2 * 1024,
+	0,
+	0,
+	0,
+	0,
+	0
+};
+
+int nds32_select_memory_mode(uint32_t aice, uint32_t address, uint32_t length)
+{
+	uint32_t dlm_start, dlm_end;
+	uint32_t ilm_start, ilm_end;
+	uint32_t address_end = address + length, value = 0, size_index = 0;
+	uint32_t value_mr6 = 0, value_mr7 = 0;
+
+	if (core_info[aice].access_channel == NDS_MEMORY_ACC_CPU)
+		return ERROR_OK;
+
+	/* check if ILMB exists & enable */
+	aice_read_reg(aice, CR1, &value);
+	aice_read_reg(aice, MR6, &value_mr6);
+	if (((value >> 10) & 0x7) && (value_mr6 & 0x01)) {
+		size_index = (value_mr6 >> 1) & 0xF;
+		ilm_start = (value_mr6 & 0xFFFFFC00);
+		ilm_end = ilm_start + NDS32_LM_SIZE_TABLE[size_index];
+		if ((ilm_start <= address) && (address < ilm_end)) {
+			aice_usb_memory_mode(aice, NDS_MEMORY_SELECT_ILM);
+			return ERROR_OK;
+		}
+	}
+
+	/* check if DLMB exists & enable */
+	aice_read_reg(aice, CR2, &value);
+	aice_read_reg(aice, MR7, &value_mr7);
+	if (((value >> 10) & 0x7) && (value_mr7 & 0x01)) {
+		size_index = (value_mr7 >> 1) & 0xF;
+		dlm_start = (value_mr7 & 0xFFFFFC00);
+		dlm_end = dlm_start + NDS32_LM_SIZE_TABLE[size_index];
+		if ((dlm_start <= address) && (address < dlm_end)) {
+			aice_usb_memory_mode(aice, NDS_MEMORY_SELECT_DLM);
+			return ERROR_OK;
+		}
+	}
+	aice_usb_memory_mode(aice, NDS_MEMORY_SELECT_MEM);
+	return ERROR_OK;
+}

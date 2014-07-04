@@ -179,7 +179,7 @@ int aice_usb_set_edm_operations_passcode(uint32_t coreid);
 static void parse_edm_operation(const char *edm_operation);
 //extern int force_turnon_V3_EDM;
 //extern char *BRANCH_NAME, *COMMIT_ID;
-
+extern int nds32_select_memory_mode(uint32_t aice, uint32_t address, uint32_t length);
 static void show_version(void) {
 	printf("Andes ICEman v3.0.0 (openocd)\n");
 	printf("Copyright (C) 2007-2013 Andes Technology Corporation\n");
@@ -704,10 +704,28 @@ static void do_diagnosis(void){
 		aice_write_reg(selected_core, R0, backup_value);
 
 		if(diagnosis_memory){
+			aice_read_reg(selected_core, CR1, &value);
+			if ((value >> 10) & 0x7) { /* ILMB exists */
+				aice_read_reg(selected_core, MR6, &backup_value);
+				backup_value |= 0x01;
+				aice_write_reg(selected_core, MR6, backup_value);
+				//aice_read_reg(selected_core, MR6, &backup_value);
+				//printf("MR6-value %x\n", backup_value);
+			}
+
+			aice_read_reg(selected_core, CR2, &value);
+			if ((value >> 10) & 0x7) { /* DLMB exists */
+				aice_read_reg(selected_core, MR7, &backup_value);
+				backup_value |= 0x01;
+				aice_write_reg(selected_core, MR7, backup_value);
+				//aice_read_reg(selected_core, MR7, &backup_value);
+				//printf("MR7-value %x\n", backup_value);
+			}
 			/* 9. Test direct memory access (bus view) confirm BUS working */
 			last_fail_item = CONFIRM_MEMORY_ON_BUS;
 			test_memory_value = rand();
 			aice_usb_memory_access(selected_core, NDS_MEMORY_ACC_BUS);
+			nds32_select_memory_mode(selected_core, diagnosis_address, 1);
 			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
 			aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &test_memory_value);
 			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &memory_value);
@@ -718,6 +736,7 @@ static void do_diagnosis(void){
 			last_fail_item = CONFIRM_MEMORY_ON_CPU;
 			test_memory_value = rand();
 			aice_usb_memory_access(selected_core, NDS_MEMORY_ACC_CPU);
+			nds32_select_memory_mode(selected_core, diagnosis_address, 1);
 			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &backup_memory_value);
 			aice_usb_write_memory_unit(selected_core, diagnosis_address, 1, 1, &test_memory_value);
 			aice_usb_read_memory_unit(selected_core, diagnosis_address, 1, 1, &memory_value);
