@@ -7,7 +7,7 @@
 jtag newtap $_CHIPNAME cpu<_TARGETID> -expected-id $_CPUTAPID
 
 set _TARGETNAME<_TARGETID> $_CHIPNAME.cpu<_TARGETID>
-target create $_TARGETNAME<_TARGETID> nds32_<_TARGET_ARCH> -endian little -chain-position $_TARGETNAME<_TARGETID> -coreid <_TARGETID> -variant $_AIE_CONF
+target create $_TARGETNAME<_TARGETID> nds32_<_TARGET_ARCH> -endian little -chain-position $_TARGETNAME<_TARGETID> -coreid <_TARGETID> -variant $_ACE_CONF
 
 set connected<_TARGETID> 0
 

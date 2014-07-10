@@ -77,7 +77,7 @@ struct option long_option[] = {
 	{"version", no_argument, 0, 'v'},
 	{"diagnosis", optional_argument, 0, 'x'},
 	{"uncnd-reset-hold", no_argument, 0, 'X'},
-	{"aie-conf", required_argument, 0, 'z'},
+	{"ace-conf", required_argument, 0, 'z'},
 	{"target", required_argument, 0, 'Z'},
 	{0, 0, 0, 0}
 };
@@ -162,7 +162,7 @@ static char *edm_passcode = NULL;
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
 static const char *custom_restart_script = NULL;
-static const char *aieconf_desc_list = NULL;
+static const char *aceconf_desc_list = NULL;
 static int diagnosis = 0;
 static int diagnosis_memory = 0;
 static unsigned int diagnosis_address = 0;
@@ -258,10 +258,10 @@ static void show_usage(void) {
 	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
-	printf("-z, --aie-conf :\t\tSpecify aie file on each core\n");
+	printf("-z, --ace-conf :\t\tSpecify ACE file on each core\n");
+	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
+	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
-	printf("\t\tUsage: --aie-conf <core#id>=<aie_conf>[,<core#id>=<aie_conf>]*\n");
-	printf("\t\t\tExample: --aie-conf core0=core0.aieconf,core1=core1.aieconf\n");
 }
 
 static void parse_param(int a_argc, char **a_argv) {
@@ -401,7 +401,7 @@ static void parse_param(int a_argc, char **a_argv) {
 				startup_reset_halt = 2;
 				break;
 			case 'z':
-				aieconf_desc_list = optarg;
+				aceconf_desc_list = optarg;
 				break;
 			case 'Z':
 				optarg_len = strlen(optarg);
@@ -1277,15 +1277,15 @@ static void update_target_cfg(void)
 	}
 }
 
-#define MAX_LEN_AIECONF_NAME 2048
+#define MAX_LEN_ACECONF_NAME 2048
 #define TOSTR(x)	#x
 #define XTOSTR(x)	TOSTR(x)
 static void update_board_cfg(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
-	const char *aieconf_desc;
+	const char *aceconf_desc;
 	unsigned int core_id =0, read_byte = 0;
-	char aieconf[MAX_LEN_AIECONF_NAME + 1];
+	char aceconf[MAX_LEN_ACECONF_NAME + 1];
 	int ret;
 	int coreid;
 
@@ -1321,29 +1321,29 @@ static void update_board_cfg(void)
 			} else {
 				strcpy(line_buffer, "nds soft_reset_halt off\n");
 			}
-		} else if ((find_pos = strstr(line_buffer, "--aie-conf")) != NULL) {
-			strcpy(line_buffer, "set _AIE_CONF \"\"\n");
-			if (aieconf_desc_list) {
-				aieconf_desc = aieconf_desc_list;
+		} else if ((find_pos = strstr(line_buffer, "--ace-conf")) != NULL) {
+			strcpy(line_buffer, "set _ACE_CONF \"\"\n");
+			if (aceconf_desc_list) {
+				aceconf_desc = aceconf_desc_list;
 				while (1) {
-					aieconf[0] = '\0';
+					aceconf[0] = '\0';
 					core_id = 0;
 					ret = 0;
 
-					ret = sscanf(aieconf_desc, "core%u=%" XTOSTR(MAX_LEN_AIECONF_NAME) "[^,]%n",
-									&core_id, aieconf, &read_byte);
+					ret = sscanf(aceconf_desc, "core%u=%" XTOSTR(MAX_LEN_ACECONF_NAME) "[^,]%n",
+									&core_id, aceconf, &read_byte);
 					if (ret != 2) {
-						printf("<-- Can not parse --aie-conf argument '%s'\n. -->", aieconf_desc);
+						printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
 						break;
 					}
 
 					/* TODO: support multi core */
-					sprintf(line_buffer, "set _AIE_CONF %s\n", aieconf);
-					aieconf_desc += read_byte;	/* aieconf points to ',' or '\0' */
-					if (*aieconf_desc == '\0')
+					sprintf(line_buffer, "set _ACE_CONF %s\n", aceconf);
+					aceconf_desc += read_byte;	/* aceconf points to ',' or '\0' */
+					if (*aceconf_desc == '\0')
 						break;
 					else
-						aieconf_desc += 1;	/* point to the one next to ',' */
+						aceconf_desc += 1;	/* point to the one next to ',' */
 				}
 			}
 		}

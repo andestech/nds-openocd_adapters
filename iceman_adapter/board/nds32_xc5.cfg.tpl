@@ -1,6 +1,6 @@
 set _CPUTAPID 0x1000063d
 set _CHIPNAME nds32
-#--aie-conf
+#--ace-conf
 #--target
 
 jtag init
