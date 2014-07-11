@@ -264,7 +264,7 @@ static void show_usage(void) {
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
 }
 
-static void parse_param(int a_argc, char **a_argv) {
+static int parse_param(int a_argc, char **a_argv) {
 	while(1) {
 		int c = 0;
 		int option_index;
@@ -291,10 +291,11 @@ static void parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'c':
 				clock_setting = strtol(optarg, NULL, 0);
-				if (clock_setting < 0)
-					clock_setting = 0;
-				if (15 < clock_setting)
-					clock_setting = 15;
+				if ((clock_setting < 0) ||
+					(clock_setting > 15)) {
+					printf("-c %d is an invalid option, the valid range for '-c' is 0-15.\n", clock_setting);
+					return ERROR_FAIL;
+				}
 				break;
 			case 'C':
 				optarg_len = strlen(optarg);
@@ -426,6 +427,7 @@ static void parse_param(int a_argc, char **a_argv) {
 	if (optind < a_argc) {
 		printf("<-- Unknown argument: %s -->\n", a_argv[optind]);
 	}
+	return ERROR_OK;
 }
 
 int aice_usb_read_reg(uint32_t coreid, uint32_t num, uint32_t *val);
@@ -1596,7 +1598,9 @@ int create_openocd(void) {
 
 int main(int argc, char **argv) {
 	int i;
-	parse_param(argc, argv);
+
+	if (parse_param(argc, argv) != ERROR_OK)
+		goto PROCESS_CLEANUP;
 
 	if(diagnosis){
 		do_diagnosis();
