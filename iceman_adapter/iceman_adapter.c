@@ -197,7 +197,7 @@ static void show_usage(void) {
 	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
-	printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
+	//printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
 	printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
