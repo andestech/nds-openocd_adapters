@@ -41,7 +41,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx:Xz:Z::";
+const char *opt_string = "aAb:Bc:C:d:DF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx:Xz:Z:";
 struct option long_option[] = {
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -206,7 +206,7 @@ static void show_usage(void) {
 
 	printf("\t\t\tAICE-MCU only supports 8 ~ 15\n\n");
 	printf("-C, --check-times:\tCount/Second to check DBGER\n");
-	printf("\t\t\t(default: 30 times)\n");
+	printf("\t\t\t(default: 300 times)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 times\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
@@ -444,7 +444,7 @@ static int target_probe(void)
 	uint32_t coreid = 0;
 
 	if (target_type[0] != TARGET_INVALID)
-		return ERROR_FAIL;
+		return ERROR_OK;
 
 	nds32_reg_init ();
 
@@ -1243,7 +1243,7 @@ static void update_interface_cfg(void)
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);
 	else
-		fprintf(interface_cfg, "aice count_to_check_dbger 30\n");
+		fprintf(interface_cfg, "aice count_to_check_dbger 300\n");
 
 	/* custom srst/trst/restart scripts */
 	if (custom_srst_script) {
