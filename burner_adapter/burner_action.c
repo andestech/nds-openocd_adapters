@@ -6,7 +6,7 @@
 static const char *command_string[TARGET_CMD_NUMBER] =
 {
 	"",
-	"reset run\x1a",
+	"nds32.cpu0 nds test reset\x1a",  //"reset run\x1a",
 	"reset halt\x1a",
 	"halt\x1a",
 	"mem2array tcl_data 32 0x%08x 1\x1a",
