@@ -181,7 +181,7 @@ static void parse_edm_operation(const char *edm_operation);
 //extern char *BRANCH_NAME, *COMMIT_ID;
 extern int nds32_select_memory_mode(uint32_t aice, uint32_t address, uint32_t length);
 static void show_version(void) {
-	printf("Andes ICEman v3.0.0 (openocd) BUILD_ID: %s\n", BUILD_ID);
+	printf("Andes ICEman v3.0.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
 	printf("Copyright (C) 2007-2014 Andes Technology Corporation\n");
 }
 
