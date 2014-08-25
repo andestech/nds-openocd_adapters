@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <getopt.h>
 #include <signal.h>
 #include "aice_port.h"
@@ -12,6 +11,7 @@
 #include "nds32_reg.h"
 #include "nds32_insn.h"
 #include "log.h"
+#include "aice_usb_helper.h"
 
 #define PORTNUM_BURNER     2354
 #define PORTNUM_TELNET     4444
@@ -953,6 +953,22 @@ static void sig_int(int UNUSED(signo))
 
 	exit(0);
 }
+#ifndef STILL_ACTIVE
+    #define STILL_ACTIVE	259
+#endif
+
+int process_query(void)
+{
+	BOOL success;
+	DWORD dwExitCode=0;
+	success = GetExitCodeProcess(openocd_proc_info.hProcess, &dwExitCode);
+	if ((dwExitCode != STILL_ACTIVE) || (!success)) {
+	    //printf("process_query failed!! %x \n", dwExitCode);
+	    return ERROR_FAIL;
+	}
+	return ERROR_OK;
+}
+
 #else
 static void sig_pipe(int UNUSED(signo))
 {
@@ -1019,7 +1035,6 @@ static void process_openocd_message(void)
 	char buffer[LINE_BUFFER_SIZE+2];
 	char *newline_pos;
 	DWORD line_buffer_index;
-	long long unprocessed_len;
 	char *unprocessed_buf;
 
 	/* init unprocessed buffer */
@@ -1033,10 +1048,8 @@ static void process_openocd_message(void)
 	}
 	buffer[had_read] = '\0';
 	unprocessed_buf = buffer;
-	unprocessed_len = had_read;
 	line_buffer_index = 0;
 
-	/*while (unprocessed_len >= 0) {*/
 	while (1) {
 		/* find '\n' */
 		newline_pos = strchr(unprocessed_buf, '\n');
@@ -1051,6 +1064,8 @@ static void process_openocd_message(void)
 			}
 			while(1)
 			{
+				if (process_query() != ERROR_OK)
+					return;
 			  if (ReadFile(adapter_pipe_input[0], buffer, LINE_BUFFER_SIZE, &had_read, NULL) != 0)
 			  {
 			    if(had_read > 0)
@@ -1059,7 +1074,6 @@ static void process_openocd_message(void)
 			}
 			buffer[had_read] = '\0';
 			unprocessed_buf = buffer;
-			unprocessed_len = had_read;
 			continue;
 		} else {
 			/* found '\n', copy substring before '\n' to line_buffer */
@@ -1072,15 +1086,19 @@ static void process_openocd_message(void)
 
 			/* update unprocessed_buf */
 			unprocessed_buf = newline_pos + 1;
-			unprocessed_len = (buffer + had_read) - unprocessed_buf;
 		}
 #else
 	/*while (fgets(line_buffer, LINE_BUFFER_SIZE, stdin) != NULL) {*/
+	int retry_times;
 	while (1) {
 		while (fgets(line_buffer, LINE_BUFFER_SIZE, stdin) == NULL)
 		{
-			;
+			retry_times ++;
+			if (retry_times >= 300)
+				return;
+			alive_sleep(10);
 		}
+		retry_times = 0;
 #endif
 		if (is_ready == 0) {
 			if ((search_str = strstr(line_buffer, "AICE-clock-index")) != NULL) {
