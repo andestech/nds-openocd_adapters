@@ -1257,7 +1257,7 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
-
+	fprintf(interface_cfg, "aice burner_port %d\n", burner_port);
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);
 	else
@@ -1452,7 +1452,7 @@ static void update_board_cfg(void)
 		}
 	}
 }
-
+#if 0
 int create_burner_adapter(void) {
 #ifdef __MINGW32__
 	BOOL success;
@@ -1503,7 +1503,7 @@ int create_burner_adapter(void) {
 #endif
 	return 0;
 }
-
+#endif
 int create_openocd(void) {
 #ifdef __MINGW32__
 	BOOL success;
@@ -1671,8 +1671,8 @@ int main(int argc, char **argv) {
 	close_config_files();
 
 	/* create processes */
-	if (create_burner_adapter() < 0)
-		return -1;
+	//if (create_burner_adapter() < 0)
+	//	return -1;
 
 	if (create_openocd() < 0)
 		goto PROCESS_CLEANUP;
