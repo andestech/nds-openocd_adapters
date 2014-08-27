@@ -1221,6 +1221,20 @@ static int aice_usb_icache_va_inval (uint32_t address)
 	return aice_execute_dim (instructions, 4);
 }
 
+static int aice_usb_isync (uint32_t address)
+{
+	log_add (LOG_DEBUG, "--<aice_usb_isync>\n");
+	uint32_t instructions[4];
+
+	aice_write_dtr (current_target_id, address);
+	instructions[0] = MFSR_DTR(R0);
+	instructions[1] = ISYNC(R0);
+	instructions[2] = ISB;
+	instructions[3] = BEQ_MINUS_12;
+
+	return aice_execute_dim (instructions, 4);
+}
+
 static int aice_usb_init_cache (void)
 {
 	log_add (LOG_DEBUG, "--<aice_usb_init_cache>\n");
@@ -1296,6 +1310,9 @@ static int aice_usb_cache_ctl (uint32_t sub_type, uint32_t address)
 			break;
 		case AICE_CACHE_CTL_L1I_VA_INVAL:
 			result = aice_usb_icache_va_inval (address);
+			break;
+		case AICE_CACHE_CTL_LOOPCACHE_ISYNC:
+			result = aice_usb_isync (address);
 			break;
 		default:
 			result = ERROR_FAIL;

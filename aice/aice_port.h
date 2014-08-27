@@ -102,6 +102,7 @@ enum aice_cache_ctl_type {
 	AICE_CACHE_CTL_L1D_VA_WB,
 	AICE_CACHE_CTL_L1I_INVALALL,
 	AICE_CACHE_CTL_L1I_VA_INVAL,
+	AICE_CACHE_CTL_LOOPCACHE_ISYNC,
 };
 
 enum aice_command_mode {
