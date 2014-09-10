@@ -41,7 +41,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx:Xz:Z:";
+const char *opt_string = "aAb:Bc:C:d:DF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx::Xz:Z:";
 struct option long_option[] = {
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
