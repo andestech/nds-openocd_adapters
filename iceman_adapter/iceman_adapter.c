@@ -139,7 +139,7 @@ static char *edm_port_operations = NULL;
 static const char *edm_port_op_file = NULL;
 static int aice_retry_time = 50;
 static int aice_no_crst_detect = 0;
-static int clock_setting = 9;
+static int clock_setting = 16;
 static int debug_level = 3;
 static int boot_code_debug;
 static int gdb_port[AICE_MAX_NUM_CORE];
@@ -783,6 +783,7 @@ static char *clock_hz[] = {
 	"1500",
 	"750",
 	"375",
+	"0",
 };
 
 static FILE *openocd_cfg_tpl;
@@ -1109,7 +1110,7 @@ static void process_openocd_message(void)
 					return;
 				}
 				else {
-					printf("JTAG frequency %s\n", aice_clk_string[clock_setting]);
+					printf("JTAG frequency %s\n", aice_clk_string[clock_index]);
 					fflush(stdout);
 				}
 			}
