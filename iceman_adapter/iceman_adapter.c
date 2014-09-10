@@ -1211,6 +1211,7 @@ static void update_gdb_port_num(void)
 		}
 	}else{
 		gdb_port[0] = PORTNUM_GDB;
+		port_num = 1;
 	}
 	if (port_num < total_num_of_core)
 		total_num_of_core = port_num;
