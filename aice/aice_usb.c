@@ -2390,7 +2390,9 @@ int aice_usb_set_edm_passcode(uint32_t coreid, char *edm_passcode)
 
 int aice_edm_init(uint32_t coreid)
 {
-	aice_write_edmsr(coreid, NDS_EDM_SR_DIMBR, 0xFFFF0000);
+	if (aice_write_edmsr(coreid, NDS_EDM_SR_DIMBR, 0xFFFF0000) != ERROR_OK)
+		return ERROR_FAIL;
+
 	aice_write_misc(coreid, NDS_EDM_MISC_DIMIR, 0);
 
 	/* unconditionally try to turn on V3_EDM_MODE */
@@ -2643,11 +2645,13 @@ int aice_usb_idcode(uint32_t *idcode, uint8_t *num_of_idcode)
 	if (ERROR_OK == retval) {
 		for (int i = 0; i < *num_of_idcode; i++) {
 			aice_core_init(i);
-			aice_edm_init(i);
+			if (aice_edm_init(i) != ERROR_OK) {
+				printf("<-- aice_edm_init error -->\n");
+				return ERROR_FAIL;
+			}
 		}
 		total_num_of_core = *num_of_idcode;
 	}
-
 	return retval;
 }
 

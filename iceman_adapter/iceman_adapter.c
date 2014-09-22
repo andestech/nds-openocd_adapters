@@ -457,6 +457,15 @@ static int target_probe(void)
 	}
 
 	if (ERROR_OK != aice_usb_idcode(&id_codes[0], &total_num_of_core)){
+		if (startup_reset_halt != 0) {
+			// if with option 'X' or 'H', do reset hold
+			total_num_of_core = 1;
+			target_type[coreid] = TARGET_V3m;
+			aice_usb_close();
+			startup_reset_halt = 2;  // uncnd-reset-hold
+			return ERROR_OK;
+		}
+		else
 		printf("<-- scan target error -->\n");
 		return ERROR_FAIL;
 	}
