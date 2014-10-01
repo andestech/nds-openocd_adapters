@@ -79,8 +79,8 @@ int prepare_connect(int port_num) {
 		return ESOCKET;
 
 	/* Allow rapid reuse of this port. */
-	socklen_t optval = 1;
-	setsockopt(host_descriptor, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
+	//socklen_t optval = 1;
+	//setsockopt(host_descriptor, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
 
 #ifdef SOCKET_NONBLOCK
 	int oldopts = fcntl(host_descriptor, F_GETFL, 0);
