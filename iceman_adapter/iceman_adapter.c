@@ -435,6 +435,10 @@ int aice_edm_init(uint32_t coreid);
 int aice_usb_halt(uint32_t coreid);
 int aice_usb_run(uint32_t coreid);
 
+uint32_t aice_hardware_version = 0;
+uint32_t aice_firmware_version = 0;
+uint32_t aice_fpga_version = 0;
+
 static int target_probe(void)
 {
 	uint16_t vid = 0x1CFC;
@@ -529,6 +533,10 @@ static int target_probe(void)
 			}
 		}
 	}
+	aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &aice_hardware_version);
+	aice_read_ctrl(AICE_READ_CTRL_GET_FIRMWARE_VERSION, &aice_firmware_version);
+	aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &aice_fpga_version);
+
 	aice_usb_close();
 	return ERROR_OK;
 }
@@ -1004,6 +1012,12 @@ static void sig_int(int UNUSED(signo))
 }
 #endif
 
+const char *AICE_DEVICE_TYPE[3]={
+	"AICE",
+	"AICE-MCU",
+	"AICE-MINI",
+};
+
 static void process_openocd_message(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE+2];
@@ -1024,7 +1038,18 @@ static void process_openocd_message(void)
 		log_buffer = (char *)malloc(sizeof(char) * LOG_BUFFER_SIZE);
 	}
 
-	printf("Andes ICEman V3.0.0 (OpenOCD)\n");
+	printf("Andes ICEman v3.0.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
+	unsigned int version_idx = 0;
+	char *version_str;
+
+	if (aice_hardware_version & 0x10000)       // AICE MCU
+		version_idx = 1;
+	else if (aice_hardware_version & 0x20000)  // AICE MINI
+		version_idx = 2;
+
+	version_str = (char *)AICE_DEVICE_TYPE[version_idx];
+	printf ("%s version: hw_ver = 0x%x, fw_ver = 0x%x, fpga_ver = 0x%x\n",
+		version_str, aice_hardware_version, aice_firmware_version, aice_fpga_version);
 	printf("There are %d cores in target\n", total_num_of_core);
 
 	for(coreid = 0; coreid < total_num_of_core; coreid++){
