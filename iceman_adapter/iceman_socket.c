@@ -64,7 +64,7 @@ int close_host(SOCKET host_descriptor) {
 }
 
 #else
-
+extern void close(int);
 #ifdef SOCKET_NONBLOCK
 #include <fcntl.h>
 #endif

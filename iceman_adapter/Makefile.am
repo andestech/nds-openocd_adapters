@@ -25,15 +25,16 @@ DRIVERLIBS = $(LIBUSB1_LIBS)
 DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 endif
 
-ICEman_LDADD = ../aice/libaice.la $(DRIVERLIBS)
+ICEman_LDADD = $(DRIVERLIBS)
 if BUILD_MINGW_BINARY
 ICEman_LDADD += -lwsock32
 else
-ICEman_LDADD +=
+ICEman_LDADD += -ldl
 endif
 
 
-ICEman_CFLAGS = -I$(srcdir)/../aice -Wall -Wextra $(DRIVERCFLAGS)
+ICEman_CFLAGS = -Wall -Wextra $(DRIVERCFLAGS)
+# ICEman_CFLAGS += -I$(srcdir)/../../openocd-0.8.0/src -I$(srcdir)/../../openocd-0.8.0/src/target
 if BUILD_MINGW_BINARY
 ICEman_CFLAGS += -DCYG
 else
@@ -44,4 +45,7 @@ ICEman_CFLAGS += -DBUILD_ID=\"$(BUILD_ID)\" \
 	-DBRANCH_NAME=\"$(BRANCH_NAME)\" \
 	-DCOMMIT_ID=\"$(COMMIT_ID)\"
 
-ICEman_LDFLAGS = -all-static
+#ICEman_LDFLAGS = -all-static
+#ICEman_LDFLAGS += ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
+
+ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
