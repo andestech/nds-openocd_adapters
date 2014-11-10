@@ -33,7 +33,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx::Xz:Z:";
+const char *opt_string = "aAb:Bc:C:d:DeF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx::Xz:Z:";
 struct option long_option[] = {
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -42,7 +42,8 @@ struct option long_option[] = {
 	{"clock", required_argument, 0, 'c'},
 	{"check-times", required_argument, 0, 'C'},
 	{"debug", required_argument, 0, 'd'},
-	{"unlimited-log", no_argument, 0, 'D'},
+	{"larger-logfile", no_argument, 0, 'D'},
+	{"unlimited-log", no_argument, 0, 'e'},
 	//{"edmv2", no_argument, 0, 'E'},
 	{"edm-port-file", required_argument, 0, 'F'},
 	{"force-debug", no_argument, 0, 'g'},
@@ -143,7 +144,7 @@ static int tcl_port = PORTNUM_TCL;
 static int startup_reset_halt = 0;
 static int soft_reset_halt;
 static int force_debug;
-//static int unlimited_log = 0;
+static unsigned int log_file_size = 0x100000;
 static int boot_time = 3000;
 static int reset_time = 1000;
 static int reset_aice_as_startup = 0;
@@ -196,7 +197,8 @@ static void show_usage(void) {
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 times\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
-	printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
+	//printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
+	printf("-D, --larger-logfile:\tThe maximum size of the log file is 1MBx2. The size is increased to 512MBx2 with this option.\n");
 	//printf("-e, --edm-retry:\tRetry count of getting EDM version as ICEman startup\n");
 	printf("-F, --edm-port-file (Only for Secure MPU):\tEDM port0/1 operations file name\n");
 	printf("\t\tFile format:\n");
@@ -297,7 +299,8 @@ static int parse_param(int a_argc, char **a_argv) {
 				debug_level = strtol(optarg, NULL, 0);
 				break;
 			case 'D':
-				//unlimited_log = 1;
+			case 'e':
+				log_file_size = 0x20000000;
 				debug_level = 3;
 				break;
 			/*case 'E':
@@ -614,8 +617,10 @@ static void update_openocd_cfg(void)
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
-	fprintf(openocd_cfg, "log_output iceman_debug.log\n");
+	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
+	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
+
 	if (global_stop)
 		fprintf(openocd_cfg, "nds global_stop on\n");
 	else
