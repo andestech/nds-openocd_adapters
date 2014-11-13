@@ -152,7 +152,6 @@ static char *count_to_check_dbger = NULL;
 static int global_stop;
 static int word_access_mem;
 static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_V3};
-static char *edm_passcode = NULL;
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
 static const char *custom_restart_script = NULL;
@@ -166,6 +165,7 @@ static void parse_edm_operation(const char *edm_operation);
 //extern int force_turnon_V3_EDM;
 //extern char *BRANCH_NAME, *COMMIT_ID;
 extern int openocd_main(int argc, char *argv[]);
+extern char *nds32_edm_passcode_init;
 
 static void show_version(void) {
 	printf("Andes ICEman v3.0.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
@@ -349,8 +349,8 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'P':
 				optarg_len = strlen(optarg);
-				edm_passcode = malloc(optarg_len + 1);
-				memcpy(edm_passcode, optarg, optarg_len + 1);
+				nds32_edm_passcode_init = malloc(optarg_len + 1);
+				memcpy(nds32_edm_passcode_init, optarg, optarg_len + 1);
 				break;
 			case 'r':
 				aice_retry_time = strtol(optarg, NULL, 0);
@@ -647,7 +647,7 @@ static void update_interface_cfg(void)
 		fputs(line_buffer, interface_cfg);
 
 	if (diagnosis)
-		fprintf(interface_cfg, "aice diagnosis %x %x\n", diagnosis_memory, diagnosis_address);
+		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
@@ -722,12 +722,6 @@ static void update_board_cfg(void)
 					exit(0);
 				}
 				sprintf(line_buffer, target_str, coreid);
-			}
-		} else if ((find_pos = strstr(line_buffer, "--edm-passcode")) != NULL) {
-			if (edm_passcode != NULL) {
-				sprintf(line_buffer, "nds login_edm_passcode %s\n", edm_passcode);
-			} else {
-				strcpy(line_buffer, "\n");
 			}
 		} else if ((find_pos = strstr(line_buffer, "--soft-reset-halt")) != NULL) {
 			if (soft_reset_halt) {
