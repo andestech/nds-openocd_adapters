@@ -145,7 +145,7 @@ static int startup_reset_halt = 0;
 static int soft_reset_halt;
 static int force_debug;
 static unsigned int log_file_size = 0x100000;
-static int boot_time = 3000;
+static int boot_time = 5000;
 static int reset_time = 1000;
 static int reset_aice_as_startup = 0;
 static char *count_to_check_dbger = NULL;
@@ -237,7 +237,7 @@ static void show_usage(void) {
 	printf("\t\t\t--resume-seq 0x500000:0x80,0x600000:rst\n\n");
 	printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
 	printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
-	printf("\t\t\t(default: 3000 milliseconds)\n");
+	printf("\t\t\t(default: 5000 milliseconds)\n");
 	//printf("-u, --update-fw:\tUpdate AICE F/W\n");
 	//printf("-U, --update-fpga:\tUpdate AICE FPGA\n");
 	printf("-v, --version:\t\tVersion of ICEman\n");
