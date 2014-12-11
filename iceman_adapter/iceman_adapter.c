@@ -589,21 +589,32 @@ char *str_replace ( const char *string, const char *substr, const char *replacem
 
 static void update_gdb_port_num(void)
 {
-	int port_num = 0;
+	int port_num=1, port_id=PORTNUM_GDB;
+	int port_id_start=0, port_id_end=0, i;
+	char *port_str;
 
 	if(gdb_port_str) {
-		char *port = strtok(gdb_port_str, ":");
-		while (port != NULL) {
-			gdb_port[port_num] = strtol(port, NULL, 0);
-			port = strtok (NULL, ":");
-			port_num++;
+		port_str = strtok(gdb_port_str, ":");
+		if (port_str != NULL) {
+			port_id_start = strtol(port_str, NULL, 0);
+			port_id = port_id_start;
+			port_str = strtok (NULL, ":");
+			if (port_str != NULL)
+				port_id_end = strtol(port_str, NULL, 0);
+
+			if (port_id_end > port_id_start) {
+				port_num = (port_id_end - port_id_start) + 1;
+				if (port_num > AICE_MAX_NUM_CORE)
+					port_num = AICE_MAX_NUM_CORE;
+			}
 		}
-	}else{
-		gdb_port[0] = PORTNUM_GDB;
-		port_num = 1;
 	}
-	if (port_num < total_num_of_core)
-		total_num_of_core = port_num;
+	total_num_of_core = port_num;
+	for (i=0; i<port_num; i++){
+		gdb_port[i] = port_id;
+		port_id++;
+	}
+	//printf("total_num_of_core %x, gdb_port=%x\n", total_num_of_core, gdb_port[0]);
 }
 
 static void update_openocd_cfg(void)
@@ -651,7 +662,8 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
-	fprintf(interface_cfg, "aice burner_port %d\n", burner_port);
+	fprintf(interface_cfg, "aice burner_port %d %d %d\n", burner_port, gdb_port[0], total_num_of_core);
+
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);
 	else
@@ -845,6 +857,8 @@ int main(int argc, char **argv) {
 	int i;
 	char *openocd_argv[6] = {0, 0, 0, 0, 0, 0};
 
+	for(i = 0; i < AICE_MAX_NUM_CORE; i++)
+		target_type[i] = TARGET_V3;
 	if (parse_param(argc, argv) != ERROR_OK)
 		return 0;
 #if 0
@@ -857,10 +871,9 @@ int main(int argc, char **argv) {
 		return 0;
 #endif
 
-	open_config_files();
-
 	/* prepare all valid port num */
 	update_gdb_port_num();
+	open_config_files();
 
 	for(i = 0; i < total_num_of_core; i++)
 	{
@@ -892,9 +905,6 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	printf("Andes ICEman v3.0.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
-	for(i = 0; i < total_num_of_core; i++){
-		printf("The core #%d listens on %d.\n", i, gdb_port[i]);
-	}
 	printf("Burner listens on %d\n", burner_port);
 	printf("Telnet port: %d\n", telnet_port);
 	printf("TCL port: %d\n", tcl_port);
