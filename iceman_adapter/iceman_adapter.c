@@ -193,7 +193,7 @@ static void show_usage(void) {
 
 	printf("\t\t\tAICE-MCU only supports 8 ~ 15\n\n");
 	printf("-C, --check-times:\tCount/Second to check DBGER\n");
-	printf("\t\t\t(default: 300 times)\n");
+	printf("\t\t\t(default: 500 times)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 times\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
@@ -667,7 +667,7 @@ static void update_interface_cfg(void)
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);
 	else
-		fprintf(interface_cfg, "aice count_to_check_dbger 300\n");
+		fprintf(interface_cfg, "aice count_to_check_dbger 500\n");
 
 	/* custom srst/trst/restart scripts */
 	if (custom_srst_script) {
