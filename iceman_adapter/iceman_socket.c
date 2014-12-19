@@ -112,9 +112,18 @@ int close_host(int host_descriptor) {
 }
 #endif
 
-#define MAX_REGISTRY_NUMS  8
+#define MAX_REGISTRY_NUMS  64
 int registry_port_num[MAX_REGISTRY_NUMS]={0,0,0,0,0,0,0,0};
 unsigned int registry_port_index=0;
+
+int nds32_registry_portnum_without_bind(int port_num)
+{
+	registry_port_num[registry_port_index] = port_num;
+	if(registry_port_index >= MAX_REGISTRY_NUMS)
+		return -1;
+	registry_port_index++;
+	return 0;
+}
 
 int nds32_registry_portnum(int port_num) {
 	unsigned int retry_time, retry_port_num=MAX_RETRY, i, not_registry;

@@ -13,6 +13,7 @@
 #endif
 
 #define AICE_MAX_NUM_CORE  (0x10)
+#define AICE_MAX_NUM_PORTS 32
 
 #define PORTNUM_BURNER     2354
 #define PORTNUM_TELNET     4444
@@ -136,7 +137,7 @@ static int aice_no_crst_detect = 0;
 static int clock_setting = 16;
 static int debug_level = 3;
 static int boot_code_debug;
-static int gdb_port[AICE_MAX_NUM_CORE];
+static int gdb_port[AICE_MAX_NUM_PORTS];
 static char *gdb_port_str = NULL;
 static int burner_port = PORTNUM_BURNER;
 static int telnet_port = PORTNUM_TELNET;
@@ -159,7 +160,8 @@ static const char *aceconf_desc_list = NULL;
 static int diagnosis = 0;
 static int diagnosis_memory = 0;
 static unsigned int diagnosis_address = 0;
-static uint8_t total_num_of_core = 1;
+static uint8_t total_num_of_ports = 1;
+extern int nds32_registry_portnum_without_bind(int port_num);
 extern int nds32_registry_portnum(int port_num);
 static void parse_edm_operation(const char *edm_operation);
 //extern int force_turnon_V3_EDM;
@@ -344,7 +346,8 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'p':
 				optarg_len = strlen(optarg);
-				gdb_port_str = malloc(AICE_MAX_NUM_CORE * 6);
+				//gdb_port_str = malloc(AICE_MAX_NUM_CORE * 6);
+				gdb_port_str = malloc(optarg_len + 1);
 				memcpy(gdb_port_str, optarg, optarg_len + 1);
 				break;
 			case 'P':
@@ -447,7 +450,8 @@ static FILE *board_cfg_tpl;
 static FILE *board_cfg;
 static FILE *target_cfg_tpl;
 static FILE *target_cfg[AICE_MAX_NUM_CORE];
-
+char target_cfg_name[64];
+char *target_cfg_name_str = (char *)&target_cfg_name[0];
 static void open_config_files(void) {
 	openocd_cfg_tpl = fopen("openocd.cfg.tpl", "r");
 	openocd_cfg = fopen("openocd.cfg", "w");
@@ -476,7 +480,7 @@ static void open_config_files(void) {
 	char *target_str = NULL;
 	char line_buffer[LINE_BUFFER_SIZE];
 
-	for (coreid = 0; coreid < total_num_of_core; coreid++){
+	for (coreid = 0; coreid < 1; coreid++){
 		if (target_type[coreid] == TARGET_V3) {
 			target_str = "target/nds32v3_%d.cfg";
 		} else if (target_type[coreid] == TARGET_V2) {
@@ -487,6 +491,7 @@ static void open_config_files(void) {
 			fprintf(stderr, "No target specified\n");
 			exit(0);
 		}
+		sprintf(target_cfg_name_str, target_str, coreid);
 		sprintf(line_buffer, target_str, coreid);
 		target_cfg[coreid] = fopen(line_buffer, "w");
 	}
@@ -501,7 +506,7 @@ static void close_config_files(void) {
 	fclose(interface_cfg);
 	fclose(board_cfg_tpl);
 	fclose(board_cfg);
-	for (coreid = 0; coreid < total_num_of_core; coreid ++)
+	for (coreid = 0; coreid < 1; coreid ++)
 		fclose(target_cfg[coreid]);
 }
 
@@ -589,7 +594,7 @@ char *str_replace ( const char *string, const char *substr, const char *replacem
 
 static void update_gdb_port_num(void)
 {
-	int port_num=1, port_id=PORTNUM_GDB;
+	int port_num=AICE_MAX_NUM_PORTS, port_id=PORTNUM_GDB;
 	int port_id_start=0, port_id_end=0, i;
 	char *port_str;
 
@@ -602,19 +607,19 @@ static void update_gdb_port_num(void)
 			if (port_str != NULL)
 				port_id_end = strtol(port_str, NULL, 0);
 
-			if (port_id_end > port_id_start) {
+			if (port_id_end >= port_id_start) {
 				port_num = (port_id_end - port_id_start) + 1;
-				if (port_num > AICE_MAX_NUM_CORE)
-					port_num = AICE_MAX_NUM_CORE;
+				if (port_num > AICE_MAX_NUM_PORTS)
+					port_num = AICE_MAX_NUM_PORTS;
 			}
 		}
 	}
-	total_num_of_core = port_num;
+	total_num_of_ports = port_num;
 	for (i=0; i<port_num; i++){
 		gdb_port[i] = port_id;
 		port_id++;
 	}
-	//printf("total_num_of_core %x, gdb_port=%x\n", total_num_of_core, gdb_port[0]);
+	//printf("total_num_of_ports %x, gdb_port=%x\n", total_num_of_ports, gdb_port[0]);
 }
 
 static void update_openocd_cfg(void)
@@ -662,7 +667,7 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
-	fprintf(interface_cfg, "aice burner_port %d %d %d\n", burner_port, gdb_port[0], total_num_of_core);
+	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
 
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);
@@ -689,7 +694,8 @@ static void update_target_cfg(void)
 	int coreid;
 	char *arch_str[3] = {"v2", "v3", "v3m"};
 	char coreid_str[3];
-	for (coreid = 0; coreid < total_num_of_core; coreid ++){
+
+	for (coreid = 0; coreid < 1; coreid ++){
 		fseek(target_cfg_tpl, 0, SEEK_SET);
 		sprintf(coreid_str, "%d", coreid);
 		while (fgets(line_buffer, LINE_BUFFER_SIZE, target_cfg_tpl) != NULL){
@@ -720,7 +726,7 @@ static void update_board_cfg(void)
 	char *target_str = NULL;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
-			for (coreid = 0; coreid < total_num_of_core; coreid++){
+			for (coreid = 0; coreid < 1; coreid++){
 				if(target_str)
 					fputs(line_buffer, board_cfg);
 				if (target_type[coreid] == TARGET_V3) {
@@ -813,7 +819,7 @@ static void update_board_cfg(void)
 		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
 	}
 
-	for (coreid = 0; coreid < total_num_of_core; coreid++) {
+	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
 			fprintf(board_cfg, "$_TARGETNAME%d configure -event halted {\n", coreid);
 			fprintf(board_cfg, "\t$_TARGETNAME%d nds mem_access bus\n", coreid);
@@ -875,14 +881,9 @@ int main(int argc, char **argv) {
 	update_gdb_port_num();
 	open_config_files();
 
-	for(i = 0; i < total_num_of_core; i++)
+	for(i = 0; i < total_num_of_ports; i++)
 	{
-	  gdb_port[i] = nds32_registry_portnum(gdb_port[i]);
-	  if(gdb_port[i] < 0)
-		{
-			printf("gdb port num error\n");
-			return 0;
-		}
+	  nds32_registry_portnum_without_bind(gdb_port[i]);
 	}
 
 	burner_port = nds32_registry_portnum(burner_port);

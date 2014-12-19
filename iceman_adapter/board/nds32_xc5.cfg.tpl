@@ -1,9 +1,9 @@
 set _CPUTAPID 0x1000063d
 set _CHIPNAME nds32
 #--ace-conf
+jtag init
 #--target
 
-jtag init
 #--edm-passcode
 #--soft-reset-halt
 
