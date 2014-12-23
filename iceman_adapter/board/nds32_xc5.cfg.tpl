@@ -6,6 +6,10 @@ jtag init
 
 #--edm-passcode
 #--soft-reset-halt
+nds reset_memAccSize
+nds memAccSize 0x00000000 0x80000000 32
+nds memAccSize 0x80000000 0x100000000 32
+nds memAccSize 0x00000000 0x800000 32
 
 proc dma_mww {args} {
 	nds mem_access bus
