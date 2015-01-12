@@ -1,8 +1,11 @@
 AC_INIT([openocd_adapter], [1.0], [hkwang@andestech.com])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
+AC_LANG_C
 AC_PROG_CC
+AC_PROG_CC_C99
 AM_PROG_CC_C_O
+AM_PROG_AR
 
 LT_INIT
 
@@ -31,5 +34,5 @@ AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
 AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`])
 AC_SUBST([COMMIT_ID], [`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`])
 
-AC_CONFIG_FILES([Makefile aice/Makefile aice_adapter/Makefile burner_adapter/Makefile iceman_adapter/Makefile])
+AC_CONFIG_FILES([Makefile aice_adapter/Makefile iceman_adapter/Makefile])
 AC_OUTPUT
