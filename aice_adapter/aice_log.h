@@ -3,7 +3,7 @@
 
 enum log_level_t {
 	AICE_LOG_DISABLE = 0,
-	AICE_LOG_VERBOSE,
+	AICE_LOG_ERROR,
 	AICE_LOG_INFO,
 	AICE_LOG_DEBUG,
 };
