@@ -1,7 +1,7 @@
 #!/bin/bash 
 
+autoreconf -ivf
 aclocal
 autoconf
 automake --gnu --add-missing --copy
-autoreconf -ivf
 
