@@ -338,7 +338,7 @@ static void aice_state (const char *input)
 
 static int aice_read_edm (const char *input)
 {
-	aice_log_add (AICE_LOG_INFO, "<aice_read_edm>: \n");
+	aice_log_add (AICE_LOG_DEBUG, "<aice_read_edm>: \n");
 
 	char response[MAXLINE];
     uint8_t JDPInst;
@@ -354,8 +354,8 @@ static int aice_read_edm (const char *input)
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_INFO, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X \n", \
-                                     target_id, JDPInst, address, num_of_words);
+    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X \n", \
+                                      target_id, JDPInst, address, num_of_words);
 
 
     EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
@@ -408,10 +408,6 @@ static int aice_read_edm (const char *input)
             result = aice_access_cmmd(AICE_CMDIDX_READ_MEM_B, target_id, address, (unsigned char *)EDMData, 1);
             break;
 
-        case JDP_R_CTRL:
-			result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)EDMData, 1);
-            break;
-
         case JDP_R_DIM:
         case JDP_R_DBG_EVENT:
         case JDP_R_IDCODE:
@@ -450,11 +446,9 @@ static int aice_read_edm (const char *input)
 }
 
 
-
-
 static int aice_write_edm( const char *input )
 {
-	aice_log_add (AICE_LOG_INFO, "<aice_write_edm>: \n");
+	aice_log_add (AICE_LOG_DEBUG, "<aice_write_edm>: \n");
 
 	char response[MAXLINE];
     uint8_t JDPInst;
@@ -472,19 +466,19 @@ static int aice_write_edm( const char *input )
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_INFO, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X \n", \
-                                     target_id, JDPInst, address, num_of_words);
+    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X \n", \
+                                      target_id, JDPInst, address, num_of_words);
 
     EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
     if( EDMData == NULL ) {
         response[0] = AICE_ERROR;
 		pipe_write (response, 1);
 
-		aice_log_add (AICE_LOG_INFO, "\t Allocate EDMData buffer Failed!!\n");
+		aice_log_add (AICE_LOG_ERROR, "\t Allocate EDMData buffer Failed!!\n");
 		return ERROR_FAIL;
     }
 
-    aice_log_add (AICE_LOG_INFO, "\t data:\n");
+    aice_log_add (AICE_LOG_DEBUG, "\t data:\n");
     for (int i = 0 ; i < num_of_words ; i++)
     {
 		EDMData[i] = get_u32( input + 14 + i*4 );
@@ -555,10 +549,6 @@ static int aice_write_edm( const char *input )
             result = aice_access_cmmd(AICE_CMDIDX_WRITE_MEM_B, target_id, address, (unsigned char *)&write_data, 1);
             break;
 
-        case JDP_W_CTRL:
-			result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)EDMData, 1);
-            break;
-
         default:
             aice_log_add (AICE_LOG_INFO, "AICE Write EDM JDPInst Error: inst error, inst code: 0x%02X", JDPInst );
             result = ERROR_FAIL;
@@ -574,8 +564,67 @@ static int aice_write_edm( const char *input )
         response[0] = AICE_ERROR;
 		pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_INFO, "\t Read EDM Failed!!\n");
+        aice_log_add (AICE_LOG_ERROR, "\t Read EDM Failed!!\n");
     }
+
+    return result;
+}
+
+static int aice_write_ctrls( const char *input )
+{
+    aice_log_add (AICE_LOG_DEBUG, "<aice_write_ctrl>: \n");
+    
+    char response[MAXLINE];
+    unsigned int address;
+    unsigned int WriteData;
+	int result;
+    
+    address   = get_u32 (input + 1);
+	WriteData = get_u32 (input + 5);
+    
+    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X, data=0x%08X \n", address, WriteData);
+    result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&WriteData, 1);
+    
+    if( result == ERROR_OK )
+        response[0] = AICE_OK;
+    else {
+        aice_log_add (AICE_LOG_ERROR, "\t Write ICE box ctrl Failed!!\n");
+        response[0] = AICE_ERROR;
+    }
+    pipe_write (response, 1);
+    
+    return result;
+}
+
+static int aice_read_ctrls( const char *input )
+{
+    aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: \n");
+    
+    char response[MAXLINE];
+    unsigned int address;
+    unsigned int pReadData;
+	int result;
+    
+    address   = get_u32 (input + 1);
+
+    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X \n", address);
+
+	result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)&pReadData, 1);
+
+    if( result == ERROR_OK ) {
+        aice_log_add (AICE_LOG_DEBUG, "\t recv: 0x%08X\n", pReadData);
+        
+        response[0] = AICE_OK;
+        set_u32(response+1, pReadData);
+        pipe_write (response, 5);
+    }
+    else {
+        aice_log_add (AICE_LOG_ERROR, "\t Read ICE box ctrl Failed!!\n");
+        
+        response[0] = AICE_ERROR;
+        pipe_write (response, 1);
+    }
+
 
     return result;
 }
@@ -608,9 +657,6 @@ int main ()
 			case AICE_IDCODE:
 				aice_idcode (line);
 				break;
-			case AICE_GET_ICE_STATE:
-				aice_state (line);
-				break;
 			case AICE_SET_JTAG_CLOCK:
 				aice_set_jtag_clock (line);
 				break;
@@ -620,6 +666,21 @@ int main ()
             case AICE_WRITE_EDM:
                 aice_write_edm(line);
                 break;
+                
+            case AICE_WRITE_CTRL:
+                aice_write_ctrls(line);
+                break;
+            
+            case AICE_READ_CTRL:
+                aice_read_ctrls(line);
+                break;
+            
+            case AICE_CUSTOM_SCRIPT:
+            case AICE_DIAGNOSTIC:
+            case AICE_GET_ICE_STATE:
+				//aice_state (line);
+				//break;
+            case AICE_CUSTOM_MONITOR_CMD:
             default:
                 aice_log_add (AICE_LOG_INFO, "Error command: %c\n", line[0] );
                 break;
