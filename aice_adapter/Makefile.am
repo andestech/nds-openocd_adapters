@@ -30,6 +30,10 @@ aice_adapter_LDFLAGS = $(bindir)/../../build/openocd/src/.libs/libopenocd.a \
 if BUILD_MINGW_BINARY
 aice_adapter_LDFLAGS += $(bindir)/../lib/libusb.a -lws2_32 -all-static
 else
-aice_adapter_LDFLAGS += $(bindir)/../lib/libusb-1.0.a -ldl -lpthread -lrt -all-static
+if BUILD_CYGWIN_BINARY
+aice_adapter_LDFLAGS += $(bindir)/../lib/libusb.a -ldl -lpthread -all-static
+else
+aice_adapter_LDFLAGS += $(bindir)/../lib/libusb-1.0.a -ldl -lpthread -lrt -all-static 
 endif
+endif 
 

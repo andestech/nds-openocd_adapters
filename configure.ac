@@ -25,7 +25,18 @@ case $host in
     ;;
 esac
 
+UNAME = `uname`
+case $UNAME in
+	CYGWIN*)
+		is_cygwin=yes
+		;;
+	*)
+		is_cygwin=no
+		;;
+esac
+
 AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
+AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB0], [test "$use_libusb1" = "no" -a "$use_libusb0" = "yes"])
 
