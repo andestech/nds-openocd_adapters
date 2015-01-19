@@ -18,19 +18,22 @@ fi
 
 case $host in
   *-mingw*)
+	echo "is_mingw=true"
     is_mingw=yes
     ;;
   *)
+	echo "is_mingw=false"
     is_mingw=no
     ;;
 esac
 
-UNAME = `uname`
-case $UNAME in
+case `uname` in
 	CYGWIN*)
+		echo "is_cygwin=true"
 		is_cygwin=yes
 		;;
 	*)
+		echo "is_cygwin=false"
 		is_cygwin=no
 		;;
 esac
