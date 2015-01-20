@@ -56,7 +56,7 @@ static int pipe_read(void *buffer, int length)
     success = ReadFile (GetStdHandle(STD_INPUT_HANDLE), buffer, length, &has_read, NULL);
     if (!success)
     {
-        aice_log_add (AICE_LOG_ERROR, "read pipe failed\n");
+        aice_log_add (AICE_LOG_ERROR, "read pipe failed");
         return -1;
     }
 
@@ -75,7 +75,7 @@ static int pipe_write(const void *buffer, int length)
     success = WriteFile (GetStdHandle(STD_OUTPUT_HANDLE), buffer, length, &written, NULL);
     if (!success)
     {
-        aice_log_add (AICE_LOG_ERROR, "write pipe failed\n");
+        aice_log_add (AICE_LOG_ERROR, "write pipe failed");
         return -1;
     }
 
@@ -106,19 +106,19 @@ static int aice_get_version_info()
     if (aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &fpga_version) != ERROR_OK)
         return ERROR_FAIL;
 
-    aice_log_add(AICE_LOG_DEBUG, "\t AICE version: hw_ver = 0x%x, fw_ver = 0x%x, fpga_ver = 0x%x\n",
+    aice_log_add(AICE_LOG_DEBUG, "\t AICE version: hw_ver = 0x%x, fw_ver = 0x%x, fpga_ver = 0x%x",
         hardware_version, firmware_version, fpga_version);
 
     //hardware features info
     if (aice_read_ctrl(AICE_READ_CTRL_ICE_CONFIG, &ice_config) != ERROR_OK)
         return ERROR_FAIL;
-    aice_log_add(AICE_LOG_DEBUG,"\t AICE hardware features: 0x%08x\n", ice_config);
+    aice_log_add(AICE_LOG_DEBUG,"\t AICE hardware features: 0x%08x", ice_config);
 
     //batch buffer size info
     if (aice_read_ctrl(AICE_REG_BATCH_DATA_BUFFER_1_STATE, &batch_data_buf1_size) != ERROR_OK)
         return ERROR_FAIL;
     batch_data_buf1_size &= 0xffffu;
-    aice_log_add(AICE_LOG_DEBUG,"\t AICE batch data buffer size: %d words\n", batch_data_buf1_size);
+    aice_log_add(AICE_LOG_DEBUG,"\t AICE batch data buffer size: %d words", batch_data_buf1_size);
 
     return ERROR_OK;
 }
@@ -188,11 +188,132 @@ aice_usb_set_clock_ERR:
     return ERROR_FAIL;
 }
 
+
+
+///Modified from aice_usb.c:aice_usb_execute_custom_script()
+#define LINE_BUFFER_SIZE 1024
+
+static enum AICE_CUSTOM_CMMD {
+    AICE_CUSTOM_CMMD_SET_SRST = 0,
+    AICE_CUSTOM_CMMD_CLEAR_SRST,
+    AICE_CUSTOM_CMMD_SET_DBGI,
+    AICE_CUSTOM_CMMD_CLEAR_DBGI,
+    AICE_CUSTOM_CMMD_SET_TRST,
+    AICE_CUSTOM_CMMD_CLEAR_TRST,
+    AICE_CUSTOM_CMMD_DELAY,
+    AICE_CUSTOM_CMMD_WRITE_PINS,
+    AICE_CUSTOM_CMMD_T_WRITE_MISC,
+    AICE_CUSTOM_CMMD_MAX,
+};
+
+static char *custom_script_cmmd[AICE_CUSTOM_CMMD_MAX]={
+    "set srst",
+    "clear srst",
+    "set dbgi",
+    "clear dbgi",
+    "set trst",
+    "clear trst",
+    "delay",
+    "write_pins",
+    "t_write_misc",
+};
+
+static int execute_custom_script(const char *script)
+{
+    FILE *script_fd;
+    uint32_t word_buffer[LINE_BUFFER_SIZE/4];
+    char tmp_buffer[LINE_BUFFER_SIZE];
+    char *line_buffer = (char *)&word_buffer[0];
+    char *curr_str, *compare_str;
+    uint32_t delay, i, num_of_words;
+    uint32_t Nibble1 = 0, Nibble2 = 0, write_pins_num = 0;
+    uint32_t write_ctrl_value = 0, idx = 0;
+    uint32_t target_id = 0, write_misc_addr = 0, write_misc_data = 0;
+    int result = ERROR_OK;
+
+    script_fd = fopen(script, "r");
+    if (script_fd == NULL) {
+        return ERROR_FAIL;
+    }
+    while (fgets(line_buffer, LINE_BUFFER_SIZE, script_fd) != NULL) {
+        for (i = 0; i < AICE_CUSTOM_CMMD_MAX; i ++) {
+            compare_str = custom_script_cmmd[i];
+            curr_str = strstr(line_buffer, compare_str);
+            if (curr_str != NULL)
+                break;
+        }
+        if (i < AICE_CUSTOM_CMMD_MAX) {
+            aice_log_add( AICE_LOG_DEBUG, "\t custom_script %s, %s, %d, %d", curr_str, compare_str, (int)i, (int)strlen(compare_str));
+        }
+        if (i <= AICE_CUSTOM_CMMD_DELAY) {
+            sscanf(curr_str + strlen(compare_str), " %d", &delay);
+            if (i == AICE_CUSTOM_CMMD_SET_SRST)
+                write_ctrl_value = AICE_CUSTOM_DELAY_SET_SRST;
+            else if (i == AICE_CUSTOM_CMMD_CLEAR_SRST)
+                write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_SRST;
+            else if (i == AICE_CUSTOM_CMMD_SET_DBGI)
+                write_ctrl_value = AICE_CUSTOM_DELAY_SET_DBGI;
+            else if (i == AICE_CUSTOM_CMMD_CLEAR_DBGI)
+                write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_DBGI;
+            else if (i == AICE_CUSTOM_CMMD_SET_TRST)
+                write_ctrl_value = AICE_CUSTOM_DELAY_SET_TRST;
+            else if (i == AICE_CUSTOM_CMMD_CLEAR_TRST)
+                write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_TRST;
+            else if (i == AICE_CUSTOM_CMMD_DELAY)
+                write_ctrl_value = 0;
+
+            write_ctrl_value |= (delay << 16);
+            aice_log_add( AICE_LOG_DEBUG, "\t custom_script aice_write_ctrl, 0x%x", write_ctrl_value);
+            result = aice_write_ctrl(AICE_WRITE_CTRL_CUSTOM_DELAY, write_ctrl_value);
+            if (result != ERROR_OK)
+                goto aice_execute_custom_script_error;
+        }
+        else if (i == AICE_CUSTOM_CMMD_WRITE_PINS) {
+            sscanf(curr_str + strlen(compare_str), " %s", &tmp_buffer[0]);
+            write_pins_num = strlen(&tmp_buffer[0]);
+            aice_log_add( AICE_LOG_DEBUG, "\t custom_script write_pins, %d %s", write_pins_num, &tmp_buffer[0]);
+            for (i = 0; i < ((write_pins_num + 1) >> 1); i ++) {
+                Nibble1 = 0;
+                Nibble2 = 0;
+                sscanf(&tmp_buffer[idx++], "%01x", &Nibble1);
+                sscanf(&tmp_buffer[idx++], "%01x", &Nibble2);
+                aice_log_add( AICE_LOG_DEBUG, "\t custom_script write_pins, %x %x", Nibble1, Nibble2);
+                line_buffer[2 + i] = (char)(Nibble1 | (Nibble2 << 4));
+            }
+            num_of_words = 2 + ((write_pins_num + 1) >> 1);
+            num_of_words = (num_of_words + 3) >> 2;
+            line_buffer[0] = (char)(write_pins_num >> 8);
+            line_buffer[1] = (char)(write_pins_num & 0xFF);
+
+            result = aice_write_pins(num_of_words, &word_buffer[0]);
+            if (result != ERROR_OK)
+                goto aice_execute_custom_script_error;
+        }
+        else if (i == AICE_CUSTOM_CMMD_T_WRITE_MISC) {
+            sscanf(curr_str + strlen(compare_str), " %d %d %d", &target_id, &write_misc_addr, &write_misc_data);
+            aice_log_add( AICE_LOG_DEBUG, "\t custom_script aice_write_misc, 0x%x, 0x%x, 0x%x", target_id, write_misc_addr, write_misc_data);
+            result = aice_write_misc(target_id, write_misc_addr, write_misc_data);
+            if (result != ERROR_OK)
+                goto aice_execute_custom_script_error;
+        }
+    }
+
+aice_execute_custom_script_end:
+    fclose(script_fd);
+    return result;
+
+aice_execute_custom_script_error:
+    aice_log_add( AICE_LOG_DEBUG, "\t Issue custom_script '%s' failed, abandon continue...", curr_str);
+    fclose(script_fd);
+    return result;
+}
+
+
 /********************************************************************************************/
 /// Modified from aice_usb.c:aice_open_device()
 static void aice_open (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_open>: \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_open>: ");
 
     char response[MAXLINE];
     uint16_t vid;
@@ -201,24 +322,24 @@ static void aice_open (const char *input)
     vid = AICE_VID;
     pid = AICE_PID;
 
-    aice_log_add (AICE_LOG_DEBUG, "\t VID: 0x%04x, PID: 0x%04x\n", vid, pid);
+    aice_log_add (AICE_LOG_DEBUG, "\t VID: 0x%04x, PID: 0x%04x", vid, pid);
 
     if (ERROR_OK != aice_usb_open(vid, pid)) {
-        aice_log_add(AICE_LOG_ERROR, "\t <-- Can not open usb -->\n");
+        aice_log_add(AICE_LOG_ERROR, "\t <-- Can not open usb -->");
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
         return;
     }
 
     if(ERROR_OK != aice_reset_box()) {
-        aice_log_add(AICE_LOG_ERROR, "\t Cannot initial AICE box!\n");
+        aice_log_add(AICE_LOG_ERROR, "\t Cannot initial AICE box!");
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
         return;
     }
 
     if (ERROR_FAIL == aice_get_version_info()) {
-        aice_log_add(AICE_LOG_ERROR, "\t Cannot get AICE info!\n");
+        aice_log_add(AICE_LOG_ERROR, "\t Cannot get AICE info!");
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
         return;
@@ -231,18 +352,18 @@ static void aice_open (const char *input)
 
 static void aice_set_jtag_clock (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_set_jtag_clock>: \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_set_jtag_clock>: ");
 
     char response[MAXLINE];
 
     jtag_clock = get_u32 (input + 1);
 
-    aice_log_add (AICE_LOG_DEBUG, "\t CLOCK: %x \n", jtag_clock);
+    aice_log_add (AICE_LOG_DEBUG, "\t CLOCK: %x", jtag_clock);
 
     if (ERROR_OK != aice_usb_set_clock (jtag_clock)) {
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
-        aice_log_add(AICE_LOG_ERROR, "\t Failed to set jtag clock!! \n");
+        aice_log_add(AICE_LOG_ERROR, "\t Failed to set jtag clock!!");
         return;
     }
     else {
@@ -256,7 +377,7 @@ static void aice_set_jtag_clock (const char *input)
 /// Modified from aice_usb.c:aice_close_device()
 static void aice_close (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_close> \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_close> ");
 
     char response[MAXLINE];
 
@@ -271,7 +392,7 @@ static void aice_close (const char *input)
 /// Modified from aice_usb.c:aice_usb_reset()
 static void aice_reset (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_reset> \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_reset> ");
 
     char response[MAXLINE];
 
@@ -292,7 +413,7 @@ static void aice_reset (const char *input)
 
 static void aice_idcode (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_idcode>:\n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_idcode>: ");
 
     char response[MAXLINE];
     uint8_t num_of_idcode;
@@ -302,13 +423,13 @@ static void aice_idcode (const char *input)
 
     retval = aice_scan_chain(idcode, &num_of_idcode);
     if( (retval!=ERROR_OK) || (num_of_idcode==0xFF) ) {
-        aice_log_add (AICE_LOG_ERROR, "\t No target connected\n");
+        aice_log_add (AICE_LOG_ERROR, "\t No target connected");
         response[0] = 0xFF;
         pipe_write (response, 1);
         return;
     }
     else if( num_of_idcode >= MAX_ID_CODE ) {
-        aice_log_add (AICE_LOG_ERROR, "\t The ice chain over 16 targets\n");
+        aice_log_add (AICE_LOG_ERROR, "\t The ice chain over 16 targets");
         response[0] = 0;
         pipe_write (response, 1);
         return;
@@ -317,11 +438,11 @@ static void aice_idcode (const char *input)
     num_of_idcode++;
     response[0] = num_of_idcode;
 
-    aice_log_add (AICE_LOG_DEBUG, "\t # of target: %d\n", num_of_idcode);
+    aice_log_add (AICE_LOG_DEBUG, "\t # of target: %d", num_of_idcode);
     for (i = 0 ; i < num_of_idcode ; i++)
     {
         set_u32 (response + 1 + i*4, idcode[i]);
-        aice_log_add (AICE_LOG_DEBUG, "\t\t IDCode%d: 0x%08X\n", i, idcode[i]);
+        aice_log_add (AICE_LOG_DEBUG, "\t\t IDCode%d: 0x%08X", i, idcode[i]);
     }
 
     pipe_write (response, 1 + num_of_idcode * 4);
@@ -329,7 +450,7 @@ static void aice_idcode (const char *input)
 
 static void aice_state (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_state>: \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_state>: ");
 
 
 ///Un-support now
@@ -342,7 +463,7 @@ static void aice_state (const char *input)
 
 static int aice_read_edm (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_read_edm>: \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_read_edm>: ");
 
     char response[MAXLINE];
     uint8_t JDPInst;
@@ -358,7 +479,7 @@ static int aice_read_edm (const char *input)
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X \n", \
+    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
                                       target_id, JDPInst, address, num_of_words);
 
 
@@ -367,7 +488,7 @@ static int aice_read_edm (const char *input)
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_INFO, "\t Allocate EDMData buffer Failed!!\n");
+        aice_log_add (AICE_LOG_INFO, "\t Allocate EDMData buffer Failed!!");
         return ERROR_FAIL;
     }
 
@@ -425,13 +546,13 @@ static int aice_read_edm (const char *input)
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
 
-        aice_log_add (AICE_LOG_INFO, "\t recv:\n");
+        aice_log_add (AICE_LOG_INFO, "\t recv:");
 
         for (int i = 0 ; i < num_of_words ; i++)
         {
             set_u32 (response + 1 + i*4, EDMData[i]);
 
-            aice_log_add( AICE_LOG_INFO, "\t\t0x%08X \n", EDMData[i]);
+            aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
         }
 
         pipe_write (response, 1 + num_of_words * 4);
@@ -440,7 +561,7 @@ static int aice_read_edm (const char *input)
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_INFO, "\t Read EDM Failed!!\n");
+        aice_log_add (AICE_LOG_INFO, "\t Read EDM Failed!!");
     }
 
 
@@ -452,7 +573,7 @@ static int aice_read_edm (const char *input)
 
 static int aice_write_edm( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_write_edm>: \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_write_edm>: ");
 
     char response[MAXLINE];
     uint8_t JDPInst;
@@ -470,7 +591,7 @@ static int aice_write_edm( const char *input )
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X \n", \
+    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
                                       target_id, JDPInst, address, num_of_words);
 
     EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
@@ -478,16 +599,16 @@ static int aice_write_edm( const char *input )
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_ERROR, "\t Allocate EDMData buffer Failed!!\n");
+        aice_log_add (AICE_LOG_ERROR, "\t Allocate EDMData buffer Failed!!");
         return ERROR_FAIL;
     }
 
-    aice_log_add (AICE_LOG_DEBUG, "\t data:\n");
+    aice_log_add (AICE_LOG_DEBUG, "\t data:");
     for (int i = 0 ; i < num_of_words ; i++)
     {
         EDMData[i] = get_u32( input + 14 + i*4 );
 
-        aice_log_add( AICE_LOG_INFO, "\t\t0x%08X \n", EDMData[i]);
+        aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
     }
 
 
@@ -568,7 +689,7 @@ static int aice_write_edm( const char *input )
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_ERROR, "\t Read EDM Failed!!\n");
+        aice_log_add (AICE_LOG_ERROR, "\t Read EDM Failed!!");
     }
 
     return result;
@@ -576,7 +697,7 @@ static int aice_write_edm( const char *input )
 
 static int aice_write_ctrls( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_write_ctrl>: \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_write_ctrl>: ");
 
     char response[MAXLINE];
     unsigned int address;
@@ -586,13 +707,13 @@ static int aice_write_ctrls( const char *input )
     address   = get_u32 (input + 1);
     WriteData = get_u32 (input + 5);
 
-    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X, data=0x%08X \n", address, WriteData);
+    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X, data=0x%08X ", address, WriteData);
     result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&WriteData, 1);
 
     if( result == ERROR_OK )
         response[0] = AICE_OK;
     else {
-        aice_log_add (AICE_LOG_ERROR, "\t Write ICE box ctrl Failed!!\n");
+        aice_log_add (AICE_LOG_ERROR, "\t Write ICE box ctrl Failed!!");
         response[0] = AICE_ERROR;
     }
     pipe_write (response, 1);
@@ -602,7 +723,7 @@ static int aice_write_ctrls( const char *input )
 
 static int aice_read_ctrls( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: \n");
+    aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: ");
 
     char response[MAXLINE];
     unsigned int address;
@@ -611,24 +732,48 @@ static int aice_read_ctrls( const char *input )
 
     address   = get_u32 (input + 1);
 
-    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X \n", address);
+    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X", address);
 
     result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)&pReadData, 1);
 
     if( result == ERROR_OK ) {
-        aice_log_add (AICE_LOG_DEBUG, "\t recv: 0x%08X\n", pReadData);
+        aice_log_add (AICE_LOG_DEBUG, "\t recv: 0x%08X", pReadData);
 
         response[0] = AICE_OK;
         set_u32(response+1, pReadData);
         pipe_write (response, 5);
     }
     else {
-        aice_log_add (AICE_LOG_ERROR, "\t Read ICE box ctrl Failed!!\n");
+        aice_log_add (AICE_LOG_ERROR, "\t Read ICE box ctrl Failed!!");
 
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
     }
 
+
+    return result;
+}
+
+static int aice_custom_script( const char *input )
+{
+    aice_log_add (AICE_LOG_DEBUG, "<aice_custom_script>: ");
+
+    char response[MAXLINE];
+    char filename[MAXLINE];
+    int result;
+
+    strcpy( filename, input+1 );
+    aice_log_add (AICE_LOG_DEBUG, "\t filename: %s", filename);
+
+    result = execute_custom_script( filename );
+
+    if( result == ERROR_OK )
+        response[0] = AICE_OK;
+    else {
+        aice_log_add (AICE_LOG_ERROR, "\t Execute custom script Failed!!");
+        response[0] = AICE_ERROR;
+    }
+    pipe_write (response, 1);
 
     return result;
 }
@@ -670,23 +815,21 @@ int main ()
             case AICE_WRITE_EDM:
                 aice_write_edm(line);
                 break;
-
             case AICE_WRITE_CTRL:
                 aice_write_ctrls(line);
                 break;
-
             case AICE_READ_CTRL:
                 aice_read_ctrls(line);
                 break;
-
             case AICE_CUSTOM_SCRIPT:
+                aice_custom_script(line);
+                break;
+
             case AICE_DIAGNOSTIC:
             case AICE_GET_ICE_STATE:
-                //aice_state (line);
-                //break;
             case AICE_CUSTOM_MONITOR_CMD:
             default:
-                aice_log_add (AICE_LOG_INFO, "Error command: %c\n", line[0] );
+                aice_log_add (AICE_LOG_INFO, "Error command: %c", line[0] );
                 break;
         }
     }

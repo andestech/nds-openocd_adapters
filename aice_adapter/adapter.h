@@ -31,6 +31,14 @@
 /* Constants for AICE command WRITE_CTRL:TCK_CONTROL */
 #define AICE_TCK_CONTROL_TCK_SCAN       0x10
 
+/* Custom SRST/DBGI/TRST */
+#define AICE_CUSTOM_DELAY_SET_SRST      0x01
+#define AICE_CUSTOM_DELAY_CLEAN_SRST    0x02
+#define AICE_CUSTOM_DELAY_SET_DBGI      0x04
+#define AICE_CUSTOM_DELAY_CLEAN_DBGI    0x08
+#define AICE_CUSTOM_DELAY_SET_TRST      0x10
+#define AICE_CUSTOM_DELAY_CLEAN_TRST    0x20
+
 #define NDS_EDM_SR_EDMSW    0x30
 #define NDS_EDMSW_WDV       (1 << 0)
 #define NDS_EDMSW_RDV       (1 << 1)
