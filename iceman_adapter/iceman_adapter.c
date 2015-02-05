@@ -132,7 +132,7 @@ static char *memory_stop_sequence = NULL;
 static char *memory_resume_sequence = NULL;
 static char *edm_port_operations = NULL;
 static const char *edm_port_op_file = NULL;
-static int aice_retry_time = 50;
+static int aice_retry_time = 2;//50;
 static int aice_no_crst_detect = 0;
 static int clock_setting = 16;
 static int debug_level = 3;
@@ -390,8 +390,8 @@ static int parse_param(int a_argc, char **a_argv) {
 				}else
 					diagnosis_memory = 0;
 				break;
-			case 'X': /* uncnd-reset-hold */
-				startup_reset_halt = 2;
+			case 'X': /* uncnd-reset-hold, the same as 'H' */
+				startup_reset_halt = 1;
 				break;
 			case 'z':
 				aceconf_desc_list = optarg;
@@ -644,8 +644,6 @@ static void update_openocd_cfg(void)
 
 	if (startup_reset_halt == 1)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
-	else if (startup_reset_halt == 2)
-		fprintf(openocd_cfg, "nds reset_halt_as_init uncnd\n");
 
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
 	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
@@ -683,6 +681,12 @@ static void update_interface_cfg(void)
 	}
 	if (custom_restart_script) {
 		fprintf(interface_cfg, "aice custom_restart_script %s\n", custom_restart_script);
+	}
+	if (startup_reset_halt) {
+		if (soft_reset_halt)
+			fprintf(interface_cfg, "aice reset_halt_as_init 2\n");
+		else
+			fprintf(interface_cfg, "aice reset_halt_as_init 1\n");
 	}
 	fputs("\n", interface_cfg);
 }
