@@ -23,12 +23,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "adapter.h"
-#include "aice_usb_pack_format.h"
+#include <aice_usb_pack_format.h>
 #include "aice_usb_command.h"
 #include "aice_pipe_command.h"
 #include "aice_log.h"
 #include "aice_jdp.h"
+#include "adapter.h"
+
 
 #define MAXLINE 8192
 
@@ -86,6 +87,35 @@ static int pipe_write(const void *buffer, int length)
 }
 /********************************************************************************************/
 
+/********************************************************************************************/
+int aice_write_ctrl(unsigned int address, unsigned int WriteData)
+{
+    unsigned int ctrl_data = WriteData;
+    int result;
+    result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&ctrl_data, 1);
+    return result;
+}
+
+int aice_read_ctrl(unsigned int address, unsigned int *pReadData)
+{
+    int result;
+    result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)pReadData, 1);
+    return result;
+}
+
+int aice_read_misc(unsigned char target_id, unsigned int address, unsigned int *pReadData)
+{
+    return aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)pReadData, 1);
+}
+
+int aice_write_misc(unsigned char target_id, unsigned int address, unsigned int WriteData)
+{
+    unsigned int misc_data = WriteData;
+    return aice_access_cmmd(AICE_CMDIDX_WRITE_MISC, target_id, address, (unsigned char *)&misc_data, 1);
+}
+
+
+/********************************************************************************************/
 ///Modified from aice_usb.c:aice_get_info()
 static int aice_get_version_info()
 {
@@ -298,7 +328,6 @@ static int execute_custom_script(const char *script)
         }
     }
 
-aice_execute_custom_script_end:
     fclose(script_fd);
     return result;
 
@@ -448,18 +477,17 @@ static void aice_idcode (const char *input)
     pipe_write (response, 1 + num_of_idcode * 4);
 }
 
-static void aice_state (const char *input)
-{
-    aice_log_add (AICE_LOG_DEBUG, "<aice_state>: ");
-
-
-///Un-support now
-//    char response[MAXLINE];
-//  enum aice_target_state_s state = aice_usb_state ();
-//  response[0] = state;
+//static void aice_state (const char *input)
+//{
+//    aice_log_add (AICE_LOG_DEBUG, "<aice_state>: ");
 //
-//  pipe_write (response, 1);
-}
+//
+//    char response[MAXLINE];
+//    enum aice_target_state_s state = aice_usb_state ();
+//    response[0] = state;
+//
+//    pipe_write (response, 1);
+//}
 
 static int aice_read_edm (const char *input)
 {
@@ -546,16 +574,18 @@ static int aice_read_edm (const char *input)
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
 
-        aice_log_add (AICE_LOG_INFO, "\t recv:");
+        //aice_log_add (AICE_LOG_INFO, "\t recv:");
 
         for (int i = 0 ; i < num_of_words ; i++)
         {
             set_u32 (response + 1 + i*4, EDMData[i]);
 
-            aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
+            //aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
         }
 
         pipe_write (response, 1 + num_of_words * 4);
+
+        aice_log_add (AICE_LOG_INFO, "\t Read EDM Finish!");
     }
     else {
         response[0] = AICE_ERROR;
@@ -603,12 +633,12 @@ static int aice_write_edm( const char *input )
         return ERROR_FAIL;
     }
 
-    aice_log_add (AICE_LOG_DEBUG, "\t data:");
+    //aice_log_add (AICE_LOG_DEBUG, "\t data:");
     for (int i = 0 ; i < num_of_words ; i++)
     {
         EDMData[i] = get_u32( input + 14 + i*4 );
 
-        aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
+        //aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
     }
 
 
@@ -684,12 +714,14 @@ static int aice_write_edm( const char *input )
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
         pipe_write (response, 1);
+
+        aice_log_add (AICE_LOG_ERROR, "\t Write EDM Finish!");
     }
     else {
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_ERROR, "\t Read EDM Failed!!");
+        aice_log_add (AICE_LOG_ERROR, "\t Write EDM Failed!!");
     }
 
     return result;

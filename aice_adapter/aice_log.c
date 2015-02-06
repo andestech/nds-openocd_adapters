@@ -4,8 +4,29 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <stdbool.h>
 #include "aice_log.h"
+
+
+#ifdef __MINGW32__ 
+
+#include <windows.h>
+void usleep(__int64 usec) 
+{ 
+    HANDLE timer; 
+    LARGE_INTEGER ft; 
+
+    ft.QuadPart = -(10*usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+    timer = CreateWaitableTimer(NULL, TRUE, NULL); 
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0); 
+    WaitForSingleObject(timer, INFINITE); 
+    CloseHandle(timer); 
+}
+
+#endif 
+
 
 #define MINIMUM_DEBUG_LOG_SIZE 1024
 #define WORKING_BUF_SIZE 4096
@@ -29,43 +50,6 @@ static bool log_unlimited_ = false;
 
 static const char *get_debug_file_name (void)
 {
-//  FILE *file_no_fd = NULL;
-//  char buffer[128];
-//  int file_no;
-//  const char *filename;
-//
-//  file_no_fd = fopen (FILE_NO_NAME, "r");
-//  if (file_no_fd == NULL)
-//  {
-//      filename = DEBUG_FILE_1;
-//  }
-//  else
-//  {
-//      if (fgets (buffer, 128, file_no_fd) == NULL)
-//          filename = DEBUG_FILE_1;
-//      else
-//      {
-//          file_no = atoi (buffer);
-//          if (file_no == 0)
-//              filename = DEBUG_FILE_1;
-//          else
-//              filename = DEBUG_FILE_2;
-//      }
-//
-//      fclose (file_no_fd);
-//  }
-//
-//  file_no_fd = fopen (FILE_NO_NAME, "w+");
-//  if (file_no_fd != NULL)
-//  {
-//      if (filename == DEBUG_FILE_1)
-//          fprintf (file_no_fd, "1\n");
-//      else if (filename == DEBUG_FILE_2)
-//          fprintf (file_no_fd, "0\n");
-//
-//      fclose (file_no_fd);
-//  }
-//
     const char *filename = DEBUG_FILE;
 
     return filename;
@@ -226,3 +210,22 @@ void aice_log_add (uint32_t a_level, const char *a_format, ...)
         fflush (debug_fd_);
     }
 }
+
+
+/* if we sleep for extended periods of time, we must invoke keep_alive() intermittantly */
+void alive_sleep(uint64_t ms)
+{
+    uint64_t napTime = 10;
+    for (uint64_t i = 0; i < ms; i += napTime) {
+        uint64_t sleep_a_bit = ms - i;
+        if (sleep_a_bit > napTime)
+            sleep_a_bit = napTime;
+
+        usleep(sleep_a_bit * 1000);
+        //keep_alive();
+    }
+}
+
+
+
+

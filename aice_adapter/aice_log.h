@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #ifndef __LOG_H__
 #define __LOG_H__
 
@@ -11,6 +13,14 @@ enum log_level_t {
 void aice_log_init (uint32_t a_buf_size, uint32_t a_debug_level, bool a_unlimited);
 void aice_log_finalize (void);
 void aice_log_add (uint32_t a_level, const char *a_format, ...);
+
+#define aice_log_error(fmt, ...) aice_log_add (AICE_LOG_ERROR, fmt"\n", ##__VA_ARGS__)
+#define aice_log_debug(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
+#define aice_log_info (fmt, ...) aice_log_add (AICE_LOG_INFO , fmt"\n", ##__VA_ARGS__)
+
+void alive_sleep(uint64_t ms);
+
+
 /*
 #define PRIx32 "x"
 #define PRId32 "d"
