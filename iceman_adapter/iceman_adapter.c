@@ -688,6 +688,9 @@ static void update_interface_cfg(void)
 		else
 			fprintf(interface_cfg, "aice reset_halt_as_init 1\n");
 	}
+	if (reset_aice_as_startup) {
+		fprintf(interface_cfg, "aice reset_aice_as_startup\n");
+	}
 	fputs("\n", interface_cfg);
 }
 
