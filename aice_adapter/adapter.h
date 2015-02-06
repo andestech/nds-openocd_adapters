@@ -21,6 +21,9 @@
 
 #define ERROR_OK            (0)
 #define ERROR_FAIL          (-4)
+#define ERROR_AICE_DISCONNECT  (-200)
+#define ERROR_AICE_TIMEOUT     (-201)
+
 
 /* Constants for AICE command WRITE_CTRL:JTAG_PIN_CONTROL, original from aice_usb.h */
 #define AICE_JTAG_PIN_CONTROL_SRST      0x01
@@ -43,6 +46,12 @@
 #define NDS_EDMSW_WDV       (1 << 0)
 #define NDS_EDMSW_RDV       (1 << 1)
 
+#define NDS_DBGER_DEX       (0x1)
+#define NDS_DBGER_DPED      (0x2)
+#define NDS_DBGER_CRST      (0x4)
+#define NDS_DBGER_AT_MAX    (0x8)
+#define NDS_DBGER_ILL_SEC_ACC   (0x10)
+
 #define CHK_DBGER_TIMEOUT   5000
 #define MAX_ID_CODE         (0x10)
 enum aice_error_s {
@@ -50,6 +59,29 @@ enum aice_error_s {
     AICE_ACK,
     AICE_ERROR,
 };
+
+enum aice_target_state_s {
+    AICE_DISCONNECT = 0,
+    AICE_TARGET_DETACH,
+    AICE_TARGET_UNKNOWN,
+    AICE_TARGET_RUNNING,
+    AICE_TARGET_HALTED,
+    AICE_TARGET_RESET,
+    AICE_TARGET_DEBUG_RUNNING,
+};
+
+/* EDM misc registers */
+enum nds_edm_misc_reg {
+    NDS_EDM_MISC_DIMIR = 0x0,
+    NDS_EDM_MISC_SBAR,
+    NDS_EDM_MISC_EDM_CMDR,
+    NDS_EDM_MISC_DBGER,
+    NDS_EDM_MISC_ACC_CTL,
+    NDS_EDM_MISC_EDM_PROBE,
+    NDS_EDM_MISC_GEN_PORT0,
+    NDS_EDM_MISC_GEN_PORT1,
+};
+
 
 
 /*****************************************************************************/
