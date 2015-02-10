@@ -2,7 +2,8 @@
 aclocal.m4
 autom4te.cache
 compile
-config.*
+config.guess
+config.sub
 configure
 depcomp
 doxygen
