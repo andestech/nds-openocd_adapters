@@ -322,5 +322,3 @@ unsigned int aice_get_usb_cmmd_size(unsigned int usb_cmmd_type)
 {
 	return aice_usb_cmmd_size[usb_cmmd_type];
 }
-
-

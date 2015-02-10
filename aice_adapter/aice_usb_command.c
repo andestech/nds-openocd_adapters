@@ -21,7 +21,6 @@
 #endif
 
 #include <string.h>
-
 #include <jtag/drivers/libusb_common.h>
 //#include <helper/log.h>
 #include "aice_usb_pack_format.h"
@@ -47,7 +46,7 @@ unsigned char usb_in_packets_buffer[AICE_IN_PACKETS_BUFFER_SIZE];
 unsigned int usb_out_packets_buffer_length = 0;
 unsigned int usb_in_packets_buffer_length = 0;
 enum aice_command_mode aice_command_mode = AICE_COMMAND_MODE_NORMAL;
-static unsigned int aice_max_retry_times = 50;
+unsigned int aice_max_retry_times = 2;//50;
 unsigned int aice_usb_rx_max_packet = 512;
 unsigned int aice_usb_tx_max_packet = 512;
 int usb_command_directly = 0;
@@ -165,9 +164,9 @@ int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid)
 	const uint16_t pids[] = { usb_pid, 0 };
 	struct jtag_libusb_device_handle *devh = NULL;
 
-	if (jtag_libusb_open(vids, pids, &devh) != ERROR_OK)
+	if (jtag_libusb_open(vids, pids, &devh) != ERROR_OK) {
 		return ERROR_FAIL;
-
+	}
 	/* BE ***VERY CAREFUL*** ABOUT MAKING CHANGES IN THIS
 	 * AREA!!!!!!!!!!!  The behavior of libusb is not completely
 	 * consistent across Windows, Linux, and Mac OS X platforms.
@@ -311,7 +310,7 @@ int aice_usb_write(unsigned char *out_buffer, unsigned int out_length)
 		return -1;
 	}
 	/* for AICE-mini zero-packet issue */
-	assert( (out_length % 64) != 0);
+	assert( (out_length % aice_usb_tx_max_packet) != 0);
 	result = usb_bulk_write_ex(aice_usb_handle, aice_usb_write_ep,
 			(char *)out_buffer, out_length, AICE_USB_TIMEOUT);
 
@@ -495,7 +494,7 @@ int aice_write_dtr(unsigned char target_id, unsigned int WriteData)
 	if (aice_read_edmsr(target_id, NDS_EDM_SR_EDMSW, &value_edmsw) != ERROR_OK)
 		return ERROR_FAIL;
 	if ((value_edmsw & NDS_EDMSW_RDV) == 0) {
-		AICE_USBCMMD_MSG("<-- TARGET ERROR! AICE failed to write to the DTR register. -->");
+		AICE_USBCMMD_MSG(NDS32_ERRMSG_TARGET_WRITE_DTR);
 		return ERROR_FAIL;
 	}
 
@@ -633,12 +632,12 @@ static int aice_usb_packet_append(unsigned char *out_buffer, unsigned int out_le
 	if (AICE_COMMAND_MODE_PACK == aice_command_mode) {
 		if (check_packet_size > AICE_OUT_PACK_COMMAND_SIZE)
 			hit_max_packet_size = 1;
-		else if ( (check_packet_size % 64) == 0)
+		else if ( (check_packet_size % aice_usb_tx_max_packet) == 0)
 			hit_zero_packet_issue = 1;
 	} else if (AICE_COMMAND_MODE_BATCH == aice_command_mode) {
 		if (check_packet_size > AICE_OUT_BATCH_COMMAND_SIZE)
 			hit_max_packet_size = 1;
-		else if ( ((check_packet_size + 4) % 64) == 0)
+		else if ( ((check_packet_size + 4) % aice_usb_tx_max_packet) == 0)
 			hit_zero_packet_issue = 1;
 	} else {
 		/* AICE_COMMAND_MODE_NORMAL */
@@ -723,8 +722,9 @@ int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int
 
 		// Device to host, receive usb packet from device
 		result = aice_usb_read(pusb_rx_cmmd_info->pusb_buffer, d2h_size);
-		if ((result != (int)d2h_size) &&
-			 (cmdidx != AICE_CMDIDX_SCAN_CHAIN)) {  // scan_chain received data maybe < d2h_size
+		if ((result < 0) ||
+			  ((result != (int)d2h_size) &&
+			  (cmdidx != AICE_CMDIDX_SCAN_CHAIN))) {  // scan_chain received data maybe < d2h_size
 				AICE_USBCMMD_MSG("%s, aice_usb_read failed (requested=%d, result=%d)", pusb_cmmd_attr->cmdname, d2h_size, result);
 				return ERROR_FAIL;
 		}
