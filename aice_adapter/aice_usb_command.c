@@ -49,7 +49,6 @@ enum aice_command_mode aice_command_mode = AICE_COMMAND_MODE_NORMAL;
 unsigned int aice_max_retry_times = 2;//50;
 unsigned int aice_usb_rx_max_packet = 512;
 unsigned int aice_usb_tx_max_packet = 512;
-int usb_command_directly = 0;
 
 struct aice_usb_cmmd_info usb_cmmd_pack_info = {
 		.pusb_buffer = &usb_out_buffer[0],

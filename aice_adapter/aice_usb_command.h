@@ -140,6 +140,5 @@ extern int aice_usb_packet_flush(void);
 extern int aice_usb_set_command_mode(enum aice_command_mode command_mode);
 
 extern struct aice_usb_cmmd_info usb_cmmd_pack_info;
-extern int usb_command_directly;
 
 #endif

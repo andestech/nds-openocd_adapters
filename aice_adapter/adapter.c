@@ -44,7 +44,6 @@
 
 static uint32_t jtag_clock;
 static unsigned int aice_clk_setting = 16;
-extern int usb_command_directly;   /// set libopenocd directly use aice_access_cmmd
 unsigned int aice_num_of_target_id_codes = 0;
 int aice_is_open = 0;
 
@@ -1066,7 +1065,6 @@ int main ()
     atexit (aice_log_finalize);
 
     aice_log_init (512*1024, AICE_LOG_DEBUG, true);
-    usb_command_directly = 1;
 
     while ((n = pipe_read (line, MAXLINE)) > 0)
     {
