@@ -915,7 +915,8 @@ static const char *confirm_result_msg[]={
     "[NON-SUPPORTED]",
 };
 
-static void aice_diagnostic( const char *input ) {
+static void aice_diagnostic( const char *input )
+{
     aice_log_add (AICE_LOG_DEBUG, "<aice_diagnostic>: ");
 
     uint16_t vid = AICE_VID;
@@ -1056,6 +1057,28 @@ diagnosis_JTAG_domain:
 }
 
 
+static int aice_custom_monitor_cmd( const char *input ) 
+{
+    aice_log_add (AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: ");
+
+    char response[MAXLINE];
+    int result;
+
+    aice_log_add( AICE_LOG_DEBUG, "\t recv: %s", input+1);
+
+    result = ERROR_OK;
+    if( result == ERROR_OK )
+        response[0] = AICE_OK;
+    else {
+        aice_log_add (AICE_LOG_ERROR, "\t Custom monitor cmd Failed!!");
+        response[0] = AICE_ERROR;
+    }
+    pipe_write (response, 1);
+
+    return result;
+}
+
+
 int main ()
 {
     char line[MAXLINE];
@@ -1103,13 +1126,12 @@ int main ()
             case AICE_DIAGNOSTIC:
                 aice_diagnostic(line);
                 break;
-
-
-
             case AICE_GET_ICE_STATE:
             //    aice_state(line);
             //    break;
             case AICE_CUSTOM_MONITOR_CMD:
+                aice_custom_monitor_cmd(line);
+                break;
             default:
                 aice_log_add (AICE_LOG_INFO, "Error command: %c", line[0] );
                 break;
