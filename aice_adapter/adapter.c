@@ -23,7 +23,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <aice_usb_pack_format.h>
+#include <jtag/drivers/libusb_common.h>
+#include "aice_usb_pack_format.h"
 #include "aice_usb_command.h"
 #include "aice_pipe_command.h"
 #include "aice_log.h"
@@ -46,6 +47,7 @@ static uint32_t jtag_clock;
 static unsigned int aice_clk_setting = 16;
 unsigned int aice_num_of_target_id_codes = 0;
 int aice_is_open = 0;
+int nds32_reset_aice_as_startup = 0;
 
 /********************************************************************************************/
 static int pipe_read(void *buffer, int length)
@@ -337,56 +339,33 @@ aice_execute_custom_script_error:
     return result;
 }
 
-//int aice_usb_state(uint32_t coreid, enum aice_target_state_s *state)
-//{
-    //uint32_t dbger_value;
-    //uint32_t ice_state;
-    //int result = aice_read_misc(coreid, NDS_EDM_MISC_DBGER, &dbger_value);
+extern struct jtag_libusb_device_handle *aice_usb_handle;
+// reset c51 through ep0
+// The reset sequence is as following.
+// 1. send ep0 packet: bmRequestType 0x40, bRequest 0xA0, wValue 0xe600, index 0x0, byte 1, length 1
+// 2. delay several milliseconds
+// 3. send ep0 packet: bmRequestType 0x40, bRequest 0xA0, wValue 0xe600, index 0x0, byte 0, length 1
+// 4. wait c51 reload FPGA
+// The reset sequence can work on AICE 1.6.6 or above.
+// Bug 7568 - AICE could not be reset by ICEman
+int aice_reset_aice_as_startup(void)
+{
+	int ret;
+	unsigned char reset_bit;
+	jtag_libusb_device_handle *dev = aice_usb_handle;
 
-    //if (ERROR_AICE_TIMEOUT == result) {
-        //if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &ice_state) != ERROR_OK) {
-            //aice_log_add(AICE_LOG_ERROR, "<-- AICE ERROR! AICE is unplugged. -->");
-            //return ERROR_FAIL;
-        //}
-
-        //if ((ice_state & 0x20) == 0) {
-            //aice_log_add(AICE_LOG_ERROR, "<-- TARGET ERROR! Target is disconnected with AICE. -->");
-            //return ERROR_FAIL;
-        //} else {
-            //return ERROR_FAIL;
-        //}
-    //} else if (ERROR_AICE_DISCONNECT == result) {
-        //aice_log_add(AICE_LOG_ERROR, "<-- AICE ERROR! AICE is unplugged. -->");
-        //return ERROR_FAIL;
-    //}
-
-    //if ((dbger_value & NDS_DBGER_ILL_SEC_ACC) == NDS_DBGER_ILL_SEC_ACC) {
-        //aice_log_add(AICE_LOG_ERROR, "<-- TARGET ERROR! Insufficient security privilege. -->");
-
-        ///* Clear ILL_SEC_ACC */
-        //aice_write_misc(coreid, NDS_EDM_MISC_DBGER, NDS_DBGER_ILL_SEC_ACC);
-
-        //*state = AICE_TARGET_RUNNING;
-    //} else if ((dbger_value & NDS_DBGER_AT_MAX) == NDS_DBGER_AT_MAX) {
-        //aice_log_add(AICE_LOG_ERROR, "<-- TARGET ERROR! Reaching the max interrupt stack level; -->");
-
-        //*state = AICE_TARGET_HALTED;
-    //} else if (((dbger_value & NDS_DBGER_CRST) == NDS_DBGER_CRST)) {
-        //aice_log_add(AICE_LOG_ERROR, "DBGER.CRST is on.");
-
-        //*state = AICE_TARGET_RESET;
-
-        ///* Clear CRST */
-        //aice_write_misc(coreid, NDS_EDM_MISC_DBGER, NDS_DBGER_CRST);
-    //} else if ((dbger_value & NDS_DBGER_DEX) == NDS_DBGER_DEX) {
-        //*state = AICE_TARGET_HALTED;
-    //} else {
-        //*state = AICE_TARGET_RUNNING;
-    //}
-
-    //return ERROR_OK;
-//}
-
+	reset_bit = 1;
+	ret = jtag_libusb_control_transfer(dev, 0x40, 0xa0, 0xe600, 0x00, (char *)&reset_bit, 1, 5000);
+	alive_sleep(100);
+	reset_bit = 0;
+	ret = jtag_libusb_control_transfer(dev, 0x40, 0xa0, 0xe600, 0x00, (char *)&reset_bit, 1, 5000);
+	alive_sleep(1500);
+	/* usb_control_msg() returns the number of bytes transferred during the
+	 * DATA stage of the control transfer - must be exactly 1 in this case! */
+	if (ret != 1)
+		return ERROR_FAIL;
+	return ERROR_OK;
+}
 
 /********************************************************************************************/
 /// Modified from aice_usb.c:aice_open_device()
@@ -410,12 +389,9 @@ static void aice_open (const char *input)
         return;
     }
 
-    if(ERROR_OK != aice_reset_box()) {
-        aice_log_add(AICE_LOG_ERROR, "\t Cannot initial AICE box!");
-        response[0] = AICE_ERROR;
-        pipe_write (response, 1);
-        return;
-    }
+    if (nds32_reset_aice_as_startup == 1) {
+		aice_reset_aice_as_startup();
+	}
 
     if (ERROR_FAIL == aice_get_version_info()) {
         aice_log_add(AICE_LOG_ERROR, "\t Cannot get AICE info!");
@@ -529,30 +505,6 @@ static void aice_idcode (const char *input)
     pipe_write (response, 1 + num_of_idcode * 4);
 }
 
-//static void aice_state (const char *input)
-//{
-    //aice_log_add (AICE_LOG_DEBUG, "<aice_state>: ");
-
-    //enum aice_target_state_s state;
-    //uint32_t coreid = get_u32 (input + 1);
-
-    //char response[MAXLINE];
-    //int result = aice_usb_state (coreid, &state);
-
-    //if(result == ERROR_OK){
-        //aice_log_add(AICE_LOG_DEBUG, "Read coreid #%d state OK!", coreid);
-
-        //response[0] = AICE_OK;
-        //response[1] = state;
-        //pipe_write (response, 2);
-    //}
-    //else {
-        //aice_log_add(AICE_LOG_ERROR, "Read coreid #%d state Failed!", coreid);
-
-        //response[0] = AICE_ERROR;
-        //pipe_write (response, 1);
-    //}
-//}
 
 static int aice_read_edm (const char *input)
 {
@@ -875,189 +827,7 @@ static int aice_custom_script( const char *input )
     return result;
 }
 
-static enum{
-        CONFIRM_USB_CONNECTION = 0,
-        CONFIRM_AICE_VERSIONS,
-        CONFIRM_JTAG_FREQUENCY_DETECTED,
-        CONFIRM_SET_JTAG_FREQUENCY,
-        CONFIRM_JTAG_CONNECTIVITY,
-        CONFIRM_JTAG_DOMAIN,
-        CONFIRM_TRST_WORKING,
-        CONFIRM_SRST_NOT_AFFECT_JTAG,
-        //CONFIRM_SELECT_CORE,
-        //CONFIRM_RESET_HOLD,
-        //CONFIRM_DIM_AND_CPU_DOMAIN,
-        //CONFIRM_MEMORY_ON_BUS,
-        //CONFIRM_MEMORY_ON_CPU,
-        CONFIRM_END,
-};
-
-static const char *confirm_messages[]={
-    "check USB connectivity ...",
-    "check AICE versions ...",
-    "check the detected JTAG frequency ...",
-    "check changing the JTAG frequency ...",
-    "check JTAG connectivity ...",
-    "check that JTAG domain is operational ...",
-    "check that TRST resets the JTAG domain ...",
-    "check that SRST does not resets JTAG domain ..."
-    //"check selecting core ...",
-    //"check reset-and-debug ...",
-    //"check that DIM and CPU domain are operational ...",
-    //"check accessing memory through BUS ...",
-    //"check accessing memory through CPU ..."
-};
-
-static unsigned int confirm_result[CONFIRM_END];
-static const char *confirm_result_msg[]={
-    "[PASS]",
-    "[FAIL]",
-    "[NON-SUPPORTED]",
-};
-
-static void aice_diagnostic( const char *input )
-{
-    aice_log_add (AICE_LOG_DEBUG, "<aice_diagnostic>: ");
-
-    uint16_t vid = AICE_VID;
-    uint16_t pid = AICE_PID;
-    uint8_t total_num_of_core = aice_num_of_target_id_codes;
-
-    unsigned int id_codes[MAX_ID_CODE];
-    uint32_t i = 0;
-    int last_fail_item, item;
-    uint32_t value, backup_value, test_value;
-    uint32_t selected_core;
-    uint32_t hardware_version=0, firmware_version=0, fpga_version=0;
-    uint32_t scan_clock;
-
-    aice_log_add(AICE_LOG_INFO, "********************");
-    aice_log_add(AICE_LOG_INFO, "Diagnostic Report");
-    aice_log_add(AICE_LOG_INFO, "********************");
-
-    for (i=0; i<CONFIRM_END; i++)
-        confirm_result[i] = 1;
-
-    /* 1. confirm USB connection */
-    last_fail_item = CONFIRM_USB_CONNECTION;
-    if ( (aice_is_open != 1) && (ERROR_OK != aice_usb_open(vid, pid)) ) {
-        aice_log_add(AICE_LOG_INFO, "[FAIL] check USB connectivity ...");
-        return;
-    }
-    confirm_result[last_fail_item] = 0;
-
-
-    /* clear timeout status */
-    if (aice_write_ctrl(AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS, 0x1) != ERROR_OK)
-        goto diagnosis_JTAG_frequency_detected;
-
-    /* clear NO_DBGI_PIN */
-    uint32_t pin_status=0;
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_JTAG_PIN_STATUS, &pin_status) != ERROR_OK)
-        goto diagnosis_JTAG_frequency_detected;
-
-    if (aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_STATUS, pin_status & (~0x02)) != ERROR_OK)
-        goto diagnosis_JTAG_frequency_detected;
-
-    /* get hardware and firmware version */
-    last_fail_item = CONFIRM_AICE_VERSIONS;
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &hardware_version) != ERROR_OK)
-        goto diagnosis_JTAG_frequency_detected;
-
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_FIRMWARE_VERSION, &firmware_version) != ERROR_OK)
-        goto diagnosis_JTAG_frequency_detected;
-
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &fpga_version) != ERROR_OK)
-        goto diagnosis_JTAG_frequency_detected;
-
-    aice_log_add(AICE_LOG_INFO, "v%d.%d.%d", (hardware_version & 0xFFFF), firmware_version, fpga_version);
-    confirm_result[last_fail_item] = 0;
-
-diagnosis_JTAG_frequency_detected:
-    /* 2. Report JTAG frequency detected */
-    last_fail_item = CONFIRM_JTAG_FREQUENCY_DETECTED;
-    if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL, AICE_TCK_CONTROL_TCK_SCAN) != ERROR_OK)
-        goto diagnosis_set_JTAG_frequency;
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
-        goto diagnosis_set_JTAG_frequency;
-    scan_clock &= 0x0F;
-    // If scan-freq = 48MHz, use 24MHz by default
-    if (scan_clock == 8)
-        scan_clock = 9;
-    aice_log_add(AICE_LOG_INFO, "JTAG frequency %d", scan_clock);
-    confirm_result[last_fail_item] = 0;
-
-diagnosis_set_JTAG_frequency:
-    /* 3. [Optional] set user specified JTAG frequency */
-    last_fail_item = CONFIRM_SET_JTAG_FREQUENCY;
-
-    aice_log_add(AICE_LOG_INFO, "set JTAG frequency %d ...", scan_clock+1);
-    if (ERROR_OK != aice_usb_set_clock(scan_clock + 1))
-        goto diagnosis_JTAG_connect;
-    aice_log_add(AICE_LOG_INFO, "set JTAG frequency %d ...", scan_clock);
-    if (ERROR_OK != aice_usb_set_clock(scan_clock))
-        goto diagnosis_JTAG_connect;
-
-    aice_log_add(AICE_LOG_INFO, "ice_state = %08x", scan_clock);
-    confirm_result[last_fail_item] = 0;
-
-diagnosis_JTAG_connect:
-    /* 4. Report JTAG scan chain (confirm JTAG connectivity) */
-    last_fail_item = CONFIRM_JTAG_CONNECTIVITY;
-    if (ERROR_OK != aice_scan_chain(&id_codes[0], &total_num_of_core))
-        goto diagnosis_JTAG_domain;
-    total_num_of_core++;
-    aice_log_add(AICE_LOG_INFO, "There %s %u %s in target", total_num_of_core > 1 ? "are":"is", total_num_of_core, total_num_of_core > 1 ? "cores":"core");
-    confirm_result[last_fail_item] = 0;
-
-diagnosis_JTAG_domain:
-    for(i = 0; i < total_num_of_core; i++){
-        selected_core = i;
-
-        /* 5. Read/write SBAR: confirm JTAG domain working */
-        last_fail_item = CONFIRM_JTAG_DOMAIN;
-        test_value = rand() & 0xFFFFFD;
-
-        aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &backup_value);
-        aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, test_value);
-        aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
-        if(value == test_value)
-            confirm_result[last_fail_item] = 0;
-
-        /* 5.a */
-        last_fail_item = CONFIRM_TRST_WORKING;
-        aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, 0);
-        aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_CONTROL, AICE_JTAG_PIN_CONTROL_TRST);
-        aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
-        if(value == 0x1)
-            confirm_result[last_fail_item] = 0;
-
-        /* 5.b */
-        last_fail_item = CONFIRM_SRST_NOT_AFFECT_JTAG;
-        aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, 0);
-        aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_CONTROL, AICE_JTAG_PIN_CONTROL_SRST);
-        aice_read_misc(selected_core, NDS_EDM_MISC_SBAR, &value);
-        if(value == 0x0)
-            confirm_result[last_fail_item] = 0;
-        /* restore SBAR */
-        aice_write_misc(selected_core, NDS_EDM_MISC_SBAR, backup_value);
-
-    report:
-        aice_log_add(AICE_LOG_INFO, "********************");
-        aice_log_add(AICE_LOG_INFO, "CODE #%d Report:", i);
-        for (item = CONFIRM_AICE_VERSIONS; item <= last_fail_item; item++){
-            aice_log_add(AICE_LOG_INFO, "%s %s", confirm_result_msg[confirm_result[item]], confirm_messages[item]);
-        }
-        aice_log_add(AICE_LOG_INFO, "********************");
-    }
-
-    char response[MAXLINE];
-    response[0] = AICE_OK;
-    pipe_write (response, 1);
-}
-
-
-static int aice_custom_monitor_cmd( const char *input ) 
+static int aice_custom_monitor_cmd( const char *input )
 {
     aice_log_add (AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: ");
 
@@ -1079,6 +849,73 @@ static int aice_custom_monitor_cmd( const char *input )
 }
 
 
+#define MAX_FILELIST 10
+void parsing_config_file( char* top_filename )
+{
+    int filelist_top = 0;
+    int finish_parsing = 0;
+    char* filelist[MAX_FILELIST];
+    char str[MAXLINE];
+    filelist[filelist_top++] = strdup(top_filename);
+    int i;
+
+    while( finish_parsing < filelist_top ) {
+        FILE *fp;
+        fp = fopen(filelist[finish_parsing++], "r");
+        if( fp == NULL ) {
+            aice_log_add(AICE_LOG_ERROR, "Can't open config file: %s", filelist[finish_parsing-1]);
+            continue;
+        }
+        aice_log_add(AICE_LOG_DEBUG, "Now file: %s", filelist[finish_parsing-1]);
+
+
+        /* readline */
+        while( fgets(str, MAXLINE, fp) != NULL ) {
+
+            /* find token */
+            char *tok = strtok( str, " ");
+            if( tok != NULL ) {
+                /// for comment
+                if( tok[0] == '#' )
+                    continue;
+
+                /// parsing command
+                if( strncmp(tok, "source", 6) == 0 ) {          /// add file list
+                                                                /// i.e. "source [find interface/nds32-aice.cfg]"
+                    tok = strtok( NULL, " ");
+                    tok = strtok( NULL, " ");
+                    filelist[filelist_top] = strdup(tok);
+                    filelist[filelist_top][strlen(filelist[filelist_top])-2] = '\0';
+                    filelist_top++;
+                    aice_log_add(AICE_LOG_DEBUG, "add file: %s",filelist[filelist_top-1]);
+                    continue;
+                }
+                else if( strncmp(tok, "aice", 4) == 0 ) {       /// aice command
+                    tok = strtok( NULL, " ");                  /// i.e. "aice reset_aice_as_startup"
+
+                    if( strncmp(tok, "reset_aice_as_startup", 21) == 0 ) {
+                        nds32_reset_aice_as_startup = 1;
+
+                        aice_log_add(AICE_LOG_DEBUG, "Detection reset_aice_as_startup command");
+                    }
+                    continue;
+                }
+                else
+                    continue;
+            }
+        }
+
+        fclose(fp);
+    }
+
+    for( i=0; i < filelist_top; i++ )
+        free(filelist[i]);
+
+
+}
+
+
+
 int main ()
 {
     char line[MAXLINE];
@@ -1088,6 +925,7 @@ int main ()
     atexit (aice_log_finalize);
 
     aice_log_init (512*1024, AICE_LOG_DEBUG, true);
+    parsing_config_file("openocd.cfg");
 
     while ((n = pipe_read (line, MAXLINE)) > 0)
     {
@@ -1123,17 +961,11 @@ int main ()
             case AICE_CUSTOM_SCRIPT:
                 aice_custom_script(line);
                 break;
-            case AICE_DIAGNOSTIC:
-                aice_diagnostic(line);
-                break;
-            case AICE_GET_ICE_STATE:
-            //    aice_state(line);
-            //    break;
             case AICE_CUSTOM_MONITOR_CMD:
                 aice_custom_monitor_cmd(line);
                 break;
             default:
-                aice_log_add (AICE_LOG_INFO, "Error command: %c", line[0] );
+                aice_log_add (AICE_LOG_INFO, "Error command: 0x%x", line[0] );
                 break;
         }
     }
