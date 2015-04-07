@@ -47,7 +47,19 @@ static uint32_t jtag_clock;
 static unsigned int aice_clk_setting = 16;
 unsigned int aice_num_of_target_id_codes = 0;
 int aice_is_open = 0;
+/***************************************************************************/
+#define AICE_MAX_VID_NUM       (0xFF)
+struct vid_pid_s {
+  	/** */
+    uint16_t vid;
+	/** */
+	uint16_t pid;
+};
+struct vid_pid_s vid_pid_array[AICE_MAX_VID_NUM];
+int vid_pid_array_top = -1;
 int nds32_reset_aice_as_startup = 0;
+/***************************************************************************/
+
 
 /********************************************************************************************/
 static int pipe_read(void *buffer, int length)
@@ -376,13 +388,28 @@ static void aice_open (const char *input)
     char response[MAXLINE];
     uint16_t vid;
     uint16_t pid;
+    int retval = ERROR_FAIL;
 
-    vid = AICE_VID;
-    pid = AICE_PID;
+    if( vid_pid_array_top == -1 ) {
+        aice_log_add(AICE_LOG_ERROR, "There is no vid_pid in config files!!");
+        response[0] = AICE_ERROR;
+        pipe_write (response, 1);
+        return;
+    }
 
-    aice_log_add (AICE_LOG_DEBUG, "\t VID: 0x%04x, PID: 0x%04x", vid, pid);
+    for( int i = 0; i <= vid_pid_array_top; i++ ) {
+        vid = vid_pid_array[i].vid;
+        pid = vid_pid_array[i].pid;
 
-    if (ERROR_OK != aice_usb_open(vid, pid)) {
+        aice_log_add (AICE_LOG_DEBUG, "\t VID: 0x%04x, PID: 0x%04x", vid, pid);
+
+        retval = aice_usb_open(vid, pid);
+
+        if (ERROR_OK == retval)
+            break;
+    }
+
+    if( retval != ERROR_OK ) {
         aice_log_add(AICE_LOG_ERROR, "\t <-- Can not open usb -->");
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
@@ -891,13 +918,38 @@ void parsing_config_file( char* top_filename )
                     continue;
                 }
                 else if( strncmp(tok, "aice", 4) == 0 ) {       /// aice command
-                    tok = strtok( NULL, " ");                  /// i.e. "aice reset_aice_as_startup"
+                    tok = strtok( NULL, " ");
 
-                    if( strncmp(tok, "reset_aice_as_startup", 21) == 0 ) {
+                    if( strncmp(tok, "reset_aice_as_startup", 21) == 0 ) {  /// i.e. "aice reset_aice_as_startup"
                         nds32_reset_aice_as_startup = 1;
 
                         aice_log_add(AICE_LOG_DEBUG, "Detection reset_aice_as_startup command");
                     }
+                    else if( strncmp(tok, "vid_pid", 7) == 0  ) {
+                        vid_pid_array_top++;
+
+                        if(vid_pid_array_top >= AICE_MAX_VID_NUM) {
+                            aice_log_add(AICE_LOG_ERROR, "vid_pid array over AICE_MAX_VID_NUM error, ignore to add new vid_pid config!");
+                            continue;
+                        }
+
+                        tok = strtok( NULL, " ");   //VID
+                        char* vid_str = strdup(tok);
+                        tok = strtok( NULL, " ");   //PID
+                        char* pid_str = strdup(tok);
+
+                        aice_log_add(AICE_LOG_DEBUG, "get vid:0x%s, pid:0x%s", vid_str, pid_str);
+
+                        char *tmp;
+                        tmp = vid_str;
+                        vid_pid_array[vid_pid_array_top].vid = strtol(vid_str, &tmp, 16);
+                        tmp = pid_str;
+                        vid_pid_array[vid_pid_array_top].pid = strtol(pid_str, &tmp, 16);
+
+                        free(vid_str);
+                        free(pid_str);
+                    }
+
                     continue;
                 }
                 else
