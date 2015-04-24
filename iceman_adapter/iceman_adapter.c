@@ -170,8 +170,8 @@ extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 
 static void show_version(void) {
-	printf("Andes ICEman v3.1.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
-	printf("Copyright (C) 2007-2014 Andes Technology Corporation\n");
+	printf("Andes ICEman v3.2.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
+	printf("Copyright (C) 2007-2015 Andes Technology Corporation\n");
 }
 
 static void show_srccode_ver(void) {
@@ -912,7 +912,7 @@ int main(int argc, char **argv) {
 		printf("tcl port num error\n");
 		return 0;
 	}
-	printf("Andes ICEman v3.1.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
+	printf("Andes ICEman v3.2.0 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
 	printf("Burner listens on %d\n", burner_port);
 	printf("Telnet port: %d\n", telnet_port);
 	printf("TCL port: %d\n", tcl_port);
