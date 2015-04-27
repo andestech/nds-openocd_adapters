@@ -46,7 +46,6 @@
 static uint32_t jtag_clock;
 static unsigned int aice_clk_setting = 16;
 unsigned int aice_num_of_target_id_codes = 0;
-int aice_is_open = 0;
 /***************************************************************************/
 #define AICE_MAX_VID_NUM       (0xFF)
 struct vid_pid_s {
@@ -427,7 +426,6 @@ static void aice_open (const char *input)
         return;
     }
 
-    aice_is_open = 1;
     response[0] = AICE_OK;
     pipe_write (response, 1);
 }
@@ -466,7 +464,6 @@ static void aice_close (const char *input)
 
     aice_usb_close ();
 
-    aice_is_open = 0;
     response[0] = AICE_OK;
     pipe_write (response, 1);
 
@@ -963,7 +960,6 @@ void parsing_config_file( char* top_filename )
     for( i=0; i < filelist_top; i++ )
         free(filelist[i]);
 
-
 }
 
 
@@ -1024,3 +1020,4 @@ int main ()
 
     return 0;
 }
+
