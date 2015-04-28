@@ -25,6 +25,7 @@ enum aice_usb_cmmd_index {
 	AICE_CMDIDX_WRITE_EDMSR,
 	AICE_CMDIDX_WRITE_DTR,
 	AICE_CMDIDX_WRITE_DTR_FROM_BUFFER,
+	AICE_CMDIDX_READ_DTR_TO_BUFFER,
 	AICE_CMDIDX_WRITE_DIM,
 	AICE_CMDIDX_EXECUTE,
 	AICE_CMDIDX_WRITE_MEM,
@@ -39,7 +40,6 @@ enum aice_usb_cmmd_index {
 	AICE_CMDIDX_READ_MISC,
 	AICE_CMDIDX_READ_EDMSR,
 	AICE_CMDIDX_READ_DTR,
-	AICE_CMDIDX_READ_DTR_TO_BUFFER,
 	AICE_CMDIDX_READ_MEM,
 	AICE_CMDIDX_READ_MEM_H,
 	AICE_CMDIDX_READ_MEM_B,
@@ -133,8 +133,8 @@ extern int aice_read_dtr_to_buffer(unsigned char target_id, unsigned int buffer_
 extern int aice_write_dtr(unsigned char target_id, unsigned int WriteData);
 extern int aice_write_dtr_from_buffer(unsigned char target_id, unsigned int buffer_idx);
 
-extern int aice_batch_buffer_write(unsigned int buf_index, const unsigned char *pWriteData, unsigned int num_of_words);
-extern int aice_batch_buffer_read(unsigned char buf_index, unsigned int *pReadData, unsigned int num_of_words);
+extern int aice_batch_buffer_write(unsigned int buf_index);
+extern int aice_batch_buffer_read(unsigned int buf_index, unsigned char *pReadData, unsigned int num_of_words);
 extern int aice_write_pins(unsigned int num_of_words, unsigned int *pWriteData);
 extern int aice_usb_packet_flush(void);
 extern int aice_usb_set_command_mode(enum aice_command_mode command_mode);

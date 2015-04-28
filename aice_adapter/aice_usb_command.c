@@ -132,6 +132,7 @@ struct aice_usb_cmmd_attr usb_all_cmmd_attr[] = {
 	{ "WRITE_EDMSR", AICE_CMD_T_WRITE_EDMSR, AICE_CMDTYPE_HTDMC, AICE_CMDTYPE_DTHMB, },
 	{ "WRITE_DTR", AICE_CMD_T_WRITE_DTR, AICE_CMDTYPE_HTDMC, AICE_CMDTYPE_DTHMB, },
 	{ "WRITE_DTR_FROM_BUFFER", AICE_CMD_WRITE_DTR_FROM_BUFFER, AICE_CMDTYPE_HTDMA, AICE_CMDTYPE_DTHMB, },
+	{ "READ_DTR_TO_BUFFER", AICE_CMD_READ_DTR_TO_BUFFER, AICE_CMDTYPE_HTDMA, AICE_CMDTYPE_DTHMB, },
 	{ "WRITE_DIM", AICE_CMD_T_WRITE_DIM, AICE_CMDTYPE_HTDMC, AICE_CMDTYPE_DTHMB, },
 	{ "EXECUTE", AICE_CMD_T_EXECUTE, AICE_CMDTYPE_HTDMC, AICE_CMDTYPE_DTHMB, },
 	{ "WRITE_MEM", AICE_CMD_T_WRITE_MEM, AICE_CMDTYPE_HTDMD, AICE_CMDTYPE_DTHMB, },
@@ -146,7 +147,6 @@ struct aice_usb_cmmd_attr usb_all_cmmd_attr[] = {
 	{ "READ_MISC", AICE_CMD_T_READ_MISC, AICE_CMDTYPE_HTDMA, AICE_CMDTYPE_DTHMA, },
 	{ "READ_EDMSR", AICE_CMD_T_READ_EDMSR, AICE_CMDTYPE_HTDMA, AICE_CMDTYPE_DTHMA, },
 	{ "READ_DTR", AICE_CMD_T_READ_DTR, AICE_CMDTYPE_HTDMA, AICE_CMDTYPE_DTHMA, },
-	{ "READ_DTR_TO_BUFFER", AICE_CMD_READ_DTR_TO_BUFFER, AICE_CMDTYPE_HTDMA, AICE_CMDTYPE_DTHMB, },
 	{ "READ_MEM", AICE_CMD_T_READ_MEM, AICE_CMDTYPE_HTDMB, AICE_CMDTYPE_DTHMA, },
 	{ "READ_MEM_H", AICE_CMD_T_READ_MEM_H, AICE_CMDTYPE_HTDMB, AICE_CMDTYPE_DTHMA, },
 	{ "READ_MEM_B", AICE_CMD_T_READ_MEM_B, AICE_CMDTYPE_HTDMB, AICE_CMDTYPE_DTHMA, },
@@ -507,19 +507,24 @@ int aice_write_dtr_from_buffer(unsigned char target_id, unsigned int buffer_idx)
 	return aice_access_cmmd(AICE_CMDIDX_WRITE_DTR_FROM_BUFFER, target_id, buffer_idx, (unsigned char *)&dtr_data, 1);
 }
 
-int aice_batch_buffer_write(unsigned int buf_index, const unsigned char *pWriteData, unsigned int num_of_words)
+int aice_batch_buffer_write(unsigned int buf_index)
 {
 	int result;
-	enum aice_command_mode aice_command_mode_ori = aice_command_mode;
+	//enum aice_command_mode aice_command_mode_ori = aice_command_mode;
+
+	unsigned char *pWriteData = (unsigned char *)&usb_out_packets_buffer[0];
+	unsigned int num_of_words = ((usb_out_packets_buffer_length + 3) / 4);
 	aice_command_mode = AICE_COMMAND_MODE_NORMAL;
 	usb_cmmd_pack_info.access_little_endian = 0;  // AICE_BIG_ENDIAN
 	result = aice_access_cmmd(AICE_CMDIDX_BATCH_BUFFER_WRITE, 0, buf_index, (unsigned char *)pWriteData, num_of_words);
 	usb_cmmd_pack_info.access_little_endian = 1;
-	aice_command_mode = aice_command_mode_ori;
+	//aice_command_mode = aice_command_mode_ori;
+	usb_out_packets_buffer_length = 0;
+	usb_in_packets_buffer_length = 0;
 	return result;
 }
 
-int aice_batch_buffer_read(unsigned char buf_index, unsigned int *pReadData, unsigned int num_of_words)
+int aice_batch_buffer_read(unsigned int buf_index, unsigned char *pReadData, unsigned int num_of_words)
 {
 	int result;
 	enum aice_command_mode aice_command_mode_ori = aice_command_mode;
@@ -581,9 +586,7 @@ int aice_usb_packet_flush(void)
 		AICE_USBCMMD_MSG("Flush usb packets (AICE_COMMAND_MODE_BATCH)");
 
 		/* use BATCH_BUFFER_WRITE to fill command-batch-buffer */
-		if (aice_batch_buffer_write(AICE_BATCH_COMMAND_BUFFER_0,
-				usb_out_packets_buffer,
-				(usb_out_packets_buffer_length + 3) / 4) != ERROR_OK)
+		if (aice_batch_buffer_write(AICE_BATCH_COMMAND_BUFFER_0) != ERROR_OK)
 			return ERROR_FAIL;
 
 		usb_out_packets_buffer_length = 0;

@@ -872,6 +872,111 @@ static int aice_custom_monitor_cmd( const char *input )
     return result;
 }
 
+static int aice_set_cmd_mode( const char *input )
+{
+	aice_log_add (AICE_LOG_DEBUG, "<aice_set_cmd_mode>: ");
+	char response[MAXLINE];
+	unsigned int cmd_mode;
+	int result = AICE_OK;
+
+	cmd_mode   = get_u32 (input + 1);
+	aice_log_add (AICE_LOG_DEBUG, "\t cmd_mode=0x%08X", cmd_mode);
+	aice_usb_set_command_mode(cmd_mode);
+	response[0] = AICE_OK;
+	pipe_write (response, 1);
+
+	return result;
+}
+
+static int aice_set_read_dtr_to_buf( const char *input )
+{
+	aice_log_add (AICE_LOG_DEBUG, "<read_dtr_to_buf>: ");
+	char response[MAXLINE];
+	unsigned int target_id;
+	unsigned int buffer_idx;
+	int result;
+
+	target_id   = get_u32 (input + 1);
+	buffer_idx   = get_u32 (input + 5);
+	aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, target_id=0x%08X", target_id, buffer_idx);
+	result = aice_read_dtr_to_buffer(target_id, buffer_idx);
+	if( result == ERROR_OK )
+		response[0] = AICE_OK;
+	else
+		response[0] = AICE_ERROR;
+	pipe_write (response, 1);
+
+	return result;
+}
+
+static int aice_set_write_dtr_from_buf( const char *input )
+{
+	aice_log_add (AICE_LOG_DEBUG, "<write_dtr_from_buf>: ");
+	char response[MAXLINE];
+	unsigned int target_id;
+	unsigned int buffer_idx;
+	int result;
+
+	target_id   = get_u32 (input + 1);
+	buffer_idx   = get_u32 (input + 5);
+	aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, target_id=0x%08X", target_id, buffer_idx);
+	result = aice_write_dtr_from_buffer(target_id, buffer_idx);
+	if( result == ERROR_OK )
+		response[0] = AICE_OK;
+	else
+		response[0] = AICE_ERROR;
+	pipe_write (response, 1);
+
+	return result;
+}
+
+static int aice_set_batch_buffer_read (const char *input)
+{
+	aice_log_add (AICE_LOG_DEBUG, "<set_batch_buffer_read>: ");
+	char response[MAXLINE];
+	uint32_t buf_index;
+	uint32_t num_of_words;
+	int result = 0;
+	unsigned char *pReadData = (unsigned char *)&response[1];
+
+	buf_index    = get_u32( input+1 );
+	num_of_words = get_u32( input+5 );
+
+	aice_log_add (AICE_LOG_DEBUG, "\t buf_index=0x%08X, num_of_words=0x%08X ", \
+	                                buf_index, num_of_words);
+	result = aice_batch_buffer_read(buf_index, pReadData, num_of_words);
+	if( result != ERROR_OK ) {
+		response[0] = AICE_ERROR;
+		pipe_write (response, 1);
+		return result;
+	}
+
+	response[0] = AICE_OK;
+	//for (i = 0 ; i < num_of_words ; i++) {
+	//	set_u32 (response + 1 + i*4, *pReadData++);
+	//}
+	pipe_write (response, 1 + num_of_words * 4);
+	return result;
+}
+
+static int aice_set_batch_buffer_write (const char *input)
+{
+	aice_log_add (AICE_LOG_DEBUG, "<set_batch_buffer_write>: ");
+	char response[MAXLINE];
+	uint32_t buf_index;
+	int result = 0;
+
+	buf_index = get_u32( input+1 );
+	aice_log_add (AICE_LOG_DEBUG, "\t buf_index=0x%08X ", \
+	                                buf_index);
+	result = aice_batch_buffer_write(buf_index);
+	if( result != ERROR_OK )
+		response[0] = AICE_ERROR;
+	else
+		response[0] = AICE_OK;
+	pipe_write (response, 1);
+	return result;
+}
 
 #define MAX_FILELIST 10
 void parsing_config_file( char* top_filename )
@@ -1011,6 +1116,21 @@ int main ()
                 break;
             case AICE_CUSTOM_MONITOR_CMD:
                 aice_custom_monitor_cmd(line);
+                break;
+            case AICE_SET_CMMD_MODE:
+                aice_set_cmd_mode(line);
+                break;
+            case AICE_READ_DTR_TO_BUFFER:
+                aice_set_read_dtr_to_buf(line);
+                break;
+            case AICE_WRITE_DTR_FROM_BUFFER:
+                aice_set_write_dtr_from_buf(line);
+                break;
+            case AICE_BATCH_BUFFER_WRITE:
+            		aice_set_batch_buffer_write(line);
+                break;
+            case AICE_BATCH_BUFFER_READ:
+            		aice_set_batch_buffer_read(line);
                 break;
             default:
                 aice_log_add (AICE_LOG_INFO, "Error command: 0x%x", line[0] );
