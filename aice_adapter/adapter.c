@@ -978,6 +978,25 @@ static int aice_set_batch_buffer_write (const char *input)
 	return result;
 }
 
+static int aice_set_pack_buffer_read (const char *input)
+{
+	aice_log_add (AICE_LOG_DEBUG, "<set_pack_buffer_read>: ");
+	char response[MAXLINE];
+	uint32_t buf_index;
+	uint32_t num_of_bytes;
+	int result = 0;
+	unsigned char *pReadData = (unsigned char *)&response[1];
+
+	num_of_bytes = get_u32( input+1 );
+
+	aice_log_add (AICE_LOG_DEBUG, "\t num_of_bytes=0x%08X ", \
+	                                num_of_bytes);
+	result = aice_pack_buffer_read(pReadData, num_of_bytes);
+	response[0] = AICE_OK;
+	pipe_write (response, 1 + num_of_bytes);
+	return result;
+}
+
 #define MAX_FILELIST 10
 void parsing_config_file( char* top_filename )
 {
@@ -1131,6 +1150,9 @@ int main ()
                 break;
             case AICE_BATCH_BUFFER_READ:
             		aice_set_batch_buffer_read(line);
+                break;
+            case AICE_PACK_BUFFER_READ:
+            		aice_set_pack_buffer_read(line);
                 break;
             default:
                 aice_log_add (AICE_LOG_INFO, "Error command: 0x%x", line[0] );

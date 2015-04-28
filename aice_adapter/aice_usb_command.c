@@ -534,6 +534,17 @@ int aice_batch_buffer_read(unsigned int buf_index, unsigned char *pReadData, uns
 	return result;
 }
 
+int aice_pack_buffer_read(unsigned char *pReadData, unsigned int num_of_bytes)
+{
+	unsigned int i;
+
+	for (i = 0 ; i < num_of_bytes ; i++) {
+		*pReadData++ = usb_in_packets_buffer[i];
+	}
+
+	return ERROR_OK;
+}
+
 int aice_reset_box(void)
 {
 	// AICE-MCU clear timeout is enough for reboot, not necessary others.

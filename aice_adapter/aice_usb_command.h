@@ -135,6 +135,7 @@ extern int aice_write_dtr_from_buffer(unsigned char target_id, unsigned int buff
 
 extern int aice_batch_buffer_write(unsigned int buf_index);
 extern int aice_batch_buffer_read(unsigned int buf_index, unsigned char *pReadData, unsigned int num_of_words);
+extern int aice_pack_buffer_read(unsigned char *pReadData, unsigned int num_of_bytes);
 extern int aice_write_pins(unsigned int num_of_words, unsigned int *pWriteData);
 extern int aice_usb_packet_flush(void);
 extern int aice_usb_set_command_mode(enum aice_command_mode command_mode);
