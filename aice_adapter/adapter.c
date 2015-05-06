@@ -57,6 +57,9 @@ struct vid_pid_s {
 struct vid_pid_s vid_pid_array[AICE_MAX_VID_NUM];
 int vid_pid_array_top = -1;
 int nds32_reset_aice_as_startup = 0;
+int debug_level   = AICE_LOG_ERROR;
+int log_file_size = MINIMUM_DEBUG_LOG_SIZE; 
+
 /***************************************************************************/
 
 
@@ -1073,6 +1076,23 @@ void parsing_config_file( char* top_filename )
 
                     continue;
                 }
+                else if( strncmp(tok, "nds", 3) == 0  ) {
+                    tok = strtok( NULL, " ");
+
+                    if( strncmp(tok, "log_file_size", 13) == 0  ) {     /// i.e "nds log_file_size #num"
+                        tok = strtok( NULL, " "); //size
+                        log_file_size = atoi(tok);
+
+                        aice_log_add(AICE_LOG_DEBUG, "log_file_size: %d", log_file_size);
+                    }
+
+                }
+                else if( strncmp(tok, "debug_level", 11) == 0 ) {       /// i.e "debug_level #level"
+                    tok = strtok( NULL, " "); //level           
+                    debug_level = atoi(tok);
+
+                    aice_log_add(AICE_LOG_DEBUG, "debug_level: %d", debug_level);
+                }
                 else
                     continue;
             }
@@ -1096,8 +1116,8 @@ int main ()
     signal(SIGINT, SIG_IGN);
     atexit (aice_log_finalize);
 
-    aice_log_init (512*1024, AICE_LOG_DEBUG, true);
     parsing_config_file("openocd.cfg");
+    aice_log_init( log_file_size, debug_level, true); 
 
     while ((n = pipe_read (line, MAXLINE)) > 0)
     {

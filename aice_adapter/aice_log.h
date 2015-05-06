@@ -3,11 +3,19 @@
 #ifndef __LOG_H__
 #define __LOG_H__
 
+#define MINIMUM_DEBUG_LOG_SIZE 0x100000
+#define WORKING_BUF_SIZE 4096
+
+
+// Based on OpenOCD logger
 enum log_level_t {
-	AICE_LOG_DISABLE = 0,
-	AICE_LOG_ERROR,
-	AICE_LOG_INFO,
-	AICE_LOG_DEBUG,
+    AICE_LOG_SILENT  = -3,
+    AICE_LOG_OUTPUT  = -2,
+    AICE_LOG_USER    = -1,
+	AICE_LOG_ERROR   = 0,
+	AICE_LOG_WARNING = 1,
+	AICE_LOG_INFO    = 2,
+	AICE_LOG_DEBUG   = 3,
 };
 
 void aice_log_init (uint32_t a_buf_size, uint32_t a_debug_level, bool a_unlimited);

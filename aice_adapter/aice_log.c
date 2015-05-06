@@ -28,14 +28,10 @@ void usleep(__int64 usec)
 #endif 
 
 
-#define MINIMUM_DEBUG_LOG_SIZE 1024
-#define WORKING_BUF_SIZE 4096
-
-const char *FILE_NO_NAME = "NEXT_FILE_NO";
-const char *DEBUG_FILE   = "aice_adapter.log";
-const char *DEBUG_FILE_1 = "aice_adapter_1.log";
-const char *DEBUG_FILE_2 = "aice_adapter_2.log";
-
+const char *Log_File_Name[2]={
+    "aice_adapter_0.log",
+    "aice_adapter_1.log",
+};
 
 static uint32_t start_index_;
 static uint32_t end_index_;
@@ -44,16 +40,11 @@ static bool enable_debug_;
 static uint32_t remain_debug_buf_size_;
 static char *debug_buf_;
 static FILE *debug_fd_;
-static uint32_t debug_level_ = AICE_LOG_DEBUG;
+static uint32_t debug_level_    = AICE_LOG_ERROR;
 static uint32_t debug_buf_size_ = MINIMUM_DEBUG_LOG_SIZE;
 static bool log_unlimited_ = false;
+static int  file_idx = 0;
 
-static const char *get_debug_file_name (void)
-{
-    const char *filename = DEBUG_FILE;
-
-    return filename;
-}
 
 static void open_debug_file (void)
 {
@@ -62,7 +53,7 @@ static void open_debug_file (void)
 
     seconds = time (NULL);
 
-    debug_filename = get_debug_file_name ();
+    debug_filename = Log_File_Name[file_idx];
     debug_fd_ = fopen (debug_filename, "w");
 
     fprintf (debug_fd_, "Date: %s\n\n", ctime (&seconds));
@@ -181,10 +172,33 @@ void aice_log_finalize (void)
         free (debug_buf_);
 }
 
+
+static void check_file_size()
+{
+    unsigned FileSize = 0;
+
+    if( debug_fd_ ) {
+        FileSize = ftell(debug_fd_);
+    }
+
+    if( FileSize >= debug_buf_size_  ||
+        debug_fd_ == NULL ) {
+        if(debug_fd_)
+            fclose(debug_fd_);
+
+        file_idx ^= 0x01;
+        open_debug_file();
+    }
+}
+
+
 void aice_log_add (uint32_t a_level, const char *a_format, ...)
 {
     if ((enable_debug_ == false) || (a_level > debug_level_))
         return;
+
+    //Ping Pong Buffers 
+    check_file_size();
 
     va_list ap;
     char working_buf[WORKING_BUF_SIZE];
