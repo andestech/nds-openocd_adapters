@@ -396,6 +396,7 @@ static void aice_open (const char *input)
         aice_log_add(AICE_LOG_ERROR, "There is no vid_pid in config files!!");
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
+        exit(-1);
         return;
     }
 
@@ -415,6 +416,7 @@ static void aice_open (const char *input)
         aice_log_add(AICE_LOG_ERROR, "\t <-- Can not open usb -->");
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
+        exit(-1);
         return;
     }
 
