@@ -1158,7 +1158,7 @@ int main ()
             case AICE_CUSTOM_MONITOR_CMD:
                 aice_custom_monitor_cmd(line);
                 break;
-            case AICE_SET_CMMD_MODE:
+            case AICE_SET_CMD_MODE:
                 aice_set_cmd_mode(line);
                 break;
             case AICE_READ_DTR_TO_BUFFER:
