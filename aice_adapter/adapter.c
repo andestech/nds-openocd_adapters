@@ -133,38 +133,31 @@ int aice_write_misc(unsigned char target_id, unsigned int address, unsigned int 
 
 /********************************************************************************************/
 ///Modified from aice_usb.c:aice_get_info()
-static int aice_get_version_info()
+static int aice_get_version_info(struct aice_port_s *aice)
 {
-    uint32_t hardware_version;
-    uint32_t firmware_version;
-    uint32_t fpga_version;
-    uint32_t ice_config;
-    uint32_t batch_data_buf1_size;
-
-
     //version info
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &hardware_version) != ERROR_OK)
+    if (aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &aice->hardware_version) != ERROR_OK)
         return ERROR_FAIL;
 
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_FIRMWARE_VERSION, &firmware_version) != ERROR_OK)
+    if (aice_read_ctrl(AICE_READ_CTRL_GET_FIRMWARE_VERSION, &aice->firmware_version) != ERROR_OK)
         return ERROR_FAIL;
 
-    if (aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &fpga_version) != ERROR_OK)
+    if (aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &aice->fpga_version) != ERROR_OK)
         return ERROR_FAIL;
 
     aice_log_add(AICE_LOG_DEBUG, "\t AICE version: hw_ver = 0x%x, fw_ver = 0x%x, fpga_ver = 0x%x",
-        hardware_version, firmware_version, fpga_version);
+        aice->hardware_version, aice->firmware_version, aice->fpga_version);
 
     //hardware features info
-    if (aice_read_ctrl(AICE_READ_CTRL_ICE_CONFIG, &ice_config) != ERROR_OK)
+    if (aice_read_ctrl(AICE_READ_CTRL_ICE_CONFIG, &aice->ice_config) != ERROR_OK)
         return ERROR_FAIL;
-    aice_log_add(AICE_LOG_DEBUG,"\t AICE hardware features: 0x%08x", ice_config);
+    aice_log_add(AICE_LOG_DEBUG,"\t AICE hardware features: 0x%08x", aice->ice_config);
 
     //batch buffer size info
-    if (aice_read_ctrl(AICE_REG_BATCH_DATA_BUFFER_1_STATE, &batch_data_buf1_size) != ERROR_OK)
+    if (aice_read_ctrl(AICE_REG_BATCH_DATA_BUFFER_1_STATE, &aice->batch_data_buf1_size) != ERROR_OK)
         return ERROR_FAIL;
-    batch_data_buf1_size &= 0xffffu;
-    aice_log_add(AICE_LOG_DEBUG,"\t AICE batch data buffer size: %d words", batch_data_buf1_size);
+    aice->batch_data_buf1_size &= 0xffffu;
+    aice_log_add(AICE_LOG_DEBUG,"\t AICE batch data buffer size: %d words", aice->batch_data_buf1_size);
 
     return ERROR_OK;
 }
@@ -383,6 +376,15 @@ int aice_reset_aice_as_startup(void)
 
 /********************************************************************************************/
 /// Modified from aice_usb.c:aice_open_device()
+char AndesName[] = {"Andes"};
+char *pAICEName[] = {
+    "AICE",
+    "AICE-MCU",
+    "AICE-MINI"
+};
+extern char *pdescp_Manufacturer;
+extern char *pdescp_Product;
+extern unsigned int descp_bcdDevice;
 static void aice_open (const char *input)
 {
     aice_log_add (AICE_LOG_DEBUG, "<aice_open>: ");
@@ -391,6 +393,8 @@ static void aice_open (const char *input)
     uint16_t vid;
     uint16_t pid;
     int retval = ERROR_FAIL;
+    int success_idx = -1;
+    struct aice_port_s aice;
 
     if( vid_pid_array_top == -1 ) {
         aice_log_add(AICE_LOG_ERROR, "There is no vid_pid in config files!!");
@@ -408,8 +412,10 @@ static void aice_open (const char *input)
 
         retval = aice_usb_open(vid, pid);
 
-        if (ERROR_OK == retval)
+        if (ERROR_OK == retval) {
+            success_idx = i;
             break;
+        }
     }
 
     if( retval != ERROR_OK ) {
@@ -424,15 +430,45 @@ static void aice_open (const char *input)
 		aice_reset_aice_as_startup();
 	}
 
-    if (ERROR_FAIL == aice_get_version_info()) {
-        aice_log_add(AICE_LOG_ERROR, "\t Cannot get AICE info!");
-        response[0] = AICE_ERROR;
-        pipe_write (response, 1);
-        return;
+    response[0] = AICE_OK;
+
+    char buffer[100] = {0};
+    if( vid_pid_array[success_idx].vid == 0x1CFC &&
+        vid_pid_array[success_idx].pid == 0x0000 ) {     // OLD Version of AICE, AICE-MCU, AICE-MINI
+        
+        if (ERROR_FAIL == aice_get_version_info(&aice)) {
+            aice_log_add(AICE_LOG_ERROR, "\t Cannot get AICE info!");
+            response[0] = AICE_ERROR;
+            pipe_write (response, 1);
+            return;
+        }           
+
+        char *vid_str, *pid_str;
+        unsigned int vid_idx, pid_idx;
+
+        vid_idx = (aice.hardware_version & 0xFF000000) >> 24;
+        pid_idx = (aice.hardware_version & 0x00FF0000) >> 16;
+        vid_str = (char *)&AndesName[0];
+        pid_str = (char *)pAICEName[pid_idx];
+
+        sprintf( buffer, "%s %s v%d.%d.%d", 
+                          vid_str, 
+                          pid_str,
+                          (aice.hardware_version & 0xFFFF), 
+                          aice.firmware_version,
+                          aice.fpga_version);
+    }
+    else {
+        sprintf ( buffer, "%s %s bcdDevice=0x%x", 
+                          pdescp_Manufacturer, 
+                          pdescp_Product, 
+                          descp_bcdDevice );
     }
 
-    response[0] = AICE_OK;
-    pipe_write (response, 1);
+
+    set_u32(response+1, strlen(buffer) );
+    strncpy(response+5, buffer, strlen(buffer));
+    pipe_write (response, 5+strlen(buffer));    // byte 0: STATUS, byte 1~4: LENGTH, others: DES_STRING
 }
 
 
@@ -987,7 +1023,6 @@ static int aice_set_pack_buffer_read (const char *input)
 {
 	aice_log_add (AICE_LOG_DEBUG, "<set_pack_buffer_read>: ");
 	char response[MAXLINE];
-	uint32_t buf_index;
 	uint32_t num_of_bytes;
 	int result = 0;
 	unsigned char *pReadData = (unsigned char *)&response[1];

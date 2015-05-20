@@ -82,6 +82,19 @@ enum nds_edm_misc_reg {
     NDS_EDM_MISC_GEN_PORT1,
 };
 
+struct aice_port_s {
+    /** Hardware version */
+    uint32_t hardware_version;
+    /** Firmware version */
+    uint32_t firmware_version;
+    /** FPGA version */
+    uint32_t fpga_version;
+    /** ICE Configuration */
+    uint32_t ice_config;
+    /** profile data buffer size */
+    uint32_t batch_data_buf1_size;
+};
+
 
 
 /*****************************************************************************/
