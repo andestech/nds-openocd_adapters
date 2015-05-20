@@ -432,7 +432,7 @@ static void aice_open (const char *input)
 
     response[0] = AICE_OK;
 
-    char buffer[100] = {0};
+    char buffer[1000] = {0};
     if( vid_pid_array[success_idx].vid == 0x1CFC &&
         vid_pid_array[success_idx].pid == 0x0000 ) {     // OLD Version of AICE, AICE-MCU, AICE-MINI
         
@@ -451,12 +451,18 @@ static void aice_open (const char *input)
         vid_str = (char *)&AndesName[0];
         pid_str = (char *)pAICEName[pid_idx];
 
-        sprintf( buffer, "%s %s v%d.%d.%d", 
-                          vid_str, 
-                          pid_str,
-                          (aice.hardware_version & 0xFFFF), 
-                          aice.firmware_version,
-                          aice.fpga_version);
+        if ((vid_idx == 0) && (pid_idx <= 2)) {
+            sprintf( buffer, "%s %s v%d.%d.%d", 
+                    vid_str, 
+                    pid_str,
+                    (aice.hardware_version & 0xFFFF), 
+                    aice.firmware_version,
+                    aice.fpga_version);
+        }
+        else {
+            sprintf( buffer, "3rd-party ICE-box: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x", 
+                aice.hardware_version, aice.firmware_version, aice.fpga_version);
+        }
     }
     else {
         sprintf ( buffer, "%s %s bcdDevice=0x%x", 
