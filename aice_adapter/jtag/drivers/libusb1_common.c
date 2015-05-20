@@ -183,3 +183,46 @@ int jtag_libusb_get_endpoints(struct jtag_libusb_device *udev,
 
 	return 0;
 }
+
+unsigned char descriptor_string_iManufacturer[128];
+unsigned char descriptor_string_iProduct[128];
+unsigned int descriptor_bcdDevice = 0x0;
+char descriptor_string_unknown[] = {"unknown"};
+
+int jtag_libusb_get_descriptor_string(jtag_libusb_device_handle *dev_handle,
+		struct jtag_libusb_device *dev,
+		char **pdescp_Manufacturer,
+		char **pdescp_Product,
+		unsigned int *pdescp_bcdDevice)
+{
+	int ret1, ret2;
+	char *pStringManufacturer, *pStringProduct;
+
+	struct libusb_device_descriptor dev_desc;
+	libusb_get_device_descriptor(dev, &dev_desc);
+	
+	LOG_DEBUG("jtag_libusb_get_descriptor_string...\n");
+	LOG_DEBUG("dev_desc.iManufacturer = %x\n", dev_desc.iManufacturer);
+	LOG_DEBUG("dev_desc.iProduct = %x\n", dev_desc.iProduct);
+
+	ret1 = libusb_get_string_descriptor_ascii(dev_handle, dev_desc.iManufacturer,
+		&descriptor_string_iManufacturer[0], sizeof(descriptor_string_iManufacturer)-1);
+	ret2 = libusb_get_string_descriptor_ascii(dev_handle, dev_desc.iProduct,
+		&descriptor_string_iProduct[0], sizeof(descriptor_string_iProduct)-1);
+
+	pStringManufacturer = (char *)&descriptor_string_unknown[0];
+	pStringProduct = (char *)&descriptor_string_unknown[0];
+	if (ret1 > 0) {
+		pStringManufacturer = (char *)&descriptor_string_iManufacturer[0];
+	}
+	if (ret2 > 0) {
+		pStringProduct = (char *)&descriptor_string_iProduct[0];
+	}
+	*pdescp_Manufacturer = pStringManufacturer;
+	*pdescp_Product = pStringProduct;
+	*pdescp_bcdDevice = (unsigned int)dev_desc.bcdDevice;
+	LOG_DEBUG("Manufacturer: %s \n", *pdescp_Manufacturer);
+	LOG_DEBUG("Product: %s \n", *pdescp_Product);
+	LOG_DEBUG("bcdDevice = %x \n", *pdescp_bcdDevice);
+	return 0;
+}

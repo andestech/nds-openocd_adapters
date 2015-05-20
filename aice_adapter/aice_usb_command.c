@@ -157,6 +157,10 @@ struct aice_usb_cmmd_attr usb_all_cmmd_attr[] = {
 unsigned int aice_usb_read_ep, aice_usb_write_ep;
 struct jtag_libusb_device_handle *aice_usb_handle = NULL;
 
+char *pdescp_Manufacturer;
+char *pdescp_Product;
+unsigned int descp_bcdDevice = 0x0;
+
 int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid)
 {
 	const uint16_t vids[] = { usb_vid, 0 };
@@ -214,6 +218,14 @@ int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid)
 	aice_usb_read_ep = aice_read_ep;
 	aice_usb_write_ep = aice_write_ep;
 	aice_usb_handle = devh;
+
+	jtag_libusb_get_descriptor_string(devh, udev,
+		&pdescp_Manufacturer,
+		&pdescp_Product,
+		&descp_bcdDevice);
+	AICE_USBCMMD_MSG("pdescp_Manufacturer = %s \n", pdescp_Manufacturer);
+	AICE_USBCMMD_MSG("pdescp_Product = %s \n", pdescp_Product);
+	AICE_USBCMMD_MSG("descp_bcdDevice = %x \n", descp_bcdDevice);
 
 	// dummy read, bug-10444, workaround for USB Data Toggling problem under Linux
 	unsigned int hardware_version;

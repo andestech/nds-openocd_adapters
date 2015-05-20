@@ -18,6 +18,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.           *
  ***************************************************************************/
+
 #ifndef JTAG_LIBUSB_COMMON_H
 #define JTAG_LIBUSB_COMMON_H
 
@@ -69,5 +70,10 @@ int jtag_libusb_get_endpoints(struct jtag_libusb_device *udev,
 		unsigned int *usb_write_ep,
 		unsigned int *usb_rx_max_packet,
 		unsigned int *usb_tx_max_packet);
+int jtag_libusb_get_descriptor_string(jtag_libusb_device_handle *dev_handle,
+		struct jtag_libusb_device *dev,
+		char **pdescp_Manufacturer,
+		char **pdescp_Product,
+		unsigned int *pdescp_bcdDevice);
 
 #endif /* JTAG_USB_COMMON_H */
