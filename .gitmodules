@@ -1,0 +1,6 @@
+[submodule "aice_adapter/libusb-1.0.18"]
+	path = aice_adapter/libusb-1.0.18
+	url = atclnx01:/home/project/git_repo/toolchain/libusb-1.0.18.git
+[submodule "aice_adapter/libusb-win32-bin-1.2.6.0"]
+	path = aice_adapter/libusb-win32-bin-1.2.6.0
+	url = atclnx01:/home/project/git_repo/toolchain/libusb-win32-bin-1.2.6.0.git
