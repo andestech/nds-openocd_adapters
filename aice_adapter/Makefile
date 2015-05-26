@@ -1,6 +1,5 @@
 CC = gcc
-CFLAGS  = -c -Wall -std=gnu99 -I. -I./jtag/drivers -DHAVE_CONFIG_H
-#LDFLAGS = -all-static
+CFLAGS  = -Wall -std=gnu99 -I. -I./jtag/drivers -DHAVE_CONFIG_H
 LDFLAGS = 
 EXECUTABLE = aice_adapter
 SOURCES = adapter.c \
@@ -16,6 +15,7 @@ ifeq ($(UNAME_S), Linux)
 	SOURCES += jtag/drivers/libusb1_common.c 
 	LDFLAGS += -ldl -lpthread -lrt libusb/lib/libusb-1.0.a
 else 
+	CFLAGS  += -I./libusb/include
 	SOURCES += jtag/drivers/libusb0_common.c 
 	LDFLAGS += -ldl -lpthread libusb/lib/libusb.a 
 endif
