@@ -904,8 +904,14 @@ static int aice_custom_monitor_cmd( const char *input )
 
     char response[MAXLINE];
     int result;
+    int len;
+    char *command;
 
-    aice_log_add( AICE_LOG_DEBUG, "\t recv: %s", input+1);
+    len = get_u32(input+1);
+    command = (char *)malloc((len+1)*sizeof(char));
+    memcpy(command, input+5, len);
+    command[len] = '\0';
+    aice_log_add( AICE_LOG_DEBUG, "\t recv: len=%d, %s", len, command);
 
     result = ERROR_OK;
     if( result == ERROR_OK )
