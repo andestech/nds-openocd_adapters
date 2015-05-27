@@ -9,8 +9,8 @@
 #include "aice_log.h"
 
 #define LOG_ERROR   aice_log_error
-#define LOG_DEBUG   aice_log_debug 
-#define LOG_INFO    aice_log_info 
+#define LOG_DEBUG   aice_log_detail 
+#define LOG_INFO    aice_log_detail
 #define LOG_WARNING aice_log_error
 
 #define ERROR_OK (0)

@@ -419,7 +419,7 @@ static void aice_open (const char *input)
     }
 
     if( retval != ERROR_OK ) {
-        aice_log_add(AICE_LOG_ERROR, "\t <-- Can not open usb -->");
+        aice_log_add(AICE_LOG_ERROR, "<-- Can not open usb -->");
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
         exit(-1);
@@ -437,7 +437,7 @@ static void aice_open (const char *input)
         vid_pid_array[success_idx].pid == 0x0000 ) {     // OLD Version of AICE, AICE-MCU, AICE-MINI
         
         if (ERROR_FAIL == aice_get_version_info(&aice)) {
-            aice_log_add(AICE_LOG_ERROR, "\t Cannot get AICE info!");
+            aice_log_add(AICE_LOG_ERROR, "Cannot get AICE info!");
             response[0] = AICE_ERROR;
             pipe_write (response, 1);
             return;
@@ -480,18 +480,16 @@ static void aice_open (const char *input)
 
 static void aice_set_jtag_clock (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_set_jtag_clock>: ");
-
     char response[MAXLINE];
 
     jtag_clock = get_u32 (input + 1);
 
-    aice_log_add (AICE_LOG_DEBUG, "\t CLOCK: %d", jtag_clock);
+    aice_log_add (AICE_LOG_DEBUG, "<aice_set_jtag_clock>: CLOCK: %d", jtag_clock);
 
     if (ERROR_OK != aice_usb_set_clock (jtag_clock)) {
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
-        aice_log_add(AICE_LOG_ERROR, "\t Failed to set jtag clock!!");
+        aice_log_add(AICE_LOG_ERROR, "Failed to set jtag clock!!");
         return;
     }
     else {
@@ -541,8 +539,6 @@ static void aice_reset (const char *input)
 
 static void aice_idcode (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_idcode>: ");
-
     char response[MAXLINE];
     uint8_t num_of_idcode;
     uint32_t idcode[MAX_ID_CODE];
@@ -551,13 +547,13 @@ static void aice_idcode (const char *input)
 
     retval = aice_scan_chain(idcode, &num_of_idcode);
     if( (retval!=ERROR_OK) || (num_of_idcode==0xFF) ) {
-        aice_log_add (AICE_LOG_ERROR, "\t No target connected");
+        aice_log_add (AICE_LOG_ERROR, "No target connected");
         response[0] = 0xFF;
         pipe_write (response, 1);
         return;
     }
     else if( num_of_idcode >= MAX_ID_CODE ) {
-        aice_log_add (AICE_LOG_ERROR, "\t The ice chain over 16 targets");
+        aice_log_add (AICE_LOG_ERROR, "The ice chain over 16 targets");
         response[0] = 0;
         pipe_write (response, 1);
         return;
@@ -566,11 +562,11 @@ static void aice_idcode (const char *input)
     num_of_idcode++;
     response[0] = num_of_idcode;
 
-    aice_log_add (AICE_LOG_DEBUG, "\t # of target: %d", num_of_idcode);
+    aice_log_add (AICE_LOG_DEBUG, "<aice_idcode>: # of target: %d", num_of_idcode);
     for (i = 0 ; i < num_of_idcode ; i++)
     {
         set_u32 (response + 1 + i*4, idcode[i]);
-        aice_log_add (AICE_LOG_DEBUG, "\t\t IDCode%d: 0x%08X", i, idcode[i]);
+        aice_log_add (AICE_LOG_DEBUG, "\t IDCode%d: 0x%08X", i, idcode[i]);
     }
 
     pipe_write (response, 1 + num_of_idcode * 4);
@@ -579,8 +575,6 @@ static void aice_idcode (const char *input)
 
 static int aice_read_edm (const char *input)
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_read_edm>: ");
-
     char response[MAXLINE];
     uint8_t JDPInst;
     uint32_t target_id;
@@ -595,7 +589,7 @@ static int aice_read_edm (const char *input)
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
+    aice_log_add (AICE_LOG_DEBUG, "<aice_read_edm>: target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
                                       target_id, JDPInst, address, num_of_words);
 
 
@@ -604,7 +598,7 @@ static int aice_read_edm (const char *input)
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_INFO, "\t Allocate EDMData buffer Failed!!");
+        aice_log_add (AICE_LOG_INFO, "Allocate Read EDMData buffer Failed!!");
         return ERROR_FAIL;
     }
 
@@ -662,24 +656,18 @@ static int aice_read_edm (const char *input)
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
 
-        //aice_log_add (AICE_LOG_INFO, "\t recv:");
-
         for (int i = 0 ; i < num_of_words ; i++)
         {
             set_u32 (response + 1 + i*4, EDMData[i]);
-
-            //aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
         }
 
         pipe_write (response, 1 + num_of_words * 4);
-
-        aice_log_add (AICE_LOG_INFO, "\t Read EDM Finish!");
     }
     else {
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_INFO, "\t Read EDM Failed!!");
+        aice_log_add (AICE_LOG_INFO, "Read EDM Failed!!");
     }
 
 
@@ -691,8 +679,6 @@ static int aice_read_edm (const char *input)
 
 static int aice_write_edm( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_write_edm>: ");
-
     char response[MAXLINE];
     uint8_t JDPInst;
     uint32_t target_id;
@@ -709,7 +695,7 @@ static int aice_write_edm( const char *input )
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
+    aice_log_add (AICE_LOG_DEBUG, "<aice_write_edm>: target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
                                       target_id, JDPInst, address, num_of_words);
 
     EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
@@ -717,16 +703,13 @@ static int aice_write_edm( const char *input )
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_ERROR, "\t Allocate EDMData buffer Failed!!");
+        aice_log_add (AICE_LOG_ERROR, "Allocate Write EDMData buffer Failed!!");
         return ERROR_FAIL;
     }
 
-    //aice_log_add (AICE_LOG_DEBUG, "\t data:");
     for (int i = 0 ; i < num_of_words ; i++)
     {
         EDMData[i] = get_u32( input + 14 + i*4 );
-
-        //aice_log_add( AICE_LOG_INFO, "\t\t0x%08X", EDMData[i]);
     }
 
 
@@ -802,14 +785,12 @@ static int aice_write_edm( const char *input )
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
         pipe_write (response, 1);
-
-        aice_log_add (AICE_LOG_ERROR, "\t Write EDM Finish!");
     }
     else {
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_ERROR, "\t Write EDM Failed!!");
+        aice_log_add (AICE_LOG_ERROR, "Write EDM Failed!!");
     }
 
     return result;
@@ -817,8 +798,6 @@ static int aice_write_edm( const char *input )
 
 static int aice_write_ctrls( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_write_ctrl>: ");
-
     char response[MAXLINE];
     unsigned int address;
     unsigned int WriteData;
@@ -827,13 +806,13 @@ static int aice_write_ctrls( const char *input )
     address   = get_u32 (input + 1);
     WriteData = get_u32 (input + 5);
 
-    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X, data=0x%08X ", address, WriteData);
+    aice_log_add (AICE_LOG_DEBUG, "<aice_write_ctrl>: addr=0x%08X, data=0x%08X ", address, WriteData);
     result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&WriteData, 1);
 
     if( result == ERROR_OK )
         response[0] = AICE_OK;
     else {
-        aice_log_add (AICE_LOG_ERROR, "\t Write ICE box ctrl Failed!!");
+        aice_log_add (AICE_LOG_ERROR, "Write ICE box ctrl Failed!!");
         response[0] = AICE_ERROR;
     }
     pipe_write (response, 1);
@@ -843,54 +822,45 @@ static int aice_write_ctrls( const char *input )
 
 static int aice_read_ctrls( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: ");
-
     char response[MAXLINE];
     unsigned int address;
     unsigned int pReadData;
     int result;
 
     address   = get_u32 (input + 1);
-
-    aice_log_add (AICE_LOG_DEBUG, "\t addr=0x%08X", address);
-
     result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)&pReadData, 1);
 
     if( result == ERROR_OK ) {
-        aice_log_add (AICE_LOG_DEBUG, "\t recv: 0x%08X", pReadData);
-
+        aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: addr=0x%08X, recv=0x%08X", address, pReadData);
         response[0] = AICE_OK;
         set_u32(response+1, pReadData);
         pipe_write (response, 5);
     }
     else {
-        aice_log_add (AICE_LOG_ERROR, "\t Read ICE box ctrl Failed!!");
+        aice_log_add (AICE_LOG_ERROR, "Read ICE box ctrl Failed!!");
 
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
     }
-
 
     return result;
 }
 
 static int aice_custom_script( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_custom_script>: ");
-
     char response[MAXLINE];
     char filename[MAXLINE];
     int result;
 
     strcpy( filename, input+1 );
-    aice_log_add (AICE_LOG_DEBUG, "\t filename: %s", filename);
+    aice_log_add (AICE_LOG_DEBUG, "<aice_custom_script>: filename=%s", filename);
 
     result = execute_custom_script( filename );
 
     if( result == ERROR_OK )
         response[0] = AICE_OK;
     else {
-        aice_log_add (AICE_LOG_ERROR, "\t Execute custom script Failed!!");
+        aice_log_add (AICE_LOG_ERROR, "Execute custom script Failed!!");
         response[0] = AICE_ERROR;
     }
     pipe_write (response, 1);
@@ -900,8 +870,6 @@ static int aice_custom_script( const char *input )
 
 static int aice_custom_monitor_cmd( const char *input )
 {
-    aice_log_add (AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: ");
-
     char response[MAXLINE];
     int result;
     int len;
@@ -911,13 +879,13 @@ static int aice_custom_monitor_cmd( const char *input )
     command = (char *)malloc((len+1)*sizeof(char));
     memcpy(command, input+5, len);
     command[len] = '\0';
-    aice_log_add( AICE_LOG_DEBUG, "\t recv: len=%d, %s", len, command);
+    aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: recv: len=%d, %s", len, command);
 
     result = ERROR_OK;
     if( result == ERROR_OK )
         response[0] = AICE_OK;
     else {
-        aice_log_add (AICE_LOG_ERROR, "\t Custom monitor cmd Failed!!");
+        aice_log_add (AICE_LOG_ERROR, "Custom monitor cmd Failed!!");
         response[0] = AICE_ERROR;
     }
     pipe_write (response, 1);
@@ -927,13 +895,12 @@ static int aice_custom_monitor_cmd( const char *input )
 
 static int aice_set_cmd_mode( const char *input )
 {
-	aice_log_add (AICE_LOG_DEBUG, "<aice_set_cmd_mode>: ");
 	char response[MAXLINE];
 	unsigned int cmd_mode;
 	int result = AICE_OK;
 
 	cmd_mode   = get_u32 (input + 1);
-	aice_log_add (AICE_LOG_DEBUG, "\t cmd_mode=0x%08X", cmd_mode);
+	aice_log_add (AICE_LOG_DEBUG, "<aice_set_cmd_mode>: cmd_mode=0x%08X", cmd_mode);
 	aice_usb_set_command_mode(cmd_mode);
 	response[0] = AICE_OK;
 	pipe_write (response, 1);
@@ -943,7 +910,6 @@ static int aice_set_cmd_mode( const char *input )
 
 static int aice_set_read_dtr_to_buf( const char *input )
 {
-	aice_log_add (AICE_LOG_DEBUG, "<read_dtr_to_buf>: ");
 	char response[MAXLINE];
 	unsigned int target_id;
 	unsigned int buffer_idx;
@@ -951,7 +917,7 @@ static int aice_set_read_dtr_to_buf( const char *input )
 
 	target_id   = get_u32 (input + 1);
 	buffer_idx   = get_u32 (input + 5);
-	aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, target_id=0x%08X", target_id, buffer_idx);
+	aice_log_add (AICE_LOG_DEBUG, "<read_dtr_to_buf>: target_id=0x%08X, target_id=0x%08X", target_id, buffer_idx);
 	result = aice_read_dtr_to_buffer(target_id, buffer_idx);
 	if( result == ERROR_OK )
 		response[0] = AICE_OK;
@@ -964,7 +930,6 @@ static int aice_set_read_dtr_to_buf( const char *input )
 
 static int aice_set_write_dtr_from_buf( const char *input )
 {
-	aice_log_add (AICE_LOG_DEBUG, "<write_dtr_from_buf>: ");
 	char response[MAXLINE];
 	unsigned int target_id;
 	unsigned int buffer_idx;
@@ -972,7 +937,7 @@ static int aice_set_write_dtr_from_buf( const char *input )
 
 	target_id   = get_u32 (input + 1);
 	buffer_idx   = get_u32 (input + 5);
-	aice_log_add (AICE_LOG_DEBUG, "\t target_id=0x%08X, target_id=0x%08X", target_id, buffer_idx);
+	aice_log_add (AICE_LOG_DEBUG, "<write_dtr_from_buf>: target_id=0x%08X, target_id=0x%08X", target_id, buffer_idx);
 	result = aice_write_dtr_from_buffer(target_id, buffer_idx);
 	if( result == ERROR_OK )
 		response[0] = AICE_OK;
@@ -985,7 +950,6 @@ static int aice_set_write_dtr_from_buf( const char *input )
 
 static int aice_set_batch_buffer_read (const char *input)
 {
-	aice_log_add (AICE_LOG_DEBUG, "<set_batch_buffer_read>: ");
 	char response[MAXLINE];
 	uint32_t buf_index;
 	uint32_t num_of_words;
@@ -995,7 +959,7 @@ static int aice_set_batch_buffer_read (const char *input)
 	buf_index    = get_u32( input+1 );
 	num_of_words = get_u32( input+5 );
 
-	aice_log_add (AICE_LOG_DEBUG, "\t buf_index=0x%08X, num_of_words=0x%08X ", \
+	aice_log_add (AICE_LOG_DEBUG, "<set_batch_buffer_read>: buf_index=0x%08X, num_of_words=0x%08X ", \
 	                                buf_index, num_of_words);
 	result = aice_batch_buffer_read(buf_index, pReadData, num_of_words);
 	if( result != ERROR_OK ) {
@@ -1005,22 +969,18 @@ static int aice_set_batch_buffer_read (const char *input)
 	}
 
 	response[0] = AICE_OK;
-	//for (i = 0 ; i < num_of_words ; i++) {
-	//	set_u32 (response + 1 + i*4, *pReadData++);
-	//}
 	pipe_write (response, 1 + num_of_words * 4);
 	return result;
 }
 
 static int aice_set_batch_buffer_write (const char *input)
 {
-	aice_log_add (AICE_LOG_DEBUG, "<set_batch_buffer_write>: ");
 	char response[MAXLINE];
 	uint32_t buf_index;
 	int result = 0;
 
 	buf_index = get_u32( input+1 );
-	aice_log_add (AICE_LOG_DEBUG, "\t buf_index=0x%08X ", \
+	aice_log_add (AICE_LOG_DEBUG, "<set_batch_buffer_write>: buf_index=0x%08X ", \
 	                                buf_index);
 	result = aice_batch_buffer_write(buf_index);
 	if( result != ERROR_OK )
@@ -1033,7 +993,6 @@ static int aice_set_batch_buffer_write (const char *input)
 
 static int aice_set_pack_buffer_read (const char *input)
 {
-	aice_log_add (AICE_LOG_DEBUG, "<set_pack_buffer_read>: ");
 	char response[MAXLINE];
 	uint32_t num_of_bytes;
 	int result = 0;
@@ -1041,7 +1000,7 @@ static int aice_set_pack_buffer_read (const char *input)
 
 	num_of_bytes = get_u32( input+1 );
 
-	aice_log_add (AICE_LOG_DEBUG, "\t num_of_bytes=0x%08X ", \
+	aice_log_add (AICE_LOG_DEBUG, "<set_pack_buffer_read>: num_of_bytes=0x%08X ", \
 	                                num_of_bytes);
 	result = aice_pack_buffer_read(pReadData, num_of_bytes);
 	response[0] = AICE_OK;
@@ -1154,8 +1113,6 @@ void parsing_config_file( char* top_filename )
         free(filelist[i]);
 
 }
-
-
 
 int main ()
 {

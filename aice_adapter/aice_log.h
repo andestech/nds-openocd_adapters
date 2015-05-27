@@ -16,6 +16,7 @@ enum log_level_t {
 	AICE_LOG_WARNING = 1,
 	AICE_LOG_INFO    = 2,
 	AICE_LOG_DEBUG   = 3,
+    AICE_LOG_DETAIL  = 4,
 };
 
 void aice_log_init (uint32_t a_buf_size, uint32_t a_debug_level, bool a_unlimited);
@@ -24,25 +25,9 @@ void aice_log_add (uint32_t a_level, const char *a_format, ...);
 
 #define aice_log_error(fmt, ...) aice_log_add (AICE_LOG_ERROR, fmt"\n", ##__VA_ARGS__)
 #define aice_log_debug(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
-#define aice_log_info (fmt, ...) aice_log_add (AICE_LOG_INFO , fmt"\n", ##__VA_ARGS__)
+#define aice_log_info(fmt, ...) aice_log_add (AICE_LOG_INFO, fmt"\n", ##__VA_ARGS__)
+#define aice_log_detail(fmt, ...) aice_log_add (AICE_LOG_DETAIL, fmt"\n", ##__VA_ARGS__)
 
 void alive_sleep(uint64_t ms);
 
-
-/*
-#define PRIx32 "x"
-#define PRId32 "d"
-#define SCNx32 "x"
-#define PRIi32 "i"
-#define PRIu32 "u"
-#define PRId8 PRId32
-#define SCNx64 "llx"
-#define PRIx64 "llx"
-
-#define LOG_ERROR(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
-#define LOG_DEBUG(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
-#define LOG_WARNING(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
-#define DEBUG_JTAG_IO(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
-*/
 #endif
