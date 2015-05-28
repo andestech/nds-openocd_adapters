@@ -452,22 +452,26 @@ static void aice_open (const char *input)
         pid_str = (char *)pAICEName[pid_idx];
 
         if ((vid_idx == 0) && (pid_idx <= 2)) {
-            sprintf( buffer, "%s %s v%d.%d.%d", 
-                    vid_str, 
+            sprintf( buffer, "%s %s v%d.%d.%d",
+                    vid_str,
                     pid_str,
-                    (aice.hardware_version & 0xFFFF), 
+                    (aice.hardware_version & 0xFFFF),
                     aice.firmware_version,
                     aice.fpga_version);
         }
         else {
-            sprintf( buffer, "3rd-party ICE-box: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x", 
-                aice.hardware_version, aice.firmware_version, aice.fpga_version);
+            //sprintf( buffer, "3rd-party ICE-box: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x",
+            //    aice.hardware_version, aice.firmware_version, aice.fpga_version);
+            sprintf ( buffer, "%s %s bcdDevice=0x%x",
+                          pdescp_Manufacturer,
+                          pdescp_Product,
+                          descp_bcdDevice );
         }
     }
     else {
-        sprintf ( buffer, "%s %s bcdDevice=0x%x", 
-                          pdescp_Manufacturer, 
-                          pdescp_Product, 
+        sprintf ( buffer, "%s %s bcdDevice=0x%x",
+                          pdescp_Manufacturer,
+                          pdescp_Product,
                           descp_bcdDevice );
     }
 
