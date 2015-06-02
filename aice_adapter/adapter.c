@@ -1127,7 +1127,7 @@ int main ()
     atexit (aice_log_finalize);
 
     parsing_config_file("openocd.cfg");
-    aice_log_init( log_file_size, debug_level, true); 
+    aice_log_init( log_file_size, debug_level); 
 
     while ((n = pipe_read (line, MAXLINE)) > 0)
     {

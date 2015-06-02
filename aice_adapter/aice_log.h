@@ -19,7 +19,7 @@ enum log_level_t {
     AICE_LOG_DETAIL  = 4,
 };
 
-void aice_log_init (uint32_t a_buf_size, uint32_t a_debug_level, bool a_unlimited);
+void aice_log_init (uint32_t a_buf_size, uint32_t a_debug_level);
 void aice_log_finalize (void);
 void aice_log_add (uint32_t a_level, const char *a_format, ...);
 
