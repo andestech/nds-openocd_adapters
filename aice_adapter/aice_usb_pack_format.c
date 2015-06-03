@@ -149,6 +149,7 @@ static void aice_pack_usb_cmmd_htdb(struct aice_usb_cmmd_info *pusb_cmmd_info)
 		pusb_cmmd_htdmb->cmd = pusb_cmmd_info->cmd;
 		pusb_cmmd_htdmb->target = pusb_cmmd_info->target;
 		pusb_cmmd_htdmb->length = pusb_cmmd_info->length;
+		pusb_cmmd_htdmb->reserved = 0;
 		paddr = (unsigned char *)&pusb_cmmd_htdmb->addr[0];
 	}
 
@@ -217,6 +218,7 @@ static void aice_pack_usb_cmmd_htdd(struct aice_usb_cmmd_info *pusb_cmmd_info)
 		pusb_cmmd_htdmd->cmd = pusb_cmmd_info->cmd;
 		pusb_cmmd_htdmd->target = pusb_cmmd_info->target;
 		pusb_cmmd_htdmd->length = pusb_cmmd_info->length;
+		pusb_cmmd_htdmd->reserved = 0;
 	}
 
 	paddr[0] = (unsigned char)((pusb_cmmd_info->addr >> 24) & 0xFF);
