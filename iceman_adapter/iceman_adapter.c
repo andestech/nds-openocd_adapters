@@ -193,7 +193,8 @@ static void show_usage(void) {
 	for (i=0; i<=15; i++)
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
 
-	printf("\t\t\tAICE-MCU only supports 8 ~ 15\n\n");
+	printf("\t\t\tAICE-MCU only supports 8 ~ 15\n");
+	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
 	printf("-C, --check-times:\tCount/Second to check DBGER\n");
 	printf("\t\t\t(default: 500 times)\n");
 	printf("\t\tExample:\n");
