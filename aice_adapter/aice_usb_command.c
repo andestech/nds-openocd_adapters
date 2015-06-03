@@ -19,13 +19,15 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <jtag/drivers/libusb_common.h>
 //#include <helper/log.h>
 #include "aice_usb_pack_format.h"
 #include "aice_usb_command.h"
 
+#define AICE_LOG_USB_PACKET  0
 #define AICE_USBCMMD_MSG	LOG_DEBUG
 
 /* AICE USB timeout value */
@@ -289,6 +291,22 @@ static int wrap_usb_bulk_write(jtag_libusb_device_handle *dev, int ep,
 static inline int usb_bulk_write_ex(jtag_libusb_device_handle *dev, int ep,
 		char *bytes, int size, int timeout)
 {
+#if (AICE_LOG_USB_PACKET == 1)
+	unsigned int i;
+	char *pOutData = bytes;
+	char msgbuffer[4096] = {0};
+	char *pmsgbuffer = (char *)&msgbuffer[0];
+
+	sprintf ( pmsgbuffer, "bulk_out:");
+	pmsgbuffer += strlen(pmsgbuffer);
+	for (i=0; i<size; i++) {
+		sprintf ( pmsgbuffer, " %02x", (unsigned char)*pOutData++);
+		pmsgbuffer += 3;
+	}
+	*pmsgbuffer = 0x0;
+	pmsgbuffer = (char *)&msgbuffer[0];
+	aice_log_add(AICE_LOG_DEBUG, msgbuffer);
+#endif
 	return usb_bulk_with_retries(&wrap_usb_bulk_write,
 			dev, ep, bytes, size, timeout);
 }
@@ -307,6 +325,20 @@ static inline int usb_bulk_read_ex(jtag_libusb_device_handle *dev, int ep,
 		AICE_USBCMMD_MSG("usb_bulk_read_ex: zero packet!!\n");
 		jtag_libusb_bulk_read(dev, ep, &zero_buffer[0], aice_usb_rx_max_packet, timeout);
 	}
+#if (AICE_LOG_USB_PACKET == 1)
+	unsigned int i;
+	char msgbuffer[4096] = {0};
+	char *pmsgbuffer = (char *)&msgbuffer[0];
+	sprintf ( pmsgbuffer, "bulk_in: size=0x%02x, buf=0x%x", size, (unsigned int )bytes);
+	pmsgbuffer += strlen(pmsgbuffer);
+	for (i=0; i<size; i++) {
+		sprintf ( pmsgbuffer, " %02x", (unsigned char)bytes[i]);
+		pmsgbuffer += 3;
+	}
+	*pmsgbuffer = 0x0;
+	pmsgbuffer = (char *)&msgbuffer[0];
+	aice_log_add(AICE_LOG_DEBUG, msgbuffer);
+#endif
 	return result;
 }
 
