@@ -459,13 +459,13 @@ static void aice_open (const char *input)
                     aice.firmware_version,
                     aice.fpga_version);
         }
+        else if (vid_idx == 0) {
+            sprintf( buffer, "Andes ICE: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x",
+                aice.hardware_version, aice.firmware_version, aice.fpga_version);
+        }
         else {
-            //sprintf( buffer, "3rd-party ICE-box: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x",
-            //    aice.hardware_version, aice.firmware_version, aice.fpga_version);
-            sprintf ( buffer, "%s %s bcdDevice=0x%x",
-                          pdescp_Manufacturer,
-                          pdescp_Product,
-                          descp_bcdDevice );
+            sprintf( buffer, "3rd-party ICE-box: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x",
+                aice.hardware_version, aice.firmware_version, aice.fpga_version);
         }
     }
     else {
