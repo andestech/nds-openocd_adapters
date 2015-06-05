@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <jtag/drivers/libusb_common.h>
-//#include <helper/log.h>
+#include <log.h>
 #include "aice_usb_pack_format.h"
 #include "aice_usb_command.h"
 
@@ -215,7 +215,7 @@ int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid)
 	unsigned int aice_write_ep;
 	jtag_libusb_get_endpoints(udev, &aice_read_ep, &aice_write_ep,
 			&aice_usb_rx_max_packet, &aice_usb_tx_max_packet);
-	//printf("aice_usb_rx_max_packet=%d, aice_usb_tx_max_packet=%d",aice_usb_rx_max_packet, aice_usb_tx_max_packet);
+	AICE_USBCMMD_MSG("aice_usb_rx_max_packet=%d, aice_usb_tx_max_packet=%d",aice_usb_rx_max_packet, aice_usb_tx_max_packet);
 
 	aice_usb_read_ep = aice_read_ep;
 	aice_usb_write_ep = aice_write_ep;
@@ -380,170 +380,17 @@ int aice_scan_chain(unsigned int *id_codes, unsigned char *num_of_ids)
 	*num_of_ids = pusb_rx_cmmd_info->length;
 	return ERROR_OK;
 }
-/*
-int aice_write_ctrl(unsigned int address, unsigned int WriteData)
-{
-	unsigned int ctrl_data = WriteData;
-	int result;
-	result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&ctrl_data, 1);
-	return result;
-}
-
-int aice_read_ctrl(unsigned int address, unsigned int *pReadData)
-{
-	int result;
-	result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)pReadData, 1);
-	return result;
-}
-
-int aice_read_misc(unsigned char target_id, unsigned int address, unsigned int *pReadData)
-{
-	return aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)pReadData, 1);
-}
-
-int aice_write_misc(unsigned char target_id, unsigned int address, unsigned int WriteData)
-{
-	unsigned int misc_data = WriteData;
-	return aice_access_cmmd(AICE_CMDIDX_WRITE_MISC, target_id, address, (unsigned char *)&misc_data, 1);
-}
-
-int aice_read_edmsr(unsigned char target_id, unsigned int address, unsigned int *pReadData)
-{
-	return aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)pReadData, 1);
-}
-
-int aice_write_edmsr(unsigned char target_id, unsigned int address, unsigned int WriteData)
-{
-	unsigned int edmsr_data = WriteData;
-	return aice_access_cmmd(AICE_CMDIDX_WRITE_EDMSR, target_id, address, (unsigned char *)&edmsr_data, 1);
-}
-
-int aice_write_mem_b(unsigned char target_id, unsigned int address, unsigned int WriteData)
-{
-	unsigned int write_data = (WriteData & 0x000000FF);
-	return aice_access_cmmd(AICE_CMDIDX_WRITE_MEM_B, target_id, address, (unsigned char *)&write_data, 1);
-}
-
-int aice_write_mem_h(unsigned char target_id, unsigned int address, unsigned int WriteData)
-{
-	unsigned int write_data = (WriteData & 0x0000FFFF);
-	address = ((address >> 1) & 0x7FFFFFFF);
-	return aice_access_cmmd(AICE_CMDIDX_WRITE_MEM_H, target_id, address, (unsigned char *)&write_data, 1);
-}
-
-int aice_write_mem(unsigned char target_id, unsigned int address, unsigned int WriteData)
-{
-	unsigned int write_data = WriteData;
-	address = ((address >> 2) & 0x3FFFFFFF);
-	return aice_access_cmmd(AICE_CMDIDX_WRITE_MEM, target_id, address, (unsigned char *)&write_data, 1);
-}
-
-int aice_fastread_mem(unsigned char target_id, unsigned char *pReadData, unsigned int num_of_words)
-{
-	return aice_access_cmmd(AICE_CMDIDX_FASTREAD_MEM, target_id, 0, (unsigned char *)pReadData, num_of_words);
-}
-
-int aice_fastwrite_mem(unsigned char target_id, const unsigned char *pWriteData, unsigned int num_of_words)
-{
-	return aice_access_cmmd(AICE_CMDIDX_FASTWRITE_MEM, target_id, 0, (unsigned char *)pWriteData, num_of_words);
-}
-
-int aice_read_mem_b(unsigned char target_id, unsigned int address, unsigned int *pReadData)
-{
-	return aice_access_cmmd(AICE_CMDIDX_READ_MEM_B, target_id, address, (unsigned char *)pReadData, 1);
-}
-
-int aice_read_mem_h(unsigned char target_id, unsigned int address, unsigned int *pReadData)
-{
-	address = ((address >> 1) & 0x7FFFFFFF);
-	return aice_access_cmmd(AICE_CMDIDX_READ_MEM_H, target_id, address, (unsigned char *)pReadData, 1);
-}
-
-int aice_read_mem(unsigned char target_id, unsigned int address, unsigned int *pReadData)
-{
-	address = ((address >> 2) & 0x3FFFFFFF);
-	return aice_access_cmmd(AICE_CMDIDX_READ_MEM, target_id, address, (unsigned char *)pReadData, 1);
-}
-*/
-/*
-static int aice_switch_to_big_endian(unsigned int *word, unsigned char num_of_words)
-{
-	unsigned int tmp, i;
-
-	for (i = 0 ; i < num_of_words ; i++) {
-		tmp = ((word[i] >> 24) & 0x000000FF) |
-			((word[i] >>  8) & 0x0000FF00) |
-			((word[i] <<  8) & 0x00FF0000) |
-			((word[i] << 24) & 0xFF000000);
-		word[i] = tmp;
-	}
-
-	return ERROR_OK;
-}
-*/
-/*
-int aice_write_dim(unsigned char target_id, unsigned int *pWriteData, unsigned char num_of_words)
-{
-	int result;
-
-	usb_cmmd_pack_info.access_little_endian = 0;  // AICE_BIG_ENDIAN
-	result = aice_access_cmmd(AICE_CMDIDX_WRITE_DIM, target_id, 0,
-		(unsigned char *)pWriteData, num_of_words);
-	usb_cmmd_pack_info.access_little_endian = 1;
-	return result;
-}
-
-int aice_do_execute(unsigned char target_id)
-{
-	unsigned int word_data = 0;
-	return aice_access_cmmd(AICE_CMDIDX_EXECUTE, target_id, 0, (unsigned char *)&word_data, 1);
-}
-*/
 
 // also define in nds32_edm.h
-#define NDS_EDM_SR_EDMSW  0x30
-#define NDS_EDMSW_WDV		(1 << 0)
-#define NDS_EDMSW_RDV		(1 << 1)
-
-/*
-int aice_read_dtr(unsigned char target_id, unsigned int *pReadData)
-{
-	unsigned int value_edmsw = 0;
-	if (aice_read_edmsr(target_id, NDS_EDM_SR_EDMSW, &value_edmsw) != ERROR_OK)
-		return ERROR_FAIL;
-	if ((value_edmsw & NDS_EDMSW_WDV) == 0) {
-		return ERROR_FAIL;
-	}
-	return aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)pReadData, 1);
-}
-*/
+//#define NDS_EDM_SR_EDMSW  0x30
+//#define NDS_EDMSW_WDV		(1 << 0)
+//#define NDS_EDMSW_RDV		(1 << 1)
 
 int aice_read_dtr_to_buffer(unsigned char target_id, unsigned int buffer_idx)
 {
 	unsigned int dtr_data = 0;
 	return aice_access_cmmd(AICE_CMDIDX_READ_DTR_TO_BUFFER, target_id, buffer_idx, (unsigned char *)&dtr_data, 1);
 }
-
-/*
-int aice_write_dtr(unsigned char target_id, unsigned int WriteData)
-{
-	int result;
-	unsigned int dtr_data = WriteData;
-	unsigned int value_edmsw = 0;
-
-	result = aice_access_cmmd(AICE_CMDIDX_WRITE_DTR, target_id, 0, (unsigned char *)&dtr_data, 1);
-	if (result != ERROR_OK)
-		return ERROR_FAIL;
-	if (aice_read_edmsr(target_id, NDS_EDM_SR_EDMSW, &value_edmsw) != ERROR_OK)
-		return ERROR_FAIL;
-	if ((value_edmsw & NDS_EDMSW_RDV) == 0) {
-		AICE_USBCMMD_MSG(NDS32_ERRMSG_TARGET_WRITE_DTR);
-		return ERROR_FAIL;
-	}
-
-	return ERROR_OK;
-}
-*/
 
 int aice_write_dtr_from_buffer(unsigned char target_id, unsigned int buffer_idx)
 {
@@ -669,9 +516,9 @@ int aice_usb_packet_flush(void)
 			else if (batch_status & 0xE)
 				return ERROR_FAIL;
 
-			//if ((i % 30) == 0)
-			//	keep_alive();
-
+			if ((i % 30) == 0) {
+				keep_alive();
+			}
 			i++;
 		}
 	}
@@ -810,4 +657,258 @@ int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int
 	} while (1);
 
 	return ERROR_OK;
+}
+
+unsigned int aice_hardware_version, aice_firmware_version, aice_fpga_version, aice_ice_config;
+int aice_get_info(struct aice_port_s *aice)
+{
+	struct aice_port_s aice_dummy;
+	if (NULL == aice)
+		aice = &aice_dummy;
+
+	//version info
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &aice->hardware_version) != ERROR_OK)
+		return ERROR_FAIL;
+
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_FIRMWARE_VERSION, &aice->firmware_version) != ERROR_OK)
+		return ERROR_FAIL;
+
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &aice->fpga_version) != ERROR_OK)
+		return ERROR_FAIL;
+
+	aice_hardware_version = aice->hardware_version;
+	aice_firmware_version = aice->firmware_version;
+	aice_fpga_version = aice->fpga_version;
+	LOG_INFO("AICE version: hw_ver = 0x%x, fw_ver = 0x%x, fpga_ver = 0x%x",
+		aice->hardware_version, aice->firmware_version, aice->fpga_version);
+	//hardware features info
+	if (aice_read_ctrl(AICE_READ_CTRL_ICE_CONFIG, &aice->ice_config) != ERROR_OK)
+		return ERROR_FAIL;
+	LOG_INFO("AICE hardware features: 0x%08x", aice->ice_config);
+	aice_ice_config = aice->ice_config;
+
+	//batch buffer size info
+	if (aice_read_ctrl(AICE_REG_BATCH_DATA_BUFFER_1_STATE, &aice->batch_data_buf1_size) != ERROR_OK)
+		return ERROR_FAIL;
+	aice->batch_data_buf1_size &= 0xffffu;
+	LOG_INFO("AICE batch data buffer size: %d words", aice->batch_data_buf1_size);
+
+	return ERROR_OK;
+}
+
+#define LINE_BUFFER_SIZE 1024
+enum AICE_CUSTOM_CMMD {
+	AICE_CUSTOM_CMMD_SET_SRST = 0,
+	AICE_CUSTOM_CMMD_CLEAR_SRST,
+	AICE_CUSTOM_CMMD_SET_DBGI,
+	AICE_CUSTOM_CMMD_CLEAR_DBGI,
+	AICE_CUSTOM_CMMD_SET_TRST,
+	AICE_CUSTOM_CMMD_CLEAR_TRST,
+	AICE_CUSTOM_CMMD_DELAY,
+	AICE_CUSTOM_CMMD_WRITE_PINS,
+	AICE_CUSTOM_CMMD_T_WRITE_MISC,
+	AICE_CUSTOM_CMMD_MAX,
+};
+
+static char *custom_script_cmmd[AICE_CUSTOM_CMMD_MAX]={
+	"set srst",
+	"clear srst",
+	"set dbgi",
+	"clear dbgi",
+	"set trst",
+	"clear trst",
+	"delay",
+	"write_pins",
+	"t_write_misc",
+};
+
+int aice_usb_execute_custom_script(const char *script)
+{
+	FILE *script_fd;
+	uint32_t word_buffer[LINE_BUFFER_SIZE/4];
+	char tmp_buffer[LINE_BUFFER_SIZE];
+	char *line_buffer = (char *)&word_buffer[0];
+	char *curr_str, *compare_str;
+	uint32_t delay, i, num_of_words;
+	uint32_t Nibble1 = 0, Nibble2 = 0, write_pins_num = 0;
+	uint32_t write_ctrl_value = 0, idx = 0;
+	uint32_t target_id = 0, write_misc_addr = 0, write_misc_data = 0;
+	int result = ERROR_OK;
+
+	script_fd = fopen(script, "r");
+	if (script_fd == NULL) {
+		return ERROR_FAIL;
+	}
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, script_fd) != NULL) {
+		for (i = 0; i < AICE_CUSTOM_CMMD_MAX; i ++) {
+			compare_str = custom_script_cmmd[i];
+			curr_str = strstr(line_buffer, compare_str);
+			if (curr_str != NULL)
+				break;
+		}
+		if (i < AICE_CUSTOM_CMMD_MAX) {
+			LOG_DEBUG("custom_script %s, %s, %d, %d", curr_str, compare_str, (int)i, (int)strlen(compare_str));
+		}
+		if (i <= AICE_CUSTOM_CMMD_DELAY) {
+			sscanf(curr_str + strlen(compare_str), " %d", &delay);
+			if (i == AICE_CUSTOM_CMMD_SET_SRST)
+				write_ctrl_value = AICE_CUSTOM_DELAY_SET_SRST;
+			else if (i == AICE_CUSTOM_CMMD_CLEAR_SRST)
+				write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_SRST;
+			else if (i == AICE_CUSTOM_CMMD_SET_DBGI)
+				write_ctrl_value = AICE_CUSTOM_DELAY_SET_DBGI;
+			else if (i == AICE_CUSTOM_CMMD_CLEAR_DBGI)
+				write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_DBGI;
+			else if (i == AICE_CUSTOM_CMMD_SET_TRST)
+				write_ctrl_value = AICE_CUSTOM_DELAY_SET_TRST;
+			else if (i == AICE_CUSTOM_CMMD_CLEAR_TRST)
+				write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_TRST;
+			else if (i == AICE_CUSTOM_CMMD_DELAY)
+				write_ctrl_value = 0;
+
+			write_ctrl_value |= (1 << 16);
+			LOG_DEBUG("custom_script aice_write_ctrl, 0x%x", write_ctrl_value);
+			result = aice_write_ctrl(AICE_WRITE_CTRL_CUSTOM_DELAY, write_ctrl_value);
+			if (result != ERROR_OK)
+				goto aice_execute_custom_script_error;
+			alive_sleep(delay);
+		}
+		else if (i == AICE_CUSTOM_CMMD_WRITE_PINS) {
+			sscanf(curr_str + strlen(compare_str), " %s", &tmp_buffer[0]);
+			write_pins_num = strlen(&tmp_buffer[0]);
+			LOG_DEBUG("custom_script write_pins, %d %s", write_pins_num, &tmp_buffer[0]);
+			for (i = 0; i < ((write_pins_num + 1) >> 1); i ++) {
+				Nibble1 = 0;
+				Nibble2 = 0;
+				sscanf(&tmp_buffer[idx++], "%01x", &Nibble1);
+				sscanf(&tmp_buffer[idx++], "%01x", &Nibble2);
+				LOG_DEBUG("custom_script write_pins, %x %x", Nibble1, Nibble2);
+				line_buffer[2 + i] = (char)(Nibble1 | (Nibble2 << 4));
+			}
+			num_of_words = 2 + ((write_pins_num + 1) >> 1);
+			num_of_words = (num_of_words + 3) >> 2;
+			line_buffer[0] = (char)(write_pins_num >> 8);
+			line_buffer[1] = (char)(write_pins_num & 0xFF);
+
+			LOG_DEBUG("ice_config = %x", aice_ice_config);
+
+			if ((aice_ice_config & (0x01 << 30)) == 0) {
+				LOG_DEBUG("write_pins unsupported !!");
+				goto aice_execute_custom_script_error;
+			}
+			result = aice_write_pins(num_of_words, &word_buffer[0]);
+			if (result != ERROR_OK)
+				goto aice_execute_custom_script_error;
+		}
+		else if (i == AICE_CUSTOM_CMMD_T_WRITE_MISC) {
+			sscanf(curr_str + strlen(compare_str), " %d %d %d", &target_id, &write_misc_addr, &write_misc_data);
+			LOG_DEBUG("custom_script aice_write_misc, 0x%x, 0x%x, 0x%x", target_id, write_misc_addr, write_misc_data);
+			result = aice_write_misc(target_id, write_misc_addr, write_misc_data);
+			if (result != ERROR_OK)
+				goto aice_execute_custom_script_error;
+		}
+	}
+
+    fclose(script_fd);
+    return result;
+
+aice_execute_custom_script_error:
+    LOG_ERROR("<-- Issue custom_script '%s' failed, abandon continue -->", curr_str);
+	fclose(script_fd);
+	return result;
+}
+
+// reset c51 through ep0
+// The reset sequence is as following.
+// 1. send ep0 packet: bmRequestType 0x40, bRequest 0xA0, wValue 0xe600, index 0x0, byte 1, length 1
+// 2. delay several milliseconds
+// 3. send ep0 packet: bmRequestType 0x40, bRequest 0xA0, wValue 0xe600, index 0x0, byte 0, length 1
+// 4. wait c51 reload FPGA
+// The reset sequence can work on AICE 1.6.6 or above.
+// Bug 7568 - AICE could not be reset by ICEman
+int aice_reset_aice_as_startup(void)
+{
+	int ret;
+	unsigned char reset_bit;
+	jtag_libusb_device_handle *dev = aice_usb_handle;
+
+	reset_bit = 1;
+	ret = jtag_libusb_control_transfer(dev, 0x40, 0xa0, 0xe600, 0x00, (char *)&reset_bit, 1, 5000);
+	alive_sleep(100);
+	reset_bit = 0;
+	ret = jtag_libusb_control_transfer(dev, 0x40, 0xa0, 0xe600, 0x00, (char *)&reset_bit, 1, 5000);
+	alive_sleep(1500);
+	/* usb_control_msg() returns the number of bytes transferred during the
+	 * DATA stage of the control transfer - must be exactly 1 in this case! */
+	if (ret != 1)
+		return ERROR_FAIL;
+	return ERROR_OK;
+}
+
+uint32_t jtag_clock = 16;
+uint32_t aice_count_to_check_dbger = 5000;
+int aice_usb_set_clock(int set_clock)
+{
+	//printf("aice_usb_set_clock WRITE_CTRL_TIMEOUT = %x\n", aice_count_to_check_dbger);
+	aice_write_ctrl(AICE_WRITE_CTRL_TIMEOUT, aice_count_to_check_dbger);
+
+	if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL,
+				AICE_TCK_CONTROL_TCK_SCAN) != ERROR_OK)
+		goto aice_usb_set_clock_ERR;
+
+	/* Read out TCK_SCAN clock value */
+	uint32_t scan_clock;
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
+		goto aice_usb_set_clock_ERR;
+
+	scan_clock &= 0x0F;
+
+	uint32_t scan_base_freq;
+	if (scan_clock & 0x8)
+		scan_base_freq = 48000; /* 48 MHz */
+	else
+		scan_base_freq = 30000; /* 30 MHz */
+
+	uint32_t set_base_freq;
+	if (set_clock == 16) {
+		// Users do NOT specify the jtag clock, use scan-freq
+		LOG_DEBUG("Use scan-freq");
+		set_clock = scan_clock;
+		// If scan-freq = 48MHz, use 24MHz by default
+		if (set_clock == 8)
+			set_clock = 9;
+		set_base_freq = scan_base_freq;
+	}
+	else if (set_clock & 0x8)
+		set_base_freq = 48000;
+	else
+		set_base_freq = 30000;
+
+	uint32_t set_freq;
+	uint32_t scan_freq;
+	set_freq = set_base_freq >> (set_clock & 0x7);
+	scan_freq = scan_base_freq >> (scan_clock & 0x7);
+
+	if (scan_freq < set_freq) {
+		LOG_ERROR("User specifies higher jtag clock than TCK_SCAN clock");
+		//goto aice_usb_set_clock_ERR;
+	}
+
+	if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL, set_clock) != ERROR_OK)
+		goto aice_usb_set_clock_ERR;
+
+	uint32_t check_speed;
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &check_speed) != ERROR_OK)
+		goto aice_usb_set_clock_ERR;
+
+	if (((int)check_speed & 0x0F) != set_clock) {
+		LOG_ERROR("Set jtag clock failed");
+		goto aice_usb_set_clock_ERR;
+	}
+
+//aice_usb_set_clock_OK:
+	jtag_clock = set_clock;
+	return ERROR_OK;
+aice_usb_set_clock_ERR:
+	return ERROR_FAIL;
 }

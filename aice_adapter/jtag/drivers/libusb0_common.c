@@ -22,7 +22,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-//#include "log.h"
+
 #include "libusb0_common.h"
 
 static bool jtag_libusb_match(struct jtag_libusb_device *dev,
@@ -125,7 +125,7 @@ int jtag_libusb_get_endpoints(struct jtag_libusb_device *udev,
 	for (int i = 0; i < desc->bNumEndpoints; i++) {
 		uint8_t epnum = desc->endpoint[i].bEndpointAddress;
 		bool is_input = epnum & 0x80;
-		LOG_DEBUG("usb ep %s %02x, max_packet %d", is_input ? "in" : "out", epnum, desc->endpoint[i].wMaxPacketSize);
+
 		if (is_input) {
 			*usb_read_ep = epnum;
 			*usb_rx_max_packet = desc->endpoint[i].wMaxPacketSize;
@@ -153,10 +153,6 @@ int jtag_libusb_get_descriptor_string(jtag_libusb_device_handle *dev_handle,
 	int ret1, ret2;
 	char *pStringManufacturer, *pStringProduct;
 
-	LOG_DEBUG("jtag_libusb_get_descriptor_string...\n");
-	LOG_DEBUG("dev_desc.iManufacturer = %x\n", dev->descriptor.iManufacturer);
-	LOG_DEBUG("dev_desc.iProduct = %x\n", dev->descriptor.iProduct);
-
 	ret1 = usb_get_string_simple(dev_handle, dev->descriptor.iManufacturer,
 		(char*)&descriptor_string_iManufacturer[0], sizeof(descriptor_string_iManufacturer)-1);
 	ret2 = usb_get_string_simple(dev_handle, dev->descriptor.iProduct,
@@ -173,8 +169,5 @@ int jtag_libusb_get_descriptor_string(jtag_libusb_device_handle *dev_handle,
 	*pdescp_Manufacturer = pStringManufacturer;
 	*pdescp_Product = pStringProduct;
 	*pdescp_bcdDevice = (unsigned int)dev->descriptor.bcdDevice;
-	LOG_DEBUG("Manufacturer: %s \n", *pdescp_Manufacturer);
-	LOG_DEBUG("Product: %s \n", *pdescp_Product);
-	LOG_DEBUG("bcdDevice = %x \n", *pdescp_bcdDevice);
 	return 0;
 }

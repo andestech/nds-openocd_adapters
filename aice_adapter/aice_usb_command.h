@@ -19,6 +19,23 @@
 #ifndef __AICE_USB_COMMAND_H__
 #define __AICE_USB_COMMAND_H__
 
+struct aice_port_s {
+	/** CPU core ID */
+	uint32_t coreid;
+	/** Hardware version */
+	uint32_t hardware_version;
+	/** Firmware version */
+	uint32_t firmware_version;
+	/** FPGA version */
+	uint32_t fpga_version;
+	/** ICE Configuration */
+	uint32_t ice_config;
+	/** profile data buffer size */
+	uint32_t batch_data_buf1_size;
+	/** port name, type, and API */
+	const struct aice_port *port;
+};
+
 enum aice_usb_cmmd_index {
 	AICE_CMDIDX_WRITE_CTRL = 0,
 	AICE_CMDIDX_WRITE_MISC,
@@ -66,8 +83,11 @@ enum aice_command_mode {
 #define AICE_READ_CTRL_GET_FPGA_VERSION      0x02
 #define AICE_READ_CTRL_GET_FIRMWARE_VERSION  0x03
 #define AICE_READ_CTRL_GET_JTAG_PIN_STATUS   0x04
+#define AICE_READ_CTRL_BATCH_CTRL            0x20
+#define AICE_READ_CTRL_BATCH_ITERATION       0x21
 #define AICE_READ_CTRL_BATCH_BUF_INFO        0x22
 #define AICE_READ_CTRL_BATCH_STATUS          0x23
+#define AICE_READ_CTRL_BATCH_CMD_BUF0_CTRL   0x30
 #define AICE_READ_CTRL_BATCH_BUF0_STATE      0x31
 #define AICE_READ_CTRL_BATCH_BUF4_STATE      0x39
 #define AICE_READ_CTRL_BATCH_BUF5_STATE      0x3B
@@ -97,6 +117,16 @@ enum aice_command_mode {
 #define AICE_BATCH_DATA_BUFFER_2     0x06
 #define AICE_BATCH_DATA_BUFFER_3     0x07
 
+/* Custom SRST/DBGI/TRST */
+#define AICE_CUSTOM_DELAY_SET_SRST		0x01
+#define AICE_CUSTOM_DELAY_CLEAN_SRST	0x02
+#define AICE_CUSTOM_DELAY_SET_DBGI		0x04
+#define AICE_CUSTOM_DELAY_CLEAN_DBGI	0x08
+#define AICE_CUSTOM_DELAY_SET_TRST		0x10
+#define AICE_CUSTOM_DELAY_CLEAN_TRST	0x20
+/* Constants for AICE command WRITE_CTRL:TCK_CONTROL */
+#define AICE_TCK_CONTROL_TCK_SCAN		0x10
+
 extern unsigned char usb_out_packets_buffer[];
 extern unsigned char usb_in_packets_buffer[];
 extern unsigned int usb_out_packets_buffer_length;
@@ -104,12 +134,16 @@ extern unsigned int usb_in_packets_buffer_length;
 extern enum aice_command_mode aice_command_mode;
 extern unsigned int aice_usb_rx_max_packet;
 extern unsigned int aice_usb_tx_max_packet;
+extern unsigned int aice_hardware_version, aice_firmware_version, aice_fpga_version, aice_ice_config;
+extern uint32_t jtag_clock;
+extern uint32_t aice_count_to_check_dbger;
 
 extern int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid);
 extern int aice_usb_close(void);
 extern int aice_usb_write(unsigned char *out_buffer, unsigned int out_length);
 extern int aice_usb_read(unsigned char *in_buffer, unsigned int expected_size);
 extern int aice_reset_box(void);
+extern int aice_get_info(struct aice_port_s *aice);
 extern int aice_scan_chain(unsigned int *id_codes, unsigned char *num_of_ids);
 extern int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length);
 extern int aice_write_ctrl(unsigned int address, unsigned int WriteData);
@@ -139,7 +173,9 @@ extern int aice_pack_buffer_read(unsigned char *pReadData, unsigned int num_of_b
 extern int aice_write_pins(unsigned int num_of_words, unsigned int *pWriteData);
 extern int aice_usb_packet_flush(void);
 extern int aice_usb_set_command_mode(enum aice_command_mode command_mode);
-
+extern int aice_usb_execute_custom_script(const char *script);
+extern int aice_reset_aice_as_startup(void);
+extern int aice_usb_set_clock(int set_clock);
 extern struct aice_usb_cmmd_info usb_cmmd_pack_info;
 
 #endif

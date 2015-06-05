@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include "aice_log.h"
+#include "log.h"
 
 
 #ifdef __MINGW32__ 

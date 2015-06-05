@@ -22,7 +22,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-//#include "log.h"
+
 #include "libusb1_common.h"
 
 static struct libusb_context *jtag_libusb_context; /**< Libusb context **/
@@ -60,17 +60,14 @@ int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 		errCode = libusb_open(devs[idx], out);
 
 		if (errCode) {
-			LOG_ERROR("libusb_open() failed with %s",
-				  libusb_error_name(errCode));
 			return errCode;
 		}
 		/* claim usb interface, if fail, search the next device. (for multi-AICEs support) */
 		int RetVal;
 		/* set_configuration must be before claim_interface() (RedHat64) */
 		RetVal = jtag_libusb_set_configuration(*out, 0);
-		//printf("libusb_set_configuration %x\n", RetVal);
 		RetVal = libusb_claim_interface(*out, 0);
-		//printf("libusb_claim_interface %x\n", RetVal);
+
 		//jtag_libusb_release_interface(*out, 0);
 		if(RetVal == 0) {
 			/** Free the device list **/
@@ -165,8 +162,6 @@ int jtag_libusb_get_endpoints(struct jtag_libusb_device *udev,
 
 				uint8_t epnum = epdesc->bEndpointAddress;
 				bool is_input = epnum & 0x80;
-				LOG_DEBUG("usb ep %s %02x, max_packet %d",
-					is_input ? "in" : "out", epnum, epdesc->wMaxPacketSize);
 
 				if (is_input) {
 					*usb_read_ep = epnum;
@@ -200,10 +195,6 @@ int jtag_libusb_get_descriptor_string(jtag_libusb_device_handle *dev_handle,
 
 	struct libusb_device_descriptor dev_desc;
 	libusb_get_device_descriptor(dev, &dev_desc);
-	
-	LOG_DEBUG("jtag_libusb_get_descriptor_string...\n");
-	LOG_DEBUG("dev_desc.iManufacturer = %x\n", dev_desc.iManufacturer);
-	LOG_DEBUG("dev_desc.iProduct = %x\n", dev_desc.iProduct);
 
 	ret1 = libusb_get_string_descriptor_ascii(dev_handle, dev_desc.iManufacturer,
 		&descriptor_string_iManufacturer[0], sizeof(descriptor_string_iManufacturer)-1);
@@ -221,8 +212,5 @@ int jtag_libusb_get_descriptor_string(jtag_libusb_device_handle *dev_handle,
 	*pdescp_Manufacturer = pStringManufacturer;
 	*pdescp_Product = pStringProduct;
 	*pdescp_bcdDevice = (unsigned int)dev_desc.bcdDevice;
-	LOG_DEBUG("Manufacturer: %s \n", *pdescp_Manufacturer);
-	LOG_DEBUG("Product: %s \n", *pdescp_Product);
-	LOG_DEBUG("bcdDevice = %x \n", *pdescp_bcdDevice);
 	return 0;
 }
