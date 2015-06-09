@@ -34,7 +34,6 @@ const char *Log_File_Name[2]={
 };
 
 static bool enable_debug_;
-static char *debug_buf_;
 static FILE *debug_fd_;
 static uint32_t debug_level_    = AICE_LOG_ERROR;
 static uint32_t debug_buf_size_ = MINIMUM_DEBUG_LOG_SIZE;
