@@ -847,6 +847,7 @@ static int aice_set_pack_buffer_read (const char *input)
 }
 
 #define MAX_FILELIST 10
+extern uint32_t aice_count_to_check_dbger;
 void parsing_config_file( char* top_filename )
 {
     int filelist_top = 0;
@@ -918,6 +919,13 @@ void parsing_config_file( char* top_filename )
 
                         free(vid_str);
                         free(pid_str);
+                    }
+                    else if( strncmp(tok, "count_to_check_dbger", 20) == 0 ) {
+                        tok = strtok( NULL, " "); //count_to_check_dbger
+
+                        char *tmp;
+                        aice_count_to_check_dbger = strtol(tok, &tmp, 10);
+                        aice_log_add(AICE_LOG_DEBUG, "get count_to_check_dbger: %d", aice_count_to_check_dbger);
                     }
 
                     continue;
