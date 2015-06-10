@@ -11,13 +11,13 @@ OBJECTS = $(SOURCES:.c=.o)
 UNAME_S := $(shell uname)
 
 ifeq ($(UNAME_S), Linux)
-	CFLAGS  += -DHAVE_LIBUSB1 -I./libusb/include/libusb-1.0
+	CFLAGS  += -m32 -DHAVE_LIBUSB1 -I./libusb/include/libusb-1.0
 	SOURCES += jtag/drivers/libusb1_common.c 
-	LDFLAGS += -ldl -lpthread -lrt libusb/lib/libusb-1.0.a
+	LDFLAGS += -m32 -ldl -lpthread libusb/lib/libusb-1.0.a -lrt
 else 
-	CFLAGS  += -I./libusb/include
+	CFLAGS  += -m32 -I./libusb/include
 	SOURCES += jtag/drivers/libusb0_common.c 
-	LDFLAGS += -ldl -lpthread libusb/lib/libusb.a 
+	LDFLAGS += -m32 -ldl -lpthread libusb/lib/libusb.a 
 endif
 
 
