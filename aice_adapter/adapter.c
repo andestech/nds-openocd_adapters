@@ -966,7 +966,7 @@ int main ()
     int n;
 
     signal(SIGINT, SIG_IGN);
-    atexit (aice_log_finalize);
+    //atexit (aice_log_finalize);   // Failed while use AndeSight cygwin build
 
     parsing_config_file("openocd.cfg");
     aice_log_init( log_file_size, debug_level); 
