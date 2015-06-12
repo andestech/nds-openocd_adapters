@@ -969,7 +969,11 @@ int main ()
     //atexit (aice_log_finalize);   // Failed while use AndeSight cygwin build
 
     parsing_config_file("openocd.cfg");
-    aice_log_init( log_file_size, debug_level); 
+
+    if( log_file_size > MINIMUM_DEBUG_LOG_SIZE ) 
+        aice_log_init( log_file_size, debug_level); 
+    else 
+        aice_log_init( log_file_size, AICE_LOG_ERROR); 
 
     while ((n = pipe_read (line, MAXLINE)) > 0)
     {
