@@ -507,6 +507,7 @@ static void close_config_files(void) {
 	fclose(interface_cfg);
 	fclose(board_cfg_tpl);
 	fclose(board_cfg);
+	fclose(target_cfg_tpl);
 	for (coreid = 0; coreid < 1; coreid ++)
 		fclose(target_cfg[coreid]);
 }

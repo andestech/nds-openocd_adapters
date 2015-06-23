@@ -42,11 +42,15 @@ int prepare_connect(int port_num) {
 	sockaddr.sin_port = htons (port_num);
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
 
-	if (bind (host_descriptor, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0)
+	if (bind (host_descriptor, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
+		closesocket(host_descriptor);
 		return EBIND;
+	}
 
-	if (listen (host_descriptor, 1) < 0)
+	if (listen (host_descriptor, 1) < 0) {
+		closesocket(host_descriptor);
 		return ELISTEN;
+	}
 
 	return host_descriptor;
 }
@@ -92,11 +96,15 @@ int prepare_connect(int port_num) {
 	sockaddr.sin_port = htons(port_num);
 	sockaddr.sin_addr.s_addr = INADDR_ANY;
 
-	if (bind(host_descriptor, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0)
+	if (bind(host_descriptor, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
+		close(host_descriptor);
 		return EBIND;
+	}
 
-	if (listen(host_descriptor, 1) < 0)
+	if (listen(host_descriptor, 1) < 0) {
+		close(host_descriptor);
 		return ELISTEN;
+	}
 
 	return host_descriptor;
 }
