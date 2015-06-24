@@ -582,6 +582,26 @@ int aice_usb_set_command_mode(enum aice_command_mode command_mode)
 	return retval;
 }
 
+int aice_clear_timeout(void)
+{
+	int result = 0;
+	unsigned char tmp_usbbuf[8];
+	tmp_usbbuf[0] = AICE_CMD_WRITE_CTRL;
+	tmp_usbbuf[1] = 0x00;
+	tmp_usbbuf[2] = AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS;
+	tmp_usbbuf[3] = 0x00;
+	tmp_usbbuf[4] = 0x00;
+	tmp_usbbuf[5] = 0x00;
+	tmp_usbbuf[6] = 0x01;
+	// Host to device, send usb packet to device
+	aice_usb_write(&tmp_usbbuf[0], 7);
+	// Device to host, receive usb packet from device
+	result = aice_usb_read(&tmp_usbbuf[0], 2);
+	if (result < 0)
+		return ERROR_FAIL;
+	return ERROR_OK;
+}
+
 int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length)
 {
 	struct aice_usb_cmmd_info *pusb_tx_cmmd_info = &usb_cmmd_pack_info;
@@ -649,7 +669,7 @@ int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int
 			}
 
 			/* clear timeout and retry */
-			if (aice_reset_box() != ERROR_OK)
+			if (aice_clear_timeout() != ERROR_OK)
 				return ERROR_FAIL;
 
 			retry_times++;
