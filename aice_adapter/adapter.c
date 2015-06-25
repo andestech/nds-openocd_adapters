@@ -56,6 +56,7 @@ int vid_pid_array_top = -1;
 int nds32_reset_aice_as_startup = 0;
 int debug_level   = AICE_LOG_ERROR;
 int log_file_size = MINIMUM_DEBUG_LOG_SIZE; 
+uint32_t EDMbuff[MAXLINE/4];
 
 /***************************************************************************/
 
@@ -337,7 +338,7 @@ static int aice_read_edm (const char *input)
     uint32_t target_id;
     uint32_t address;
     uint32_t num_of_words;
-    uint32_t *EDMData;
+    uint32_t *EDMData = EDMbuff;
     int result = 0;
     unsigned int value_edmsw = 0;
 
@@ -350,14 +351,14 @@ static int aice_read_edm (const char *input)
                                       target_id, JDPInst, address, num_of_words);
 
 
-    EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
-    if( EDMData == NULL ) {
-        response[0] = AICE_ERROR;
-        pipe_write (response, 1);
+    //EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
+    //if( EDMData == NULL ) {
+    //    response[0] = AICE_ERROR;
+    //    pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_INFO, "Allocate Read EDMData buffer Failed!!");
-        return ERROR_FAIL;
-    }
+    //    aice_log_add (AICE_LOG_INFO, "Allocate Read EDMData buffer Failed!!");
+    //    return ERROR_FAIL;
+    //}
 
 
     switch ( JDPInst ) {
@@ -428,7 +429,7 @@ static int aice_read_edm (const char *input)
     }
 
 
-    free(EDMData);
+    //free(EDMData);
 
     return result;
 }
@@ -441,7 +442,7 @@ static int aice_write_edm( const char *input )
     uint32_t target_id;
     uint32_t address;
     uint32_t num_of_words;
-    uint32_t *EDMData;
+    uint32_t *EDMData = EDMbuff;
     int result = 0;
     unsigned int value_edmsw = 0;
     unsigned int write_data  = 0;
@@ -455,14 +456,14 @@ static int aice_write_edm( const char *input )
     aice_log_add (AICE_LOG_DEBUG, "<aice_write_edm>: target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
                                       target_id, JDPInst, address, num_of_words);
 
-    EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
-    if( EDMData == NULL ) {
-        response[0] = AICE_ERROR;
-        pipe_write (response, 1);
+    //EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
+    //if( EDMData == NULL ) {
+    //    response[0] = AICE_ERROR;
+    //    pipe_write (response, 1);
 
-        aice_log_add (AICE_LOG_ERROR, "Allocate Write EDMData buffer Failed!!");
-        return ERROR_FAIL;
-    }
+    //    aice_log_add (AICE_LOG_ERROR, "Allocate Write EDMData buffer Failed!!");
+    //    return ERROR_FAIL;
+    //}
 
     for (int i = 0 ; i < num_of_words ; i++)
     {
@@ -632,17 +633,19 @@ static int aice_custom_monitor_cmd( const char *input )
     int result = ERROR_FAIL;
     int len;
     int ret_len = 1;
-    char *command;
+    //char *command;
+    char command[MAXLINE];
 
     int coreid;
     int address;
     int size;
-    uint32_t *data;
+    //uint32_t *data;
+    uint32_t data[MAXLINE/4];
     int i;
 
 
     len = get_u32(input+1);
-    command = (char *)malloc((len+1)*sizeof(char));
+    //command = (char *)malloc((len+1)*sizeof(char));
     memcpy(command, input+5, len);
     command[len] = '\0';
     aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: recv: len=%d, %s", len, command);
@@ -670,13 +673,13 @@ static int aice_custom_monitor_cmd( const char *input )
                             coreid, address, size);
 
             //Allocate buffer
-            data = (uint32_t*)malloc((size/4)*sizeof(uint32_t));  // words
-            if( !data ) {
-                aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: allocate failed!!");
-                result = ERROR_FAIL;
-                ret_len = 1;
-                break;
-            }
+            //data = (uint32_t*)malloc((size/4)*sizeof(uint32_t));  // words
+            //if( !data ) {
+            //    aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: allocate failed!!");
+            //    result = ERROR_FAIL;
+            //    ret_len = 1;
+            //    break;
+            //}
 
             //Setup SBAR
             aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: set SBAR");
@@ -709,7 +712,7 @@ static int aice_custom_monitor_cmd( const char *input )
             ret_len = 1+4+size;     // 1:STATUS, 4:LENGTH, size:DATE
             result = ERROR_OK;
 
-            free(data);
+            //free(data);
             break;
 
         default:
