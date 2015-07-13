@@ -34,7 +34,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DeF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx::Xz:Z:";
+const char *opt_string = "aAb:Bc:C:d:DeF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -71,6 +71,7 @@ struct option long_option[] = {
 	{"version", no_argument, 0, 'v'},
 	{"diagnosis", optional_argument, 0, 'x'},
 	{"uncnd-reset-hold", no_argument, 0, 'X'},
+	{"idlm-base", required_argument, 0, 'y'},
 	{"ace-conf", required_argument, 0, 'z'},
 	{"target", required_argument, 0, 'Z'},
 	{0, 0, 0, 0}
@@ -161,6 +162,7 @@ static int diagnosis = 0;
 static int diagnosis_memory = 0;
 static unsigned int diagnosis_address = 0;
 static uint8_t total_num_of_ports = 1;
+static unsigned int custom_def_idlm_base=0, ilm_base=0, ilm_size=0, dlm_base=0, dlm_size=0;
 extern int nds32_registry_portnum_without_bind(int port_num);
 extern int nds32_registry_portnum(int port_num);
 static void parse_edm_operation(const char *edm_operation);
@@ -249,6 +251,7 @@ static void show_usage(void) {
 	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
+	printf("-y, --idlm-base:\t\tDefine ILM&DLM base and size\n");
 	printf("-z, --ace-conf :\t\tSpecify ACE file on each core\n");
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
@@ -396,6 +399,10 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'z':
 				aceconf_desc_list = optarg;
+				break;
+			case 'y':
+				custom_def_idlm_base = 1;
+				sscanf(optarg, "0x%x,0x%x,0x%x,0x%x", &ilm_base, &ilm_size, &dlm_base, &dlm_size);
 				break;
 			case 'Z':
 				optarg_len = strlen(optarg);
@@ -638,6 +645,8 @@ static void update_openocd_cfg(void)
 	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
+	if (custom_def_idlm_base)
+		fprintf(openocd_cfg, "nds idlm_base_size %d %d %d %d\n", ilm_base, ilm_size, dlm_base, dlm_size);
 
 	if (global_stop)
 		fprintf(openocd_cfg, "nds global_stop on\n");
