@@ -639,62 +639,60 @@ static int aice_custom_monitor_cmd( const char *input )
     int coreid;
     int address;
     int size;
-    //uint32_t *data;
-    uint32_t data[MAXLINE/4];
+    char write_data[MAXLINE/4];
+    char read_data[MAXLINE/4];
     int i;
 
 
     len = get_u32(input+1);
-    //command = (char *)malloc((len+1)*sizeof(char));
     memcpy(command, input+5, len);
     command[len] = '\0';
-    aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: recv: len=%d, %s", len, command);
+    aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: recv: len=%d", len);
 
     switch(command[0]) {
-        case 1:
-            aice_log_add( AICE_LOG_DEBUG, "Hello Monitor Command" );
-            set_u32(response+1, 0);     // return LENGTH=0
-            ret_len = 5;                // 1B:STATUS, 4B:LENGTH
-            result = ERROR_OK;
-            break;
-
-        case 2:
-            aice_log_add( AICE_LOG_DEBUG, "%s", command+1 );
-            set_u32(response+1, 0);     // return LENGTH=0
-            ret_len = 5;                // 1B:STATUS, 4B:LENGTH
-            result = ERROR_OK;
-            break;
-
-        case 3:
+        case 0:
             coreid  = get_u32(command+1);
             address = get_u32(command+5);
             size    = get_u32(command+9);   // bytes
-            aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: fastread coreid=%d, address=0x%08X, size=%d Bytes", 
+            memcpy(write_data, command+13, size);
+            aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: coreid=%d, address=0x%08X, size=%d Bytes", 
                             coreid, address, size);
 
-            //Allocate buffer
-            //data = (uint32_t*)malloc((size/4)*sizeof(uint32_t));  // words
-            //if( !data ) {
-            //    aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: allocate failed!!");
-            //    result = ERROR_FAIL;
-            //    ret_len = 1;
-            //    break;
-            //}
+            //Setup SBAR for Write
+            aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: set SBAR");
+            address &= 0xFFFFFFFC;
+            address |= 0x00000001;  //write
+            result = aice_access_cmmd( AICE_CMDIDX_WRITE_MISC, coreid, NDS_EDM_MISC_SBAR, (unsigned char*)&address, 1 );
+            if( result != ERROR_OK ) {
+                aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: write SBAR failed!! data=0x%08X", address);
+                result = ERROR_FAIL;
+                ret_len = 1;
+                break;
+            }
 
-            //Setup SBAR
+            aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: fastwrite mem");
+            result = aice_access_cmmd( AICE_CMDIDX_FASTWRITE_MEM, coreid, 0, (unsigned char*)write_data, size/4);
+            if( result != ERROR_OK ) {
+                aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: fastwrite mem failed!!");
+                result = ERROR_FAIL;
+                ret_len = 1;
+                break;
+            }
+
+            //Setup SBAR for Read
             aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: set SBAR");
             address &= 0xFFFFFFFC;
             result = aice_access_cmmd( AICE_CMDIDX_WRITE_MISC, coreid, NDS_EDM_MISC_SBAR, (unsigned char*)&address, 1 );
             if( result != ERROR_OK ) {
-                aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: write SBAR failed!!");
+                aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: write SBAR failed!! data=0x%08X", address);
                 result = ERROR_FAIL;
                 ret_len = 1;
                 break;
             }
 
             //FASTRAED_MEM 
-            aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: fastreaed mem");
-            result = aice_access_cmmd( AICE_CMDIDX_FASTREAD_MEM, coreid, 0, (unsigned char*)data, size/4);
+            aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: fastread mem");
+            result = aice_access_cmmd( AICE_CMDIDX_FASTREAD_MEM, coreid, 0, (unsigned char*)read_data, size/4);
             if( result != ERROR_OK ) {
                 aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: fastread mem failed!!");
                 result = ERROR_FAIL;
@@ -704,15 +702,14 @@ static int aice_custom_monitor_cmd( const char *input )
 
             //DEBUG
             for( i = 0; i < size; i++ ) {
-                aice_log_add(AICE_LOG_DEBUG, "0x%08X", data[i]);
+                aice_log_add(AICE_LOG_DEBUG, "ori_data=0x%X now_data=0x%X", write_data[i], read_data[i]);
             }
 
             set_u32(response+1, size);
-            memcpy(response+5, (char*)data, size);
+            memcpy(response+5, (char*)read_data, size);
             ret_len = 1+4+size;     // 1:STATUS, 4:LENGTH, size:DATE
             result = ERROR_OK;
 
-            //free(data);
             break;
 
         default:
