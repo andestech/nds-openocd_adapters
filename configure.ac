@@ -38,6 +38,18 @@ case `uname` in
 		;;
 esac
 
+case `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d' | sed 's/(//g'` in 
+   *detached*)
+		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`])
+        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`
+		;;
+   *)	
+		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`])
+        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`
+		;;
+esac	
+	
+
 AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
 AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
@@ -45,7 +57,6 @@ AM_CONDITIONAL([USE_LIBUSB0], [test "$use_libusb1" = "no" -a "$use_libusb0" = "y
 
 # Define variables
 AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
-AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`])
 AC_SUBST([COMMIT_ID], [`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`])
 
 AC_CONFIG_FILES([Makefile aice_adapter/Makefile iceman_adapter/Makefile])
