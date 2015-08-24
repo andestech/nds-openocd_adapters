@@ -21,6 +21,7 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
+#define NDS32_USER_CFG     "nds32_user.cfg"
 
 #ifdef __GNUC__
 #  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
@@ -458,6 +459,7 @@ static FILE *board_cfg_tpl;
 static FILE *board_cfg;
 static FILE *target_cfg_tpl;
 static FILE *target_cfg[AICE_MAX_NUM_CORE];
+static FILE *openocd_cfg_usrdef;
 char target_cfg_name[64];
 char *target_cfg_name_str = (char *)&target_cfg_name[0];
 static void open_config_files(void) {
@@ -503,6 +505,7 @@ static void open_config_files(void) {
 		sprintf(line_buffer, target_str, coreid);
 		target_cfg[coreid] = fopen(line_buffer, "w");
 	}
+	openocd_cfg_usrdef = fopen(NDS32_USER_CFG, "a");
 }
 
 static void close_config_files(void) {
@@ -517,6 +520,7 @@ static void close_config_files(void) {
 	fclose(target_cfg_tpl);
 	for (coreid = 0; coreid < 1; coreid ++)
 		fclose(target_cfg[coreid]);
+	fclose(openocd_cfg_usrdef);
 }
 
 static void parse_mem_operation(const char *mem_operation) {
@@ -661,6 +665,7 @@ static void update_openocd_cfg(void)
 
 	if (word_access_mem)
 		fprintf(openocd_cfg, "nds word_access_mem on\n");
+	fprintf(openocd_cfg, "source [find %s] \n", NDS32_USER_CFG);
 }
 
 static void update_interface_cfg(void)
