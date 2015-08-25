@@ -215,6 +215,7 @@ int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid)
 	unsigned int aice_write_ep;
 	jtag_libusb_get_endpoints(udev, &aice_read_ep, &aice_write_ep,
 			&aice_usb_rx_max_packet, &aice_usb_tx_max_packet);
+	AICE_USBCMMD_MSG("aice_read_ep=0x%x, aice_write_ep=0x%x", aice_read_ep, aice_write_ep);
 	AICE_USBCMMD_MSG("aice_usb_rx_max_packet=%d, aice_usb_tx_max_packet=%d",aice_usb_rx_max_packet, aice_usb_tx_max_packet);
 
 	aice_usb_read_ep = aice_read_ep;

@@ -123,6 +123,9 @@ int jtag_libusb_get_endpoints(struct jtag_libusb_device *udev,
 	struct usb_interface_descriptor *desc = iface->altsetting;
 
 	for (int i = 0; i < desc->bNumEndpoints; i++) {
+		if (desc->endpoint[i].bmAttributes != USB_ENDPOINT_TYPE_BULK)
+			continue;
+
 		uint8_t epnum = desc->endpoint[i].bEndpointAddress;
 		bool is_input = epnum & 0x80;
 

@@ -159,6 +159,8 @@ int jtag_libusb_get_endpoints(struct jtag_libusb_device *udev,
 			for (int k = 0;
 				k < (int)interdesc->bNumEndpoints; k++) {
 				epdesc = &interdesc->endpoint[k];
+				if (epdesc->bmAttributes != LIBUSB_TRANSFER_TYPE_BULK)
+					continue;
 
 				uint8_t epnum = epdesc->bEndpointAddress;
 				bool is_input = epnum & 0x80;

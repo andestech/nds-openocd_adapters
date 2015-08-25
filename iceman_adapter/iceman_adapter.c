@@ -640,14 +640,18 @@ static void update_openocd_cfg(void)
 	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
-		fputs(line_buffer, openocd_cfg);
+	//while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
+	//	fputs(line_buffer, openocd_cfg);
 
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
+
+	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
+	fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
+
 	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
 	if (custom_def_idlm_base)
 		fprintf(openocd_cfg, "nds idlm_base_size %d %d %d %d\n", ilm_base, ilm_size, dlm_base, dlm_size);
