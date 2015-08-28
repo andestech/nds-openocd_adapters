@@ -883,7 +883,10 @@ void parsing_config_file( char* top_filename )
                     tok = strtok( NULL, " ");
                     tok = strtok( NULL, " ");
                     filelist[filelist_top] = strdup(tok);
-                    filelist[filelist_top][strlen(filelist[filelist_top])-2] = '\0';
+                    
+                    char *pch; 
+                    pch = strrchr( filelist[filelist_top], ']' );
+                    filelist[filelist_top][pch-filelist[filelist_top]] = '\0';
                     filelist_top++;
                     aice_log_add(AICE_LOG_DEBUG, "add file: %s",filelist[filelist_top-1]);
                     continue;
