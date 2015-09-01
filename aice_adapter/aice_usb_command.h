@@ -137,6 +137,7 @@ extern unsigned int aice_usb_tx_max_packet;
 extern unsigned int aice_hardware_version, aice_firmware_version, aice_fpga_version, aice_ice_config;
 extern uint32_t jtag_clock;
 extern uint32_t aice_count_to_check_dbger;
+extern uint32_t aice_set_usb_timeout;
 
 extern int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid);
 extern int aice_usb_close(void);

@@ -356,7 +356,7 @@ int aice_usb_write(unsigned char *out_buffer, unsigned int out_length)
 	/* for AICE-mini zero-packet issue */
 	assert( (out_length % aice_usb_tx_max_packet) != 0);
 	result = usb_bulk_write_ex(aice_usb_handle, aice_usb_write_ep,
-			(char *)out_buffer, out_length, AICE_USB_TIMEOUT);
+			(char *)out_buffer, out_length, aice_set_usb_timeout);
 
 	return result;
 }
@@ -365,7 +365,7 @@ int aice_usb_write(unsigned char *out_buffer, unsigned int out_length)
 int aice_usb_read(unsigned char *in_buffer, unsigned int expected_size)
 {
 	int result = usb_bulk_read_ex(aice_usb_handle, aice_usb_read_ep,
-			(char *)in_buffer, expected_size, AICE_USB_TIMEOUT);
+			(char *)in_buffer, expected_size, aice_set_usb_timeout);
 
 	return result;
 }
@@ -868,6 +868,7 @@ int aice_reset_aice_as_startup(void)
 
 uint32_t jtag_clock = 16;
 uint32_t aice_count_to_check_dbger = 5000;
+uint32_t aice_set_usb_timeout = AICE_USB_TIMEOUT;
 int aice_usb_set_clock(int set_clock)
 {
 	//printf("aice_usb_set_clock WRITE_CTRL_TIMEOUT = %x\n", aice_count_to_check_dbger);
