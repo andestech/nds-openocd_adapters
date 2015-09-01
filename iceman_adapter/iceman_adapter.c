@@ -151,7 +151,7 @@ static unsigned int log_file_size = 0x100000;
 static int boot_time = 5000;
 static int reset_time = 1000;
 static int reset_aice_as_startup = 0;
-static char *count_to_check_dbger = NULL;
+static int count_to_check_dbger = 0;
 static int global_stop;
 static int word_access_mem;
 static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_V3};
@@ -265,7 +265,7 @@ static int parse_param(int a_argc, char **a_argv) {
 		int option_index;
 		int optarg_len;
 		char tmpchar = 0;
-		uint32_t ms_check_dbger = 0;
+		//uint32_t ms_check_dbger = 0;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
 		if (c == EOF)
@@ -293,14 +293,9 @@ static int parse_param(int a_argc, char **a_argv) {
 				}
 				break;
 			case 'C':
-				optarg_len = strlen(optarg);
-				count_to_check_dbger = malloc(optarg_len + 1);
-				memcpy(count_to_check_dbger, optarg, optarg_len + 1);
-				sscanf(count_to_check_dbger, "%u%c", &ms_check_dbger, &tmpchar);
+				sscanf(optarg, "%u%c", &count_to_check_dbger, &tmpchar);
 				if (tmpchar == 's' || tmpchar == 'S')
-					ms_check_dbger *= 1000;
-				//aice_usb_set_count_to_check_dbger(ms_check_dbger);
-				//printf("aice_count_to_check_dbger %d \n", ms_check_dbger);
+					count_to_check_dbger *= 1000;
 				break;
 			case 'd':
 				debug_level = strtol(optarg, NULL, 0);
@@ -688,7 +683,7 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
 
 	if (count_to_check_dbger)
-		fprintf(interface_cfg, "aice count_to_check_dbger %s\n", count_to_check_dbger);
+		fprintf(interface_cfg, "aice count_to_check_dbger %d\n", count_to_check_dbger);
 	else
 		fprintf(interface_cfg, "aice count_to_check_dbger 500\n");
 
