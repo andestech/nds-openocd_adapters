@@ -626,6 +626,16 @@ static int aice_custom_script( const char *input )
     return result;
 }
 
+/*
+ *  IMPORTANT NOTE !!
+ *
+ *    If the read/write data is insied the ILM/DLM, it should use ACC_CTRL 
+ *    to switch the index to ILM/DLM. 
+ *
+ *    The demo custom monitor cmd can only read/write DRAM.
+ *    AE210P platforms cannot correctly support this monitor command. 
+ *
+ */
 #define NDS_EDM_MISC_SBAR 0x01
 static int aice_custom_monitor_cmd( const char *input )
 {
