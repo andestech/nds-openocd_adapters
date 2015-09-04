@@ -871,49 +871,27 @@ uint32_t aice_count_to_check_dbger = 5000;
 uint32_t aice_set_usb_timeout = AICE_USB_TIMEOUT;
 int aice_usb_set_clock(int set_clock)
 {
-	//printf("aice_usb_set_clock WRITE_CTRL_TIMEOUT = %x\n", aice_count_to_check_dbger);
-	aice_write_ctrl(AICE_WRITE_CTRL_TIMEOUT, aice_count_to_check_dbger);
+	// had set_clock before
+	if ((jtag_clock != 16) && (jtag_clock == (uint32_t)set_clock))
+		return ERROR_OK;
 
-	if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL,
-				AICE_TCK_CONTROL_TCK_SCAN) != ERROR_OK)
-		goto aice_usb_set_clock_ERR;
-
-	/* Read out TCK_SCAN clock value */
-	uint32_t scan_clock;
-	if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
-		goto aice_usb_set_clock_ERR;
-
-	scan_clock &= 0x0F;
-
-	uint32_t scan_base_freq;
-	if (scan_clock & 0x8)
-		scan_base_freq = 48000; /* 48 MHz */
-	else
-		scan_base_freq = 30000; /* 30 MHz */
-
-	uint32_t set_base_freq;
 	if (set_clock == 16) {
 		// Users do NOT specify the jtag clock, use scan-freq
 		LOG_DEBUG("Use scan-freq");
-		set_clock = scan_clock;
+
+		if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL,
+				AICE_TCK_CONTROL_TCK_SCAN) != ERROR_OK)
+			goto aice_usb_set_clock_ERR;
+
+		/* Read out TCK_SCAN clock value */
+		uint32_t scan_clock=0;
+		if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
+			goto aice_usb_set_clock_ERR;
+
+		set_clock = (scan_clock & 0x0F);
 		// If scan-freq = 48MHz, use 24MHz by default
 		if (set_clock == 8)
 			set_clock = 9;
-		set_base_freq = scan_base_freq;
-	}
-	else if (set_clock & 0x8)
-		set_base_freq = 48000;
-	else
-		set_base_freq = 30000;
-
-	uint32_t set_freq;
-	uint32_t scan_freq;
-	set_freq = set_base_freq >> (set_clock & 0x7);
-	scan_freq = scan_base_freq >> (scan_clock & 0x7);
-
-	if (scan_freq < set_freq) {
-		LOG_ERROR("User specifies higher jtag clock than TCK_SCAN clock");
-		//goto aice_usb_set_clock_ERR;
 	}
 
 	if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL, set_clock) != ERROR_OK)
@@ -927,7 +905,7 @@ int aice_usb_set_clock(int set_clock)
 		LOG_ERROR("Set jtag clock failed");
 		goto aice_usb_set_clock_ERR;
 	}
-
+	aice_write_ctrl(AICE_WRITE_CTRL_TIMEOUT, aice_count_to_check_dbger);
 //aice_usb_set_clock_OK:
 	jtag_clock = set_clock;
 	return ERROR_OK;

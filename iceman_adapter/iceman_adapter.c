@@ -683,9 +683,9 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
 
 	if (count_to_check_dbger)
-		fprintf(interface_cfg, "aice count_to_check_dbger %d\n", count_to_check_dbger);
+		fprintf(interface_cfg, "aice count_to_check_dbger %d %d\n", count_to_check_dbger, clock_setting);
 	else
-		fprintf(interface_cfg, "aice count_to_check_dbger 500\n");
+		fprintf(interface_cfg, "aice count_to_check_dbger 500 %d\n", clock_setting);
 
 	/* custom srst/trst/restart scripts */
 	if (custom_srst_script) {
