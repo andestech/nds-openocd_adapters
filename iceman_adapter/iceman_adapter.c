@@ -632,7 +632,7 @@ static void update_gdb_port_num(void)
 
 static void update_openocd_cfg(void)
 {
-	char line_buffer[LINE_BUFFER_SIZE];
+	//char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
 	//while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)

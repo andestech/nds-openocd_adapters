@@ -26,6 +26,7 @@
 #include <log.h>
 #include "aice_usb_pack_format.h"
 #include "aice_usb_command.h"
+#include "aice_jdp.h"
 
 #define AICE_LOG_USB_PACKET  0
 #define AICE_USBCMMD_MSG	LOG_DEBUG
@@ -51,6 +52,11 @@ enum aice_command_mode aice_command_mode = AICE_COMMAND_MODE_NORMAL;
 unsigned int aice_max_retry_times = 2;//50;
 unsigned int aice_usb_rx_max_packet = 512;
 unsigned int aice_usb_tx_max_packet = 512;
+uint32_t aice_ice_config = 0;
+uint32_t aice_hardware_version = 0;
+uint32_t aice_firmware_version = 0;
+uint32_t aice_fpga_version = 0;
+uint32_t aice_batch_data_buf1_size = 0;
 
 struct aice_usb_cmmd_info usb_cmmd_pack_info = {
 		.pusb_buffer = &usb_out_buffer[0],
@@ -163,6 +169,10 @@ char *pdescp_Manufacturer;
 char *pdescp_Product;
 unsigned int descp_bcdDevice = 0x0;
 
+static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length);
+static int aice_usb_packet_flush(void);
+static int aice_usb_write_pins(unsigned int num_of_words, unsigned int *pWriteData);
+
 int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid)
 {
 	const uint16_t vids[] = { usb_vid, 0 };
@@ -232,8 +242,8 @@ int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid)
 
 	// dummy read, bug-10444, workaround for USB Data Toggling problem under Linux
 	unsigned int hardware_version;
-	aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &hardware_version);
-	aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &hardware_version);
+	aice_usb_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &hardware_version);
+	aice_usb_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &hardware_version);
 
 	return ERROR_OK;
 }
@@ -383,23 +393,23 @@ int aice_scan_chain(unsigned int *id_codes, unsigned char *num_of_ids)
 }
 
 // also define in nds32_edm.h
-//#define NDS_EDM_SR_EDMSW  0x30
-//#define NDS_EDMSW_WDV		(1 << 0)
-//#define NDS_EDMSW_RDV		(1 << 1)
+#define NDS_EDM_SR_EDMSW  0x30
+#define NDS_EDMSW_WDV		(1 << 0)
+#define NDS_EDMSW_RDV		(1 << 1)
 
-int aice_read_dtr_to_buffer(unsigned char target_id, unsigned int buffer_idx)
+int aice_read_dtr_to_buffer(uint32_t target_id, uint32_t buffer_idx)
 {
 	unsigned int dtr_data = 0;
 	return aice_access_cmmd(AICE_CMDIDX_READ_DTR_TO_BUFFER, target_id, buffer_idx, (unsigned char *)&dtr_data, 1);
 }
 
-int aice_write_dtr_from_buffer(unsigned char target_id, unsigned int buffer_idx)
+int aice_write_dtr_from_buffer(uint32_t target_id, uint32_t buffer_idx)
 {
 	unsigned int dtr_data = 0;
 	return aice_access_cmmd(AICE_CMDIDX_WRITE_DTR_FROM_BUFFER, target_id, buffer_idx, (unsigned char *)&dtr_data, 1);
 }
 
-int aice_batch_buffer_write(unsigned int buf_index)
+int aice_batch_buffer_write(uint32_t buf_index)
 {
 	int result;
 	//enum aice_command_mode aice_command_mode_ori = aice_command_mode;
@@ -416,7 +426,7 @@ int aice_batch_buffer_write(unsigned int buf_index)
 	return result;
 }
 
-int aice_batch_buffer_read(unsigned int buf_index, unsigned char *pReadData, unsigned int num_of_words)
+int aice_batch_buffer_read(uint32_t buf_index, unsigned char *pReadData, uint32_t num_of_words)
 {
 	int result;
 	enum aice_command_mode aice_command_mode_ori = aice_command_mode;
@@ -426,7 +436,7 @@ int aice_batch_buffer_read(unsigned int buf_index, unsigned char *pReadData, uns
 	return result;
 }
 
-int aice_pack_buffer_read(unsigned char *pReadData, unsigned int num_of_bytes)
+int aice_pack_buffer_read(unsigned char *pReadData, uint32_t num_of_bytes)
 {
 	unsigned int i;
 
@@ -437,26 +447,26 @@ int aice_pack_buffer_read(unsigned char *pReadData, unsigned int num_of_bytes)
 	return ERROR_OK;
 }
 
-int aice_reset_box(void)
+int aice_usb_reset_box(void)
 {
 	// AICE-MCU clear timeout is enough for reboot, not necessary others.
-	if (aice_write_ctrl(AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS, 0x1) != ERROR_OK)
+	if (aice_usb_write_ctrl(AICE_WRITE_CTRL_CLEAR_TIMEOUT_STATUS, 0x1) != ERROR_OK)
 		return ERROR_FAIL;
 
 	/* turn off FASTMODE for AICE-MCU 1.3.2 - */
 	unsigned int pin_status = 0;
-	if (aice_read_ctrl(AICE_READ_CTRL_GET_JTAG_PIN_STATUS, &pin_status)
+	if (aice_usb_read_ctrl(AICE_READ_CTRL_GET_JTAG_PIN_STATUS, &pin_status)
 			!= ERROR_OK)
 		return ERROR_FAIL;
 
-	if (aice_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_STATUS, pin_status & (~0x2))
+	if (aice_usb_write_ctrl(AICE_WRITE_CTRL_JTAG_PIN_STATUS, pin_status & (~0x2))
 			!= ERROR_OK)
 		return ERROR_FAIL;
 
 	return ERROR_OK;
 }
 
-int aice_write_pins(unsigned int num_of_words, unsigned int *pWriteData)
+static int aice_usb_write_pins(unsigned int num_of_words, unsigned int *pWriteData)
 {
 	int result;
 
@@ -466,7 +476,143 @@ int aice_write_pins(unsigned int num_of_words, unsigned int *pWriteData)
 	return result;
 }
 
-int aice_usb_packet_flush(void)
+int aice_usb_write_ctrl(uint32_t address, uint32_t WriteData)
+{
+    unsigned int ctrl_data = WriteData;
+    int result;
+    result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&ctrl_data, 1);
+    return result;
+}
+
+int aice_usb_read_ctrl(uint32_t address, uint32_t *pReadData)
+{
+    int result;
+    result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)pReadData, 1);
+    return result;
+}
+
+int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words )
+{
+	unsigned int value_edmsw = 0;
+
+	//LOG_DEBUG("AICE Read EDM USB: target_id=0x%08X, cmd=0x%02X, addr=0x%08X", target_id, JDPInst, address);
+
+	if ( (JDPInst & 0x80) != 0 ) {
+		LOG_ERROR( "AICE Read EDM JDPInst Error: does not Read inst, inst code: 0x%02X", JDPInst );
+		return ERROR_FAIL;
+	}
+
+	switch ( JDPInst ) {
+		case JDP_R_DBG_SR:
+			return aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_R_DTR:
+			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
+				return ERROR_FAIL;
+
+			if ((value_edmsw & NDS_EDMSW_WDV) == 0) {
+				return ERROR_FAIL;
+			}
+			return aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
+
+		case JDP_R_MEM_W:
+			address = ((address >> 2) & 0x3FFFFFFF);
+			return aice_access_cmmd(AICE_CMDIDX_READ_MEM, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_R_MISC_REG:
+			return aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_R_FAST_MEM:
+			return aice_access_cmmd(AICE_CMDIDX_FASTREAD_MEM, target_id, 0, (unsigned char *)EDMData, num_of_words);
+
+		case JDP_R_MEM_H:
+			address = ((address >> 1) & 0x7FFFFFFF);
+			return aice_access_cmmd(AICE_CMDIDX_READ_MEM_H, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_R_MEM_B:
+			return aice_access_cmmd(AICE_CMDIDX_READ_MEM_B, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_R_DIM:
+		case JDP_R_DBG_EVENT:
+		case JDP_R_IDCODE:
+		default:
+			LOG_ERROR( "AICE Read EDM JDPInst Error: inst error, inst code: 0x%02X", JDPInst );
+			return ERROR_FAIL;
+	};
+	return ERROR_FAIL;
+}
+
+int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words )
+{
+	int result = 0;
+	unsigned int value_edmsw = 0;
+	unsigned int write_data  = 0;
+
+	//    if( num_of_words == 1 )
+	//        LOG_DEBUG("AICE Write EDM USB: target_id=0x%08X, cmd=0x%02X, addr=0x%08X, date=0x%08X", target_id, JDPInst, address, *EDMData);
+	//    else
+	//        LOG_DEBUG("AICE Write EDM USB: target_id=0x%08X, cmd=0x%02X, addr=0x%08X", target_id, JDPInst, address);
+
+	if ( (JDPInst & 0x80) != 0x80 ) {
+		LOG_ERROR( "AICE Write EDM JDPInst Error: does not Write inst, inst code: 0x%02X", JDPInst );
+		return ERROR_FAIL;
+	}
+
+	switch ( JDPInst ) {
+		case JDP_W_DIM:
+			usb_cmmd_pack_info.access_little_endian = 0;  // AICE_BIG_ENDIAN
+			result = aice_access_cmmd(AICE_CMDIDX_WRITE_DIM, target_id, 0,
+		                            (unsigned char *)EDMData, num_of_words);
+			usb_cmmd_pack_info.access_little_endian = 1;
+			return result;
+
+		case JDP_W_DBG_SR:
+			return aice_access_cmmd(AICE_CMDIDX_WRITE_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_W_DTR:
+			result = aice_access_cmmd(AICE_CMDIDX_WRITE_DTR, target_id, 0, (unsigned char *)EDMData, 1);
+			if (result != ERROR_OK)
+				return ERROR_FAIL;
+
+			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
+				return ERROR_FAIL;
+
+			if ((value_edmsw & NDS_EDMSW_RDV) == 0) {
+				//AICE_USBCMMD_MSG(NDS32_ERRMSG_TARGET_WRITE_DTR);
+				return ERROR_FAIL;
+			}
+			return ERROR_OK;
+
+		case JDP_W_MEM_W:
+			address = ((address >> 2) & 0x3FFFFFFF);
+			return aice_access_cmmd(AICE_CMDIDX_WRITE_MEM, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_W_MISC_REG:
+			return aice_access_cmmd(AICE_CMDIDX_WRITE_MISC, target_id, address, (unsigned char *)EDMData, 1);
+
+		case JDP_W_FAST_MEM:
+			return aice_access_cmmd(AICE_CMDIDX_FASTWRITE_MEM, target_id, 0, (unsigned char *)EDMData, num_of_words);
+
+		case JDP_W_EXECUTE:
+			return aice_access_cmmd(AICE_CMDIDX_EXECUTE, target_id, 0, (unsigned char *)&write_data, 1);
+
+		case JDP_W_MEM_H:
+			write_data = (*EDMData & 0x0000FFFF);
+			address = ((address >> 1) & 0x7FFFFFFF);
+			return aice_access_cmmd(AICE_CMDIDX_WRITE_MEM_H, target_id, address, (unsigned char *)&write_data, 1);
+
+		case JDP_W_MEM_B:
+			write_data = (*EDMData & 0x000000FF);
+			return aice_access_cmmd(AICE_CMDIDX_WRITE_MEM_B, target_id, address, (unsigned char *)&write_data, 1);
+
+		default:
+			LOG_ERROR( "AICE Write EDM JDPInst Error: inst error, inst code: 0x%02X", JDPInst );
+			return ERROR_FAIL;
+	};
+	return ERROR_FAIL;
+}
+
+static int aice_usb_packet_flush(void)
 {
 	if (usb_out_packets_buffer_length == 0)
 		return 0;
@@ -497,7 +643,7 @@ int aice_usb_packet_flush(void)
 
 		/* enable BATCH command */
 		aice_command_mode = AICE_COMMAND_MODE_NORMAL;
-		if (aice_write_ctrl(AICE_WRITE_CTRL_BATCH_CTRL, 0x80000000) != ERROR_OK)
+		if (aice_usb_write_ctrl(AICE_WRITE_CTRL_BATCH_CTRL, 0x80000000) != ERROR_OK)
 			return ERROR_FAIL;
 		aice_command_mode = AICE_COMMAND_MODE_BATCH;
 
@@ -510,7 +656,7 @@ int aice_usb_packet_flush(void)
 
 		i = 0;
 		while (1) {
-			aice_read_ctrl(AICE_READ_CTRL_BATCH_STATUS, &batch_status);
+			aice_usb_read_ctrl(AICE_READ_CTRL_BATCH_STATUS, &batch_status);
 
 			if (batch_status & 0x1)
 				return ERROR_OK;
@@ -575,7 +721,7 @@ int aice_usb_set_command_mode(enum aice_command_mode command_mode)
 	if (AICE_COMMAND_MODE_BATCH == command_mode) {
 		/* reset batch buffer */
 		aice_command_mode = AICE_COMMAND_MODE_NORMAL;
-		retval = aice_write_ctrl(AICE_WRITE_CTRL_BATCH_CMD_BUF0_CTRL, 0x40000);
+		retval = aice_usb_write_ctrl(AICE_WRITE_CTRL_BATCH_CMD_BUF0_CTRL, 0x40000);
 	}
 
 	aice_command_mode = command_mode;
@@ -603,7 +749,7 @@ int aice_clear_timeout(void)
 	return ERROR_OK;
 }
 
-int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length)
+static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length)
 {
 	struct aice_usb_cmmd_info *pusb_tx_cmmd_info = &usb_cmmd_pack_info;
 	struct aice_usb_cmmd_info *pusb_rx_cmmd_info = &usb_cmmd_unpack_info;
@@ -680,43 +826,6 @@ int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int
 	return ERROR_OK;
 }
 
-unsigned int aice_hardware_version, aice_firmware_version, aice_fpga_version, aice_ice_config;
-int aice_get_info(struct aice_port_s *aice)
-{
-	struct aice_port_s aice_dummy;
-	if (NULL == aice)
-		aice = &aice_dummy;
-
-	//version info
-	if (aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &aice->hardware_version) != ERROR_OK)
-		return ERROR_FAIL;
-
-	if (aice_read_ctrl(AICE_READ_CTRL_GET_FIRMWARE_VERSION, &aice->firmware_version) != ERROR_OK)
-		return ERROR_FAIL;
-
-	if (aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &aice->fpga_version) != ERROR_OK)
-		return ERROR_FAIL;
-
-	aice_hardware_version = aice->hardware_version;
-	aice_firmware_version = aice->firmware_version;
-	aice_fpga_version = aice->fpga_version;
-	LOG_INFO("AICE version: hw_ver = 0x%x, fw_ver = 0x%x, fpga_ver = 0x%x",
-		aice->hardware_version, aice->firmware_version, aice->fpga_version);
-	//hardware features info
-	if (aice_read_ctrl(AICE_READ_CTRL_ICE_CONFIG, &aice->ice_config) != ERROR_OK)
-		return ERROR_FAIL;
-	LOG_INFO("AICE hardware features: 0x%08x", aice->ice_config);
-	aice_ice_config = aice->ice_config;
-
-	//batch buffer size info
-	if (aice_read_ctrl(AICE_REG_BATCH_DATA_BUFFER_1_STATE, &aice->batch_data_buf1_size) != ERROR_OK)
-		return ERROR_FAIL;
-	aice->batch_data_buf1_size &= 0xffffu;
-	LOG_INFO("AICE batch data buffer size: %d words", aice->batch_data_buf1_size);
-
-	return ERROR_OK;
-}
-
 #define LINE_BUFFER_SIZE 1024
 enum AICE_CUSTOM_CMMD {
 	AICE_CUSTOM_CMMD_SET_SRST = 0,
@@ -789,7 +898,7 @@ int aice_usb_execute_custom_script(const char *script)
 
 			write_ctrl_value |= (1 << 16);
 			LOG_DEBUG("custom_script aice_write_ctrl, 0x%x", write_ctrl_value);
-			result = aice_write_ctrl(AICE_WRITE_CTRL_CUSTOM_DELAY, write_ctrl_value);
+			result = aice_usb_write_ctrl(AICE_WRITE_CTRL_CUSTOM_DELAY, write_ctrl_value);
 			if (result != ERROR_OK)
 				goto aice_execute_custom_script_error;
 			alive_sleep(delay);
@@ -817,14 +926,14 @@ int aice_usb_execute_custom_script(const char *script)
 				LOG_DEBUG("write_pins unsupported !!");
 				goto aice_execute_custom_script_error;
 			}
-			result = aice_write_pins(num_of_words, &word_buffer[0]);
+			result = aice_usb_write_pins(num_of_words, &word_buffer[0]);
 			if (result != ERROR_OK)
 				goto aice_execute_custom_script_error;
 		}
 		else if (i == AICE_CUSTOM_CMMD_T_WRITE_MISC) {
 			sscanf(curr_str + strlen(compare_str), " %d %d %d", &target_id, &write_misc_addr, &write_misc_data);
 			LOG_DEBUG("custom_script aice_write_misc, 0x%x, 0x%x, 0x%x", target_id, write_misc_addr, write_misc_data);
-			result = aice_write_misc(target_id, write_misc_addr, write_misc_data);
+			result = aice_usb_write_edm(target_id, JDP_W_MISC_REG, write_misc_addr, (uint32_t*)&write_misc_data, 1);
 			if (result != ERROR_OK)
 				goto aice_execute_custom_script_error;
 		}
@@ -869,23 +978,23 @@ int aice_reset_aice_as_startup(void)
 uint32_t jtag_clock = 16;
 uint32_t aice_count_to_check_dbger = 5000;
 uint32_t aice_set_usb_timeout = AICE_USB_TIMEOUT;
-int aice_usb_set_clock(int set_clock)
+int aice_usb_set_clock(uint32_t set_clock)
 {
 	// had set_clock before
-	if ((jtag_clock != 16) && (jtag_clock == (uint32_t)set_clock))
-		return ERROR_OK;
+	//if ((jtag_clock != 16) && (jtag_clock == (uint32_t)set_clock))
+	//	return ERROR_OK;
 
 	if (set_clock == 16) {
 		// Users do NOT specify the jtag clock, use scan-freq
 		LOG_DEBUG("Use scan-freq");
 
-		if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL,
+		if (aice_usb_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL,
 				AICE_TCK_CONTROL_TCK_SCAN) != ERROR_OK)
 			goto aice_usb_set_clock_ERR;
 
 		/* Read out TCK_SCAN clock value */
 		uint32_t scan_clock=0;
-		if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
+		if (aice_usb_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &scan_clock) != ERROR_OK)
 			goto aice_usb_set_clock_ERR;
 
 		set_clock = (scan_clock & 0x0F);
@@ -894,18 +1003,18 @@ int aice_usb_set_clock(int set_clock)
 			set_clock = 9;
 	}
 
-	if (aice_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL, set_clock) != ERROR_OK)
+	if (aice_usb_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL, set_clock) != ERROR_OK)
 		goto aice_usb_set_clock_ERR;
 
 	uint32_t check_speed;
-	if (aice_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &check_speed) != ERROR_OK)
+	if (aice_usb_read_ctrl(AICE_READ_CTRL_GET_ICE_STATE, &check_speed) != ERROR_OK)
 		goto aice_usb_set_clock_ERR;
 
 	if (((int)check_speed & 0x0F) != set_clock) {
 		LOG_ERROR("Set jtag clock failed");
 		goto aice_usb_set_clock_ERR;
 	}
-	aice_write_ctrl(AICE_WRITE_CTRL_TIMEOUT, aice_count_to_check_dbger);
+	aice_usb_write_ctrl(AICE_WRITE_CTRL_TIMEOUT, aice_count_to_check_dbger);
 //aice_usb_set_clock_OK:
 	jtag_clock = set_clock;
 	return ERROR_OK;

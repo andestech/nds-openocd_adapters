@@ -102,33 +102,37 @@ static int pipe_write(const void *buffer, int length)
 /********************************************************************************************/
 
 /********************************************************************************************/
-int aice_write_ctrl(unsigned int address, unsigned int WriteData)
-{
-    unsigned int ctrl_data = WriteData;
-    int result;
-    result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&ctrl_data, 1);
-    return result;
-}
-
-int aice_read_ctrl(unsigned int address, unsigned int *pReadData)
-{
-    int result;
-    result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)pReadData, 1);
-    return result;
-}
-
-int aice_read_misc(unsigned char target_id, unsigned int address, unsigned int *pReadData)
-{
-    return aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)pReadData, 1);
-}
-
-int aice_write_misc(unsigned char target_id, unsigned int address, unsigned int WriteData)
-{
-    unsigned int misc_data = WriteData;
-    return aice_access_cmmd(AICE_CMDIDX_WRITE_MISC, target_id, address, (unsigned char *)&misc_data, 1);
-}
 
 /********************************************************************************************/
+#define aice_read_ctrl    aice_usb_read_ctrl
+int aice_get_info(void)
+{
+	//version info
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_HARDWARE_VERSION, &aice_hardware_version) != ERROR_OK)
+		return ERROR_FAIL;
+
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_FIRMWARE_VERSION, &aice_firmware_version) != ERROR_OK)
+		return ERROR_FAIL;
+
+	if (aice_read_ctrl(AICE_READ_CTRL_GET_FPGA_VERSION, &aice_fpga_version) != ERROR_OK)
+		return ERROR_FAIL;
+
+	LOG_INFO("AICE version: hw_ver = 0x%x, fw_ver = 0x%x, fpga_ver = 0x%x",
+		aice_hardware_version, aice_firmware_version, aice_fpga_version);
+	//hardware features info
+	if (aice_read_ctrl(AICE_READ_CTRL_ICE_CONFIG, &aice_ice_config) != ERROR_OK)
+		return ERROR_FAIL;
+	LOG_INFO("AICE hardware features: 0x%08x", aice_ice_config);
+
+	//batch buffer size info
+	if (aice_read_ctrl(AICE_REG_BATCH_DATA_BUFFER_1_STATE, &aice_batch_data_buf1_size) != ERROR_OK)
+		return ERROR_FAIL;
+	aice_batch_data_buf1_size &= 0xffffu;
+	LOG_INFO("AICE batch data buffer size: %d words", aice_batch_data_buf1_size);
+
+	return ERROR_OK;
+}
+
 /// Modified from aice_usb.c:aice_open_device()
 char AndesName[] = {"Andes"};
 char *pAICEName[] = {
@@ -148,7 +152,6 @@ static void aice_open (const char *input)
     uint16_t pid;
     int retval = ERROR_FAIL;
     int success_idx = -1;
-    struct aice_port_s aice;
 
     if( vid_pid_array_top == -1 ) {
         aice_log_add(AICE_LOG_ERROR, "There is no vid_pid in config files!!");
@@ -163,9 +166,7 @@ static void aice_open (const char *input)
         pid = vid_pid_array[i].pid;
 
         aice_log_add (AICE_LOG_DEBUG, "\t VID: 0x%04x, PID: 0x%04x", vid, pid);
-
         retval = aice_usb_open(vid, pid);
-
         if (ERROR_OK == retval) {
             success_idx = i;
             break;
@@ -185,23 +186,21 @@ static void aice_open (const char *input)
 	}
 
     response[0] = AICE_OK;
-
     char buffer[1000] = {0};
     if( vid_pid_array[success_idx].vid == 0x1CFC &&
         vid_pid_array[success_idx].pid == 0x0000 ) {     // OLD Version of AICE, AICE-MCU, AICE-MINI
         
-        if (ERROR_FAIL == aice_get_info(&aice)) {
+        if (ERROR_FAIL == aice_get_info()) {
             aice_log_add(AICE_LOG_ERROR, "Cannot get AICE info!");
             response[0] = AICE_ERROR;
             pipe_write (response, 1);
             return;
-        }           
-
+        }
         char *vid_str, *pid_str;
         unsigned int vid_idx, pid_idx;
 
-        vid_idx = (aice.hardware_version & 0xFF000000) >> 24;
-        pid_idx = (aice.hardware_version & 0x00FF0000) >> 16;
+        vid_idx = (aice_hardware_version & 0xFF000000) >> 24;
+        pid_idx = (aice_hardware_version & 0x00FF0000) >> 16;
         vid_str = (char *)&AndesName[0];
         pid_str = (char *)pAICEName[pid_idx];
 
@@ -209,17 +208,17 @@ static void aice_open (const char *input)
             sprintf( buffer, "%s %s v%d.%d.%d",
                     vid_str,
                     pid_str,
-                    (aice.hardware_version & 0xFFFF),
-                    aice.firmware_version,
-                    aice.fpga_version);
+                    (aice_hardware_version & 0xFFFF),
+                    aice_firmware_version,
+                    aice_fpga_version);
         }
         else if (vid_idx == 0) {
             sprintf( buffer, "Andes ICE: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x",
-                aice.hardware_version, aice.firmware_version, aice.fpga_version);
+                aice_hardware_version, aice_firmware_version, aice_fpga_version);
         }
         else {
             sprintf( buffer, "3rd-party ICE-box: ice_ver1 = 0x%08x, ice_ver2 = 0x%08x, ice_ver3 = 0x%08x",
-                aice.hardware_version, aice.firmware_version, aice.fpga_version);
+                aice_hardware_version, aice_firmware_version, aice_fpga_version);
         }
     }
     else {
@@ -228,7 +227,6 @@ static void aice_open (const char *input)
                           pdescp_Product,
                           descp_bcdDevice );
     }
-
 
     set_u32(response+1, strlen(buffer) );
     strncpy(response+5, buffer, strlen(buffer));
@@ -280,7 +278,7 @@ static void aice_reset (const char *input)
 
     char response[MAXLINE];
 
-    if ( ERROR_OK != aice_reset_box() ) {
+    if ( ERROR_OK != aice_usb_reset_box() ) {
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
         return;
@@ -340,7 +338,7 @@ static int aice_read_edm (const char *input)
     uint32_t num_of_words;
     uint32_t *EDMData = EDMbuff;
     int result = 0;
-    unsigned int value_edmsw = 0;
+    //unsigned int value_edmsw = 0;
 
     JDPInst      = input[1];
     target_id    = get_u32( input+2 );
@@ -359,58 +357,7 @@ static int aice_read_edm (const char *input)
     //    aice_log_add (AICE_LOG_INFO, "Allocate Read EDMData buffer Failed!!");
     //    return ERROR_FAIL;
     //}
-
-
-    switch ( JDPInst ) {
-        case JDP_R_DBG_SR:
-            result = aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_R_DTR:
-            value_edmsw = 0;
-            if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK) {
-                result = ERROR_FAIL;
-                break;
-            }
-            if ((value_edmsw & NDS_EDMSW_WDV) == 0) {
-                result = ERROR_FAIL;
-                break;
-            }
-            result = aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_R_MEM_W:
-            address = ((address >> 2) & 0x3FFFFFFF);
-            result = aice_access_cmmd(AICE_CMDIDX_READ_MEM, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_R_MISC_REG:
-            result = aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_R_FAST_MEM:
-            result = aice_access_cmmd(AICE_CMDIDX_FASTREAD_MEM, target_id, 0, (unsigned char *)EDMData, num_of_words);
-            break;
-
-        case JDP_R_MEM_H:
-            address = ((address >> 1) & 0x7FFFFFFF);
-            result = aice_access_cmmd(AICE_CMDIDX_READ_MEM_H, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_R_MEM_B:
-            result = aice_access_cmmd(AICE_CMDIDX_READ_MEM_B, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_R_DIM:
-        case JDP_R_DBG_EVENT:
-        case JDP_R_IDCODE:
-        default:
-            aice_log_add (AICE_LOG_INFO, "AICE Read EDM JDPInst Error: inst error, inst code: 0x%02X", JDPInst );
-            result = ERROR_FAIL;
-            break;
-    };
-
-
+    result = aice_usb_read_edm(target_id, JDPInst, address, EDMData, num_of_words);
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
 
@@ -444,8 +391,8 @@ static int aice_write_edm( const char *input )
     uint32_t num_of_words;
     uint32_t *EDMData = EDMbuff;
     int result = 0;
-    unsigned int value_edmsw = 0;
-    unsigned int write_data  = 0;
+    //unsigned int value_edmsw = 0;
+    //unsigned int write_data  = 0;
 
 
     JDPInst      = input[1];
@@ -469,77 +416,7 @@ static int aice_write_edm( const char *input )
     {
         EDMData[i] = get_u32( input + 14 + i*4 );
     }
-
-
-    switch ( JDPInst ) {
-        case JDP_W_DIM:
-            usb_cmmd_pack_info.access_little_endian = 0;  // AICE_BIG_ENDIAN
-
-            result =  aice_access_cmmd(AICE_CMDIDX_WRITE_DIM, target_id, 0, (unsigned char *)EDMData, num_of_words);
-            usb_cmmd_pack_info.access_little_endian = 1;
-            break;
-
-
-        case JDP_W_DBG_SR:
-            result = aice_access_cmmd(AICE_CMDIDX_WRITE_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_W_DTR:
-            result = aice_access_cmmd(AICE_CMDIDX_WRITE_DTR, target_id, 0, (unsigned char *)EDMData, 1);
-            if (result != ERROR_OK) {
-                result = ERROR_FAIL;
-                break;
-            }
-
-            if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK) {
-                result = ERROR_FAIL;
-                break;
-            }
-
-            if ((value_edmsw & NDS_EDMSW_RDV) == 0) {
-                aice_log_add( AICE_LOG_INFO, "<-- TARGET ERROR! AICE failed to write to the DTR register. -->");
-                result = ERROR_FAIL;
-                break;
-            }
-            result = ERROR_OK;
-            break;
-
-        case JDP_W_MEM_W:
-            address = ((address >> 2) & 0x3FFFFFFF);
-            result = aice_access_cmmd(AICE_CMDIDX_WRITE_MEM, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_W_MISC_REG:
-            result = aice_access_cmmd(AICE_CMDIDX_WRITE_MISC, target_id, address, (unsigned char *)EDMData, 1);
-            break;
-
-        case JDP_W_FAST_MEM:
-            result = aice_access_cmmd(AICE_CMDIDX_FASTWRITE_MEM, target_id, 0, (unsigned char *)EDMData, num_of_words);
-            break;
-
-        case JDP_W_EXECUTE:
-            write_data = 0;
-            result = aice_access_cmmd(AICE_CMDIDX_EXECUTE, target_id, 0, (unsigned char *)&write_data, 1);
-            break;
-
-        case JDP_W_MEM_H:
-            write_data = (EDMData[0] & 0x0000FFFF);
-            address = ((address >> 1) & 0x7FFFFFFF);
-            result = aice_access_cmmd(AICE_CMDIDX_WRITE_MEM_H, target_id, address, (unsigned char *)&write_data, 1);
-            break;
-
-        case JDP_W_MEM_B:
-            write_data = (EDMData[0] & 0x000000FF);
-            result = aice_access_cmmd(AICE_CMDIDX_WRITE_MEM_B, target_id, address, (unsigned char *)&write_data, 1);
-            break;
-
-        default:
-            aice_log_add (AICE_LOG_INFO, "AICE Write EDM JDPInst Error: inst error, inst code: 0x%02X", JDPInst );
-            result = ERROR_FAIL;
-            break;
-    };
-
-
+    result = aice_usb_write_edm(target_id, JDPInst, address, EDMData, num_of_words);
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
         pipe_write (response, 1);
@@ -565,7 +442,7 @@ static int aice_write_ctrls( const char *input )
     WriteData = get_u32 (input + 5);
 
     aice_log_add (AICE_LOG_DEBUG, "<aice_write_ctrl>: addr=0x%08X, data=0x%08X ", address, WriteData);
-    result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&WriteData, 1);
+    result = aice_usb_write_ctrl(address, WriteData);
 
     if( result == ERROR_OK )
         response[0] = AICE_OK;
@@ -582,16 +459,15 @@ static int aice_read_ctrls( const char *input )
 {
     char response[MAXLINE];
     unsigned int address;
-    unsigned int pReadData;
+    unsigned int ReadData;
     int result;
 
     address   = get_u32 (input + 1);
-    result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)&pReadData, 1);
-
+    result = aice_usb_read_ctrl(address, &ReadData);
     if( result == ERROR_OK ) {
-        aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: addr=0x%08X, recv=0x%08X", address, pReadData);
+        aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: addr=0x%08X, recv=0x%08X", address, ReadData);
         response[0] = AICE_OK;
-        set_u32(response+1, pReadData);
+        set_u32(response+1, ReadData);
         pipe_write (response, 5);
     }
     else {
@@ -672,7 +548,7 @@ static int aice_custom_monitor_cmd( const char *input )
             aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: set SBAR");
             address &= 0xFFFFFFFC;
             address |= 0x00000001;  //write
-            result = aice_access_cmmd( AICE_CMDIDX_WRITE_MISC, coreid, NDS_EDM_MISC_SBAR, (unsigned char*)&address, 1 );
+            result = aice_usb_write_edm(coreid, JDP_W_MISC_REG, NDS_EDM_MISC_SBAR, (uint32_t*)&address, 1);
             if( result != ERROR_OK ) {
                 aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: write SBAR failed!! data=0x%08X", address);
                 result = ERROR_FAIL;
@@ -681,7 +557,7 @@ static int aice_custom_monitor_cmd( const char *input )
             }
 
             aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: fastwrite mem");
-            result = aice_access_cmmd( AICE_CMDIDX_FASTWRITE_MEM, coreid, 0, (unsigned char*)write_data, size/4);
+            result = aice_usb_write_edm(coreid, JDP_W_FAST_MEM, 0, (uint32_t *)&write_data[0], size/4);
             if( result != ERROR_OK ) {
                 aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: fastwrite mem failed!!");
                 result = ERROR_FAIL;
@@ -692,7 +568,7 @@ static int aice_custom_monitor_cmd( const char *input )
             //Setup SBAR for Read
             aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: set SBAR");
             address &= 0xFFFFFFFC;
-            result = aice_access_cmmd( AICE_CMDIDX_WRITE_MISC, coreid, NDS_EDM_MISC_SBAR, (unsigned char*)&address, 1 );
+            result = aice_usb_write_edm(coreid, JDP_W_MISC_REG, NDS_EDM_MISC_SBAR, (uint32_t*)&address, 1);
             if( result != ERROR_OK ) {
                 aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: write SBAR failed!! data=0x%08X", address);
                 result = ERROR_FAIL;
@@ -702,7 +578,7 @@ static int aice_custom_monitor_cmd( const char *input )
 
             //FASTRAED_MEM 
             aice_log_add( AICE_LOG_DEBUG, "<aice_custom_monitor_cmd>: fastread mem");
-            result = aice_access_cmmd( AICE_CMDIDX_FASTREAD_MEM, coreid, 0, (unsigned char*)read_data, size/4);
+            result = aice_usb_read_edm(coreid, JDP_R_FAST_MEM, 0, (uint32_t *)&read_data[0], size/4);
             if( result != ERROR_OK ) {
                 aice_log_add( AICE_LOG_ERROR, "<aice_custom_monitor_cmd>: fastread mem failed!!");
                 result = ERROR_FAIL;

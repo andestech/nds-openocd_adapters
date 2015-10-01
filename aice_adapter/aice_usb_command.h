@@ -19,23 +19,6 @@
 #ifndef __AICE_USB_COMMAND_H__
 #define __AICE_USB_COMMAND_H__
 
-struct aice_port_s {
-	/** CPU core ID */
-	uint32_t coreid;
-	/** Hardware version */
-	uint32_t hardware_version;
-	/** Firmware version */
-	uint32_t firmware_version;
-	/** FPGA version */
-	uint32_t fpga_version;
-	/** ICE Configuration */
-	uint32_t ice_config;
-	/** profile data buffer size */
-	uint32_t batch_data_buf1_size;
-	/** port name, type, and API */
-	const struct aice_port *port;
-};
-
 enum aice_usb_cmmd_index {
 	AICE_CMDIDX_WRITE_CTRL = 0,
 	AICE_CMDIDX_WRITE_MISC,
@@ -134,49 +117,35 @@ extern unsigned int usb_in_packets_buffer_length;
 extern enum aice_command_mode aice_command_mode;
 extern unsigned int aice_usb_rx_max_packet;
 extern unsigned int aice_usb_tx_max_packet;
-extern unsigned int aice_hardware_version, aice_firmware_version, aice_fpga_version, aice_ice_config;
 extern uint32_t jtag_clock;
 extern uint32_t aice_count_to_check_dbger;
 extern uint32_t aice_set_usb_timeout;
+extern uint32_t aice_ice_config;
+extern uint32_t aice_hardware_version;
+extern uint32_t aice_firmware_version;
+extern uint32_t aice_fpga_version;
+extern uint32_t aice_batch_data_buf1_size;
 
-extern int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid);
-extern int aice_usb_close(void);
-extern int aice_usb_write(unsigned char *out_buffer, unsigned int out_length);
-extern int aice_usb_read(unsigned char *in_buffer, unsigned int expected_size);
-extern int aice_reset_box(void);
-extern int aice_get_info(struct aice_port_s *aice);
-extern int aice_scan_chain(unsigned int *id_codes, unsigned char *num_of_ids);
-extern int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length);
-extern int aice_write_ctrl(unsigned int address, unsigned int WriteData);
-extern int aice_read_ctrl(unsigned int address, unsigned int *pReadData);
-extern int aice_read_misc(unsigned char target_id, unsigned int address, unsigned int *pReadData);
-extern int aice_write_misc(unsigned char target_id, unsigned int address, unsigned int WriteData);
-extern int aice_read_edmsr(unsigned char target_id, unsigned int address, unsigned int *pReadData);
-extern int aice_write_edmsr(unsigned char target_id, unsigned int address, unsigned int WriteData);
-extern int aice_write_mem_b(unsigned char target_id, unsigned int address, unsigned int WriteData);
-extern int aice_write_mem_h(unsigned char target_id, unsigned int address, unsigned int WriteData);
-extern int aice_write_mem(unsigned char target_id, unsigned int address, unsigned int WriteData);
-extern int aice_fastread_mem(unsigned char target_id, unsigned char *pReadData, unsigned int num_of_words);
-extern int aice_fastwrite_mem(unsigned char target_id, const unsigned char *pWriteData, unsigned int num_of_words);
-extern int aice_read_mem_b(unsigned char target_id, unsigned int address, unsigned int *pReadData);
-extern int aice_read_mem_h(unsigned char target_id, unsigned int address, unsigned int *pReadData);
-extern int aice_read_mem(unsigned char target_id, unsigned int address, unsigned int *pReadData);
-extern int aice_write_dim(unsigned char target_id, unsigned int *word, unsigned char num_of_words);
-extern int aice_do_execute(unsigned char target_id);
-extern int aice_read_dtr(unsigned char target_id, unsigned int *pReadData);
-extern int aice_read_dtr_to_buffer(unsigned char target_id, unsigned int buffer_idx);
-extern int aice_write_dtr(unsigned char target_id, unsigned int WriteData);
-extern int aice_write_dtr_from_buffer(unsigned char target_id, unsigned int buffer_idx);
+int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid);
+int aice_usb_close(void);
+int aice_usb_write(unsigned char *out_buffer, unsigned int out_length);
+int aice_usb_read(unsigned char *in_buffer, unsigned int expected_size);
+int aice_usb_reset_box(void);
+int aice_scan_chain(unsigned int *id_codes, unsigned char *num_of_ids);
+int aice_usb_write_ctrl(uint32_t address, uint32_t WriteData);
+int aice_usb_read_ctrl(uint32_t address, uint32_t *pReadData);
+int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words );
+int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words );
+int aice_read_dtr_to_buffer(uint32_t target_id, uint32_t buffer_idx);
+int aice_write_dtr_from_buffer(uint32_t target_id, uint32_t buffer_idx);
 
-extern int aice_batch_buffer_write(unsigned int buf_index);
-extern int aice_batch_buffer_read(unsigned int buf_index, unsigned char *pReadData, unsigned int num_of_words);
-extern int aice_pack_buffer_read(unsigned char *pReadData, unsigned int num_of_bytes);
-extern int aice_write_pins(unsigned int num_of_words, unsigned int *pWriteData);
-extern int aice_usb_packet_flush(void);
-extern int aice_usb_set_command_mode(enum aice_command_mode command_mode);
-extern int aice_usb_execute_custom_script(const char *script);
-extern int aice_reset_aice_as_startup(void);
-extern int aice_usb_set_clock(int set_clock);
-extern struct aice_usb_cmmd_info usb_cmmd_pack_info;
+int aice_batch_buffer_write(uint32_t buf_index);
+int aice_batch_buffer_read(uint32_t buf_index, unsigned char *pReadData, uint32_t num_of_words);
+int aice_pack_buffer_read(unsigned char *pReadData, uint32_t num_of_bytes);
+
+int aice_usb_set_command_mode(enum aice_command_mode command_mode);
+int aice_usb_execute_custom_script(const char *script);
+int aice_reset_aice_as_startup(void);
+int aice_usb_set_clock(uint32_t set_clock);
 
 #endif
