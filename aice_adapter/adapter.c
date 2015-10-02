@@ -43,6 +43,11 @@
 #define AICE_PID 0x0000
 
 unsigned int aice_num_of_target_id_codes = 0;
+uint32_t aice_ice_config = 0;
+uint32_t aice_hardware_version = 0;
+uint32_t aice_firmware_version = 0;
+uint32_t aice_fpga_version = 0;
+uint32_t aice_batch_data_buf1_size = 0;
 /***************************************************************************/
 #define AICE_MAX_VID_NUM       (0xFF)
 struct vid_pid_s {
@@ -182,8 +187,8 @@ static void aice_open (const char *input)
     }
 
     if (nds32_reset_aice_as_startup == 1) {
-		aice_reset_aice_as_startup();
-	}
+        aice_reset_aice_as_startup();
+    }
 
     response[0] = AICE_OK;
     char buffer[1000] = {0};
@@ -195,6 +200,12 @@ static void aice_open (const char *input)
             response[0] = AICE_ERROR;
             pipe_write (response, 1);
             return;
+        }
+        if ((aice_ice_config & (0x01 << 30)) == 0) {
+            aice_set_write_pins_support(0);
+        }
+        else {
+            aice_set_write_pins_support(1);
         }
         char *vid_str, *pid_str;
         unsigned int vid_idx, pid_idx;

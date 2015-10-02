@@ -52,11 +52,7 @@ enum aice_command_mode aice_command_mode = AICE_COMMAND_MODE_NORMAL;
 unsigned int aice_max_retry_times = 2;//50;
 unsigned int aice_usb_rx_max_packet = 512;
 unsigned int aice_usb_tx_max_packet = 512;
-uint32_t aice_ice_config = 0;
-uint32_t aice_hardware_version = 0;
-uint32_t aice_firmware_version = 0;
-uint32_t aice_fpga_version = 0;
-uint32_t aice_batch_data_buf1_size = 0;
+uint32_t aice_write_pins_support = 0;
 
 struct aice_usb_cmmd_info usb_cmmd_pack_info = {
 		.pusb_buffer = &usb_out_buffer[0],
@@ -920,9 +916,9 @@ int aice_usb_execute_custom_script(const char *script)
 			line_buffer[0] = (char)(write_pins_num >> 8);
 			line_buffer[1] = (char)(write_pins_num & 0xFF);
 
-			LOG_DEBUG("ice_config = %x", aice_ice_config);
+			LOG_DEBUG("aice_write_pins_support = %x", aice_write_pins_support);
 
-			if ((aice_ice_config & (0x01 << 30)) == 0) {
+			if (aice_write_pins_support == 0) {
 				LOG_DEBUG("write_pins unsupported !!");
 				goto aice_execute_custom_script_error;
 			}
@@ -1020,4 +1016,10 @@ int aice_usb_set_clock(uint32_t set_clock)
 	return ERROR_OK;
 aice_usb_set_clock_ERR:
 	return ERROR_FAIL;
+}
+
+int aice_set_write_pins_support(uint32_t if_support)
+{
+	aice_write_pins_support = if_support;
+	return ERROR_OK;
 }

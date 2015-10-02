@@ -120,11 +120,6 @@ extern unsigned int aice_usb_tx_max_packet;
 extern uint32_t jtag_clock;
 extern uint32_t aice_count_to_check_dbger;
 extern uint32_t aice_set_usb_timeout;
-extern uint32_t aice_ice_config;
-extern uint32_t aice_hardware_version;
-extern uint32_t aice_firmware_version;
-extern uint32_t aice_fpga_version;
-extern uint32_t aice_batch_data_buf1_size;
 
 int aice_usb_open(unsigned int usb_vid, unsigned int usb_pid);
 int aice_usb_close(void);
@@ -147,5 +142,6 @@ int aice_usb_set_command_mode(enum aice_command_mode command_mode);
 int aice_usb_execute_custom_script(const char *script);
 int aice_reset_aice_as_startup(void);
 int aice_usb_set_clock(uint32_t set_clock);
+int aice_set_write_pins_support(uint32_t if_support);
 
 #endif
