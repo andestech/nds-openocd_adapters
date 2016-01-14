@@ -36,7 +36,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DeF:gGhHkKl:L:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
+const char *opt_string = "aAb:Bc:C:d:DeF:gGhHkK::l:L:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -56,7 +56,7 @@ struct option long_option[] = {
 	//{"enable-virtual-hosting", no_argument, 0, 'j'},
 	//{"disable-virtual-hosting", no_argument, 0, 'J'},
 	{"word-access-mem", no_argument, 0, 'k'},
-	{"soft-reset-hold", no_argument, 0, 'K'},
+	{"soft-reset-hold", optional_argument, 0, 'K'},
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
 	{"custom-restart", required_argument, 0, 'N'},
@@ -146,7 +146,7 @@ static int burner_port = PORTNUM_BURNER;
 static int telnet_port = PORTNUM_TELNET;
 static int tcl_port = PORTNUM_TCL;
 static int startup_reset_halt = 0;
-static int soft_reset_halt;
+static int soft_reset_halt = 0;
 static int force_debug;
 static unsigned int log_file_size = 0xA00000; // default: 10MB
 static int boot_time = 5000;
@@ -326,7 +326,12 @@ static int parse_param(int a_argc, char **a_argv) {
 				word_access_mem = 1;
 				break;
 			case 'K':
-				soft_reset_halt = 1;
+				if (optarg != NULL){
+					sscanf(optarg, "%x", &soft_reset_halt);
+				}
+				else {
+					soft_reset_halt = 2;
+				}
 				break;
 			case 'l': /* customer-srst */
 				custom_srst_script = optarg;
@@ -700,7 +705,7 @@ static void update_interface_cfg(void)
 	}
 	if (startup_reset_halt) {
 		if (soft_reset_halt)
-			fprintf(interface_cfg, "aice reset_halt_as_init 2\n");
+			fprintf(interface_cfg, "aice reset_halt_as_init %d\n", soft_reset_halt);
 		else
 			fprintf(interface_cfg, "aice reset_halt_as_init 1\n");
 	}
