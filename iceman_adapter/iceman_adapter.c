@@ -21,6 +21,7 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
+#define ICEMAN_VERSION     "v3.2.3"
 #define NDS32_USER_CFG     "nds32_user.cfg"
 
 #ifdef __GNUC__
@@ -173,7 +174,7 @@ extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 
 static void show_version(void) {
-	printf("Andes ICEman v3.2.3 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
+	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
 	printf("Copyright (C) 2007-2015 Andes Technology Corporation\n");
 }
 
@@ -674,7 +675,7 @@ static void update_interface_cfg(void)
 	/* update nds32-aice.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, interface_cfg_tpl) != NULL)
 		fputs(line_buffer, interface_cfg);
-
+	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 	if (diagnosis)
 		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
 	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
@@ -927,7 +928,7 @@ int main(int argc, char **argv) {
 		printf("tcl port num error\n");
 		return 0;
 	}
-	printf("Andes ICEman v3.2.3 (OpenOCD) BUILD_ID: %s\n", BUILD_ID);
+	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
 	printf("Burner listens on %d\n", burner_port);
 	printf("Telnet port: %d\n", telnet_port);
 	printf("TCL port: %d\n", tcl_port);
