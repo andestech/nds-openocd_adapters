@@ -148,7 +148,7 @@ static int tcl_port = PORTNUM_TCL;
 static int startup_reset_halt = 0;
 static int soft_reset_halt;
 static int force_debug;
-static unsigned int log_file_size = 0x100000;
+static unsigned int log_file_size = 0xA00000; // default: 10MB
 static int boot_time = 5000;
 static int reset_time = 1000;
 static int reset_aice_as_startup = 0;
