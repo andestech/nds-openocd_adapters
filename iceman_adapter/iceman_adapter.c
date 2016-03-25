@@ -21,7 +21,7 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
-#define ICEMAN_VERSION     "v3.2.3"
+#define ICEMAN_VERSION     "v3.2.4"
 #define NDS32_USER_CFG     "nds32_user.cfg"
 
 #ifdef __GNUC__
