@@ -503,6 +503,8 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 			return aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
 
 		case JDP_R_DTR:
+			if (aice_command_mode == AICE_COMMAND_MODE_PACK)
+				aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
 			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
 				return ERROR_FAIL;
 
@@ -570,6 +572,8 @@ int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, u
 			if (result != ERROR_OK)
 				return ERROR_FAIL;
 
+			if (aice_command_mode == AICE_COMMAND_MODE_PACK)
+				aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
 			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
 				return ERROR_FAIL;
 
