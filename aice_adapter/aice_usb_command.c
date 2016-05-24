@@ -503,15 +503,40 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 			return aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
 
 		case JDP_R_DTR:
-			if (aice_command_mode == AICE_COMMAND_MODE_PACK)
-				aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
+			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
+			aice_usb_set_command_mode(AICE_COMMAND_MODE_PACK);
+
 			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
 				return ERROR_FAIL;
+
+			int result = aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
+			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
+
+			char usbin_data[256];
+			unsigned char *pread1_byte = (unsigned char *)&usbin_data[4];
+			uint32_t d2h_size = aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMA);  // READ_EDMSR
+			unsigned char *pread2_byte = (unsigned char *)&usbin_data[d2h_size + 4];
+			d2h_size += aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMA);          // READ_DTR
+
+			aice_pack_buffer_read((uint8_t *)&usbin_data[0], d2h_size);
+
+			value_edmsw = (unsigned char)pread1_byte[3];
+			value_edmsw |= ((unsigned char)pread1_byte[2] << 8);
+			value_edmsw |= ((unsigned char)pread1_byte[1] << 16);
+			value_edmsw |= ((unsigned char)pread1_byte[0] << 24);
+			if ((value_edmsw & NDS_EDMSW_WDV) == 0) {
+				return ERROR_FAIL;
+			}
+			uint32_t value_dtr = (unsigned char)pread2_byte[3];
+			value_dtr |= ((unsigned char)pread2_byte[2] << 8);
+			value_dtr |= ((unsigned char)pread2_byte[1] << 16);
+			value_dtr |= ((unsigned char)pread2_byte[0] << 24);
+			*EDMData = value_dtr;
 
 			if ((value_edmsw & NDS_EDMSW_WDV) == 0) {
 				return ERROR_FAIL;
 			}
-			return aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
+			return result;
 
 		case JDP_R_MEM_W:
 			address = ((address >> 2) & 0x3FFFFFFF);
@@ -568,15 +593,28 @@ int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, u
 			return aice_access_cmmd(AICE_CMDIDX_WRITE_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
 
 		case JDP_W_DTR:
+			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
+			aice_usb_set_command_mode(AICE_COMMAND_MODE_PACK);
+
 			result = aice_access_cmmd(AICE_CMDIDX_WRITE_DTR, target_id, 0, (unsigned char *)EDMData, 1);
 			if (result != ERROR_OK)
 				return ERROR_FAIL;
 
-			if (aice_command_mode == AICE_COMMAND_MODE_PACK)
-				aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
 			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
 				return ERROR_FAIL;
+			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
 
+			char usbin_data[256];
+			uint32_t d2h_size = aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMB);  // WRITE_DTR
+			unsigned char *pread1_byte = (unsigned char *)&usbin_data[d2h_size + 4];
+			d2h_size += aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMA);          // READ_EDMSR
+
+			aice_pack_buffer_read((uint8_t *)&usbin_data[0], d2h_size);
+			value_edmsw = (unsigned char)pread1_byte[3];
+			value_edmsw |= ((unsigned char)pread1_byte[2] << 8);
+			value_edmsw |= ((unsigned char)pread1_byte[1] << 16);
+			value_edmsw |= ((unsigned char)pread1_byte[0] << 24);
+	
 			if ((value_edmsw & NDS_EDMSW_RDV) == 0) {
 				//AICE_USBCMMD_MSG(NDS32_ERRMSG_TARGET_WRITE_DTR);
 				return ERROR_FAIL;
@@ -759,15 +797,15 @@ static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsig
 	unsigned char cmd_ack_code; //extra_length, res_target_id;
 	unsigned int *pWordData = (unsigned int*)pdata;
 
-	h2d_size = aice_get_usb_cmmd_size(pusb_cmmd_attr->h2d_type);
-	d2h_size = aice_get_usb_cmmd_size(pusb_cmmd_attr->d2h_type);
+	h2d_size = aice_get_usb_cmd_size(pusb_cmmd_attr->h2d_type);
+	d2h_size = aice_get_usb_cmd_size(pusb_cmmd_attr->d2h_type);
 	pusb_tx_cmmd_info->cmdtype = pusb_cmmd_attr->h2d_type;
 	pusb_tx_cmmd_info->cmd = pusb_cmmd_attr->cmd;
 	pusb_tx_cmmd_info->target = (unsigned char)target_id;
 	pusb_tx_cmmd_info->length = (length - 1);
 	pusb_tx_cmmd_info->addr = address;
 	pusb_tx_cmmd_info->pword_data = (unsigned char *)pdata;
-	aice_pack_usb_cmmd(pusb_tx_cmmd_info);
+	aice_pack_usb_cmd(pusb_tx_cmmd_info);
 
 	pusb_rx_cmmd_info->cmdtype = pusb_cmmd_attr->d2h_type;
 	pusb_rx_cmmd_info->length = (length - 1);
@@ -799,7 +837,7 @@ static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsig
 				AICE_USBCMMD_MSG("%s, aice_usb_read failed (requested=%d, result=%d)", pusb_cmmd_attr->cmdname, d2h_size, result);
 				return ERROR_FAIL;
 		}
-		aice_pack_usb_cmmd(pusb_rx_cmmd_info);
+		aice_pack_usb_cmd(pusb_rx_cmmd_info);
 		cmd_ack_code = pusb_rx_cmmd_info->cmd;
 
 		AICE_USBCMMD_MSG("%s, COREID: %d, address: 0x%x, data: 0x%x",

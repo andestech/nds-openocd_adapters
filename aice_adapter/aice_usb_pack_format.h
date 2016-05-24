@@ -59,7 +59,7 @@ struct aice_usb_cmmd_info {
 	unsigned char *pword_data;
 };
 
-extern void aice_pack_usb_cmmd(struct aice_usb_cmmd_info *pusb_cmmd_info);
-extern unsigned int aice_get_usb_cmmd_size(unsigned int usb_cmmd_type);
+extern void aice_pack_usb_cmd(struct aice_usb_cmmd_info *pusb_cmmd_info);
+extern unsigned int aice_get_usb_cmd_size(unsigned int usb_cmmd_type);
 
 #endif
