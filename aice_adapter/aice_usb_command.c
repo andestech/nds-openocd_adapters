@@ -489,8 +489,6 @@ int aice_usb_read_ctrl(uint32_t address, uint32_t *pReadData)
 
 int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words )
 {
-	unsigned int value_edmsw = 0;
-
 	//LOG_DEBUG("AICE Read EDM USB: target_id=0x%08X, cmd=0x%02X, addr=0x%08X", target_id, JDPInst, address);
 
 	if ( (JDPInst & 0x80) != 0 ) {
@@ -503,40 +501,7 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 			return aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
 
 		case JDP_R_DTR:
-			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
-			aice_usb_set_command_mode(AICE_COMMAND_MODE_PACK);
-
-			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
-				return ERROR_FAIL;
-
-			int result = aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
-			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
-
-			char usbin_data[256];
-			unsigned char *pread1_byte = (unsigned char *)&usbin_data[4];
-			uint32_t d2h_size = aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMA);  // READ_EDMSR
-			unsigned char *pread2_byte = (unsigned char *)&usbin_data[d2h_size + 4];
-			d2h_size += aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMA);          // READ_DTR
-
-			aice_pack_buffer_read((uint8_t *)&usbin_data[0], d2h_size);
-
-			value_edmsw = (unsigned char)pread1_byte[3];
-			value_edmsw |= ((unsigned char)pread1_byte[2] << 8);
-			value_edmsw |= ((unsigned char)pread1_byte[1] << 16);
-			value_edmsw |= ((unsigned char)pread1_byte[0] << 24);
-			if ((value_edmsw & NDS_EDMSW_WDV) == 0) {
-				return ERROR_FAIL;
-			}
-			uint32_t value_dtr = (unsigned char)pread2_byte[3];
-			value_dtr |= ((unsigned char)pread2_byte[2] << 8);
-			value_dtr |= ((unsigned char)pread2_byte[1] << 16);
-			value_dtr |= ((unsigned char)pread2_byte[0] << 24);
-			*EDMData = value_dtr;
-
-			if ((value_edmsw & NDS_EDMSW_WDV) == 0) {
-				return ERROR_FAIL;
-			}
-			return result;
+			return aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
 
 		case JDP_R_MEM_W:
 			address = ((address >> 2) & 0x3FFFFFFF);
@@ -568,7 +533,6 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words )
 {
 	int result = 0;
-	unsigned int value_edmsw = 0;
 	unsigned int write_data  = 0;
 
 	//    if( num_of_words == 1 )
@@ -593,33 +557,7 @@ int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, u
 			return aice_access_cmmd(AICE_CMDIDX_WRITE_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
 
 		case JDP_W_DTR:
-			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
-			aice_usb_set_command_mode(AICE_COMMAND_MODE_PACK);
-
-			result = aice_access_cmmd(AICE_CMDIDX_WRITE_DTR, target_id, 0, (unsigned char *)EDMData, 1);
-			if (result != ERROR_OK)
-				return ERROR_FAIL;
-
-			if (aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, NDS_EDM_SR_EDMSW, (unsigned char *)&value_edmsw, 1) != ERROR_OK)
-				return ERROR_FAIL;
-			aice_usb_set_command_mode(AICE_COMMAND_MODE_NORMAL);
-
-			char usbin_data[256];
-			uint32_t d2h_size = aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMB);  // WRITE_DTR
-			unsigned char *pread1_byte = (unsigned char *)&usbin_data[d2h_size + 4];
-			d2h_size += aice_get_usb_cmd_size(AICE_CMDTYPE_DTHMA);          // READ_EDMSR
-
-			aice_pack_buffer_read((uint8_t *)&usbin_data[0], d2h_size);
-			value_edmsw = (unsigned char)pread1_byte[3];
-			value_edmsw |= ((unsigned char)pread1_byte[2] << 8);
-			value_edmsw |= ((unsigned char)pread1_byte[1] << 16);
-			value_edmsw |= ((unsigned char)pread1_byte[0] << 24);
-	
-			if ((value_edmsw & NDS_EDMSW_RDV) == 0) {
-				//AICE_USBCMMD_MSG(NDS32_ERRMSG_TARGET_WRITE_DTR);
-				return ERROR_FAIL;
-			}
-			return ERROR_OK;
+			return aice_access_cmmd(AICE_CMDIDX_WRITE_DTR, target_id, 0, (unsigned char *)EDMData, 1);
 
 		case JDP_W_MEM_W:
 			address = ((address >> 2) & 0x3FFFFFFF);
