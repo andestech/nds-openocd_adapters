@@ -143,7 +143,8 @@ char AndesName[] = {"Andes"};
 char *pAICEName[] = {
     "AICE",
     "AICE-MCU",
-    "AICE-MINI"
+    "AICE-MINI",
+    "AICE-II"
 };
 extern char *pdescp_Manufacturer;
 extern char *pdescp_Product;
