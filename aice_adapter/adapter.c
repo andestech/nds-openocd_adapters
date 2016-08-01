@@ -216,7 +216,7 @@ static void aice_open (const char *input)
         vid_str = (char *)&AndesName[0];
         pid_str = (char *)pAICEName[pid_idx];
 
-        if ((vid_idx == 0) && (pid_idx <= 2)) {
+        if ((vid_idx == 0) && (pid_idx <= 3)) {
             sprintf( buffer, "%s %s v%d.%d.%d",
                     vid_str,
                     pid_str,
