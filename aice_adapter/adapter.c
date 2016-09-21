@@ -295,12 +295,12 @@ static void aice_reset (const char *input)
         pipe_write (response, 1);
         return;
     }
-
+		/* skip tckscan before restart, for JTAG-pins pinmux
     if( ERROR_OK != aice_usb_set_clock(jtag_clock) ) {
         response[0] = AICE_ERROR;
         pipe_write (response, 1);
     }
-
+		*/
     response[0] = AICE_OK;
     pipe_write (response, 1);
 }
