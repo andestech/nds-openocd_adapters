@@ -36,7 +36,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DeF:gGhHkK::l:L:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
+const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -48,6 +48,7 @@ struct option long_option[] = {
 	{"larger-logfile", no_argument, 0, 'D'},
 	{"unlimited-log", no_argument, 0, 'e'},
 	//{"edmv2", no_argument, 0, 'E'},
+	{"log-output", required_argument, 0, 'f'},
 	{"edm-port-file", required_argument, 0, 'F'},
 	{"force-debug", no_argument, 0, 'g'},
 	{"enable-global-stop", no_argument, 0, 'G'},
@@ -172,6 +173,7 @@ static void parse_edm_operation(const char *edm_operation);
 //extern char *BRANCH_NAME, *COMMIT_ID;
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
+static const char *log_output = NULL;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
@@ -207,6 +209,7 @@ static void show_usage(void) {
 	//printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
 	printf("-D, --larger-logfile:\tThe maximum size of the log file is 1MBx2. The size is increased to 512MBx2 with this option.\n");
 	//printf("-e, --edm-retry:\tRetry count of getting EDM version as ICEman startup\n");
+	printf("-f, --log-output:\toutput log file path\n");
 	printf("-F, --edm-port-file (Only for Secure MPU):\tEDM port0/1 operations file name\n");
 	printf("\t\tFile format:\n");
 	printf("\t\t\twrite_edm 6:0x1234,7:0x1234;\n");
@@ -313,6 +316,9 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 'F':
 				edm_port_op_file = optarg;
 				break;
+            case 'f':
+                log_output = optarg;
+                break;
 			case 'g':
 				force_debug = 1;
 				break;
@@ -638,7 +644,7 @@ static void update_gdb_port_num(void)
 
 static void update_openocd_cfg(void)
 {
-	//char line_buffer[LINE_BUFFER_SIZE];
+	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
 	//while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
@@ -647,7 +653,18 @@ static void update_openocd_cfg(void)
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
-	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
+    if( log_output == NULL )
+    	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
+    else {
+        strncpy(line_buffer, log_output, strlen(log_output));
+
+        if( line_buffer[strlen(line_buffer)-1] != '/' )
+            strncat(line_buffer, "/iceman_debug0.log", 18);
+        else
+            strncat(line_buffer, "iceman_debug0.log", 17);
+
+    	fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+    }
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
 	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");

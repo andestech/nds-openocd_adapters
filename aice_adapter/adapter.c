@@ -745,7 +745,7 @@ static int aice_set_pack_buffer_read (const char *input)
 }
 
 #define MAX_FILELIST 10
-
+extern char* log_output;
 void parsing_config_file( char* top_filename )
 {
     int filelist_top = 0;
@@ -754,6 +754,7 @@ void parsing_config_file( char* top_filename )
     char str[MAXLINE];
     filelist[filelist_top++] = strdup(top_filename);
     int i;
+    char *pch;
 
     while( finish_parsing < filelist_top ) {
         FILE *fp;
@@ -850,6 +851,23 @@ void parsing_config_file( char* top_filename )
                     debug_level = atoi(tok);
 
                     aice_log_add(AICE_LOG_DEBUG, "debug_level: %d", debug_level);
+                }
+                else if( strncmp(tok, "log_output", 10) == 0 ) {
+                    tok = strtok( NULL, " "); // path
+                    log_output = strdup(tok);
+
+                    pch = strrchr(log_output, '/');
+
+                    // remove iceman_debug0.log
+                    if( pch != NULL ) {
+                        log_output[pch-log_output+1] = '\0';
+                    } else {
+                        // log_output iceman_debug0.log
+                        free(log_output);
+                        log_output = NULL;
+                    }
+
+                    aice_log_add(AICE_LOG_DEBUG, "log_output: %s", log_output);
                 }
                 else
                     continue;

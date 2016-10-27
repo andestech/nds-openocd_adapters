@@ -38,16 +38,22 @@ static FILE *debug_fd_;
 static uint32_t debug_level_    = AICE_LOG_ERROR;
 static uint32_t debug_buf_size_ = MINIMUM_DEBUG_LOG_SIZE;
 static int  file_idx = 0;
+char *log_output = NULL;
 
-
+#define MAX_FILENAME 2048
 static void open_debug_file (void)
 {
-    const char *debug_filename;
+    char debug_filename[MAX_FILENAME];
     time_t seconds;
 
     seconds = time (NULL);
 
-    debug_filename = Log_File_Name[file_idx];
+    memset(debug_filename, 0, MAX_FILENAME);
+    if( log_output != NULL ) {
+        strncpy(debug_filename, log_output, strlen(log_output));
+    }
+
+    strcat(debug_filename, Log_File_Name[file_idx]);
     debug_fd_ = fopen (debug_filename, "w");
 
     fprintf (debug_fd_, "Date: %s\n\n", ctime (&seconds));
