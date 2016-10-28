@@ -21,6 +21,8 @@ DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 aice_adapter_SOURCES += jtag/drivers/libusb1_common.c
 endif
 
+aice_adapter_LDFLAGS = $(DRIVERLIBS)
+
 aice_adapter_CFLAGS = -I$(srcdir)/jtag/drivers \
 					  -Wall $(DRIVERCFLAGS) \
 					  -DHAVE_CONFIG_H
@@ -32,15 +34,15 @@ aice_adapter_CFLAGS +=
 endif
 
 
-aice_adapter_LDFLAGS = -all-static 
+aice_adapter_LDFLAGS += -static 
 
 if BUILD_MINGW_BINARY
-aice_adapter_LDFLAGS += -lws2_32 -lusb
+aice_adapter_LDADD = -lws2_32 -lusb
 else
 if BUILD_CYGWIN_BINARY
-aice_adapter_LDFLAGS += -ldl -lpthread -lusb 
+aice_adapter_LDADD = -lusb -ldl -lpthread
 else
-aice_adapter_LDFLAGS += -ldl -lpthread -lrt -lusb-1.0
+aice_adapter_LDADD = -lusb-1.0 -ldl -lpthread -lrt
 endif
 endif 
 
