@@ -1,7 +1,12 @@
 #!/bin/bash 
 
+LIBTOOL_DIR=.
+if [ -n "$1" ]; then
+    LIBTOOL_DIR=$1
+fi
+
 autoreconf -ivf
-aclocal
+aclocal -I /usr/share/aclocal
 autoconf
 automake --gnu --add-missing --copy
 
