@@ -6,7 +6,7 @@ if [ -n "$1" ]; then
 fi
 
 autoreconf -ivf
-aclocal -I /usr/share/aclocal
+aclocal -I $LIBTOOL_DIR -I /usr/share/aclocal
 autoconf
 automake --gnu --add-missing --copy
 
