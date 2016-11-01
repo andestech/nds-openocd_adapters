@@ -656,13 +656,9 @@ static void update_openocd_cfg(void)
     if( log_output == NULL )
     	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
     else {
+        memset(line_buffer, 0, LINE_BUFFER_SIZE);
         strncpy(line_buffer, log_output, strlen(log_output));
-
-        if( line_buffer[strlen(line_buffer)-1] != '/' )
-            strncat(line_buffer, "/iceman_debug0.log", 18);
-        else
-            strncat(line_buffer, "iceman_debug0.log", 17);
-
+        strncat(line_buffer, "iceman_debug0.log", 17);
     	fprintf(openocd_cfg, "log_output %s\n", line_buffer);
     }
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);

@@ -56,6 +56,13 @@ static void open_debug_file (void)
     strcat(debug_filename, Log_File_Name[file_idx]);
     debug_fd_ = fopen (debug_filename, "w");
 
+    // open failed
+    if(!debug_fd_) {
+        debug_fd_ = stdout;
+    }
+
+
+
     fprintf (debug_fd_, "Date: %s\n\n", ctime (&seconds));
 }
 
