@@ -165,7 +165,8 @@ char *pdescp_Manufacturer;
 char *pdescp_Product;
 unsigned int descp_bcdDevice = 0x0;
 
-static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length);
+static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id,
+		unsigned int address, unsigned char *pdata, unsigned int length);
 static int aice_usb_packet_flush(void);
 static int aice_usb_write_pins(unsigned int num_of_words, unsigned int *pWriteData);
 
@@ -679,7 +680,7 @@ static int aice_usb_packet_append(unsigned char *out_buffer, unsigned int out_le
 			return ERROR_FAIL;
 		}
 	}
-	AICE_USBCMMD_MSG("Append usb packets 0x%02x", out_buffer[0]);
+	//AICE_USBCMMD_MSG("Append usb packets 0x%02x", out_buffer[0]);
 
 	memcpy(usb_out_packets_buffer + usb_out_packets_buffer_length, out_buffer, out_length);
 	usb_out_packets_buffer_length += out_length;
@@ -725,7 +726,8 @@ int aice_clear_timeout(void)
 	return ERROR_OK;
 }
 
-static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsigned int address, unsigned char *pdata, unsigned int length)
+static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id,
+		unsigned int address, unsigned char *pdata, unsigned int length)
 {
 	struct aice_usb_cmmd_info *pusb_tx_cmmd_info = &usb_cmmd_pack_info;
 	struct aice_usb_cmmd_info *pusb_rx_cmmd_info = &usb_cmmd_unpack_info;
@@ -761,6 +763,8 @@ static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id, unsig
 			(aice_command_mode == AICE_COMMAND_MODE_BATCH)) {
 			result = aice_usb_packet_append(pusb_tx_cmmd_info->pusb_buffer,
 							h2d_size, d2h_size);
+			AICE_USBCMMD_MSG("%s(pack), COREID: %d, address: 0x%x, data: 0x%x",
+				pusb_cmmd_attr->cmdname, target_id, address, (unsigned int)*pWordData);
 			return result;
 	}
 	do {
@@ -813,6 +817,9 @@ enum AICE_CUSTOM_CMMD {
 	AICE_CUSTOM_CMMD_DELAY,
 	AICE_CUSTOM_CMMD_WRITE_PINS,
 	AICE_CUSTOM_CMMD_T_WRITE_MISC,
+	AICE_CUSTOM_CMMD_WRITE_CTRL,
+	AICE_CUSTOM_CMMD_SCAN_CHAIN,
+	AICE_CUSTOM_CMMD_TCK_SCAN,
 	AICE_CUSTOM_CMMD_MAX,
 };
 
@@ -826,6 +833,9 @@ static char *custom_script_cmmd[AICE_CUSTOM_CMMD_MAX]={
 	"delay",
 	"write_pins",
 	"t_write_misc",
+	"write_ctrl",
+	"scan_chain",
+	"tck_scan",
 };
 
 int aice_usb_execute_custom_script(const char *script)
@@ -913,13 +923,32 @@ int aice_usb_execute_custom_script(const char *script)
 			if (result != ERROR_OK)
 				goto aice_execute_custom_script_error;
 		}
+		else if (i == AICE_CUSTOM_CMMD_WRITE_CTRL) {
+			uint32_t write_ctrl_addr = 0, write_ctrl_data = 0;
+			sscanf(curr_str + strlen(compare_str), " %d %d", &write_ctrl_addr, &write_ctrl_data);
+			LOG_DEBUG("custom_script aice_write_ctrl, 0x%x, 0x%x", write_ctrl_addr, write_ctrl_data);
+			result = aice_usb_write_ctrl(write_ctrl_addr, write_ctrl_data);
+			if (result != ERROR_OK)
+				goto aice_execute_custom_script_error;
+		}
+		else if (i == AICE_CUSTOM_CMMD_SCAN_CHAIN) {
+			unsigned int id_codes[16];
+			aice_access_cmmd(AICE_CMDIDX_SCAN_CHAIN, 0, 0, (unsigned char *)&id_codes[0], 16);
+			LOG_DEBUG("scan_chain, id_codes = %x", id_codes[0]);
+			//alive_sleep(100);
+		}
+		else if (i == AICE_CUSTOM_CMMD_TCK_SCAN) {
+			aice_usb_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL, AICE_TCK_CONTROL_TCK_SCAN);
+			LOG_DEBUG("tck_scan");
+			//alive_sleep(100);
+		}
 	}
 
-    fclose(script_fd);
-    return result;
+	fclose(script_fd);
+	return result;
 
 aice_execute_custom_script_error:
-    LOG_ERROR("<-- Issue custom_script '%s' failed, abandon continue -->", curr_str);
+	LOG_ERROR("<-- Issue custom_script '%s' failed, abandon continue -->", curr_str);
 	fclose(script_fd);
 	return result;
 }
