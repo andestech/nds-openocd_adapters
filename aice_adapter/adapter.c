@@ -140,11 +140,13 @@ int aice_get_info(void)
 
 /// Modified from aice_usb.c:aice_open_device()
 char AndesName[] = {"Andes"};
-char *pAICEName[] = {
+#define AICE_PROD_MAX    5
+char *pAICEName[AICE_PROD_MAX] = {
     "AICE",
     "AICE-MCU",
     "AICE-MINI",
-    "AICE-II"
+    "AICE2-T",
+    "AICE2",
 };
 extern char *pdescp_Manufacturer;
 extern char *pdescp_Product;
@@ -216,7 +218,7 @@ static void aice_open (const char *input)
         vid_str = (char *)&AndesName[0];
         pid_str = (char *)pAICEName[pid_idx];
 
-        if ((vid_idx == 0) && (pid_idx <= 3)) {
+        if ((vid_idx == 0) && (pid_idx < AICE_PROD_MAX)) {
             sprintf( buffer, "%s %s v%d.%d.%d",
                     vid_str,
                     pid_str,
