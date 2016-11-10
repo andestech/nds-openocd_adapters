@@ -103,7 +103,22 @@ struct aice_usb_cmmd_dthmb {
 	unsigned char reserved;
 };
 
-unsigned int aice_usb_cmmd_size[] = {
+struct aice_usb_cmmd_dthxrw {
+	unsigned char cmdack;
+	unsigned char attr[4];
+	unsigned char length[4];    // DTHXR only
+	unsigned char byte_data[4]; // DTHXR only
+};
+
+struct aice_usb_cmmd_htdxrw {
+	unsigned char cmd;
+	unsigned char attr[4];
+	unsigned char addr[8];
+	unsigned char length[4];
+	unsigned char byte_data[4]; // HTDXW only
+};
+
+static unsigned int aice_usb_cmmd_size[] = {
 	AICE_CMDSIZE_HTDA,
 	AICE_CMDSIZE_HTDB,
 	AICE_CMDSIZE_HTDC,
@@ -116,6 +131,10 @@ unsigned int aice_usb_cmmd_size[] = {
 	AICE_CMDSIZE_DTHB,
 	AICE_CMDSIZE_DTHMA,
 	AICE_CMDSIZE_DTHMB,
+	AICE_CMDSIZE_HTDXR,
+	AICE_CMDSIZE_HTDXW,
+	AICE_CMDSIZE_DTHXR,
+	AICE_CMDSIZE_DTHXW,
 };
 
 static void aice_pack_usb_cmd_htda(struct aice_usb_cmmd_info *pusb_cmmd_info)
@@ -298,6 +317,102 @@ static void aice_pack_usb_cmd_dthb(struct aice_usb_cmmd_info *pusb_cmmd_info)
 	}
 }
 
+static void aice_pack_usb_cmd_dthxrw(struct aice_usb_cmmd_info *pusb_cmmd_info)
+{
+	struct aice_usb_cmmd_dthxrw *pusb_cmmd_dthxrw = (struct aice_usb_cmmd_dthxrw *)pusb_cmmd_info->pusb_buffer;
+	pusb_cmmd_info->cmd = pusb_cmmd_dthxrw->cmdack;
+
+	if (pusb_cmmd_info->cmdtype == AICE_CMDTYPE_DTHXW)
+		return;
+
+	unsigned char *pbyte_data = (unsigned char *)&pusb_cmmd_dthxrw->byte_data[0];
+	unsigned char *pword_data = pusb_cmmd_info->pword_data;
+	unsigned int i, word_cnt;
+
+	// update attr
+	pusb_cmmd_info->attr = pusb_cmmd_dthxrw->attr[0];
+	for (i = 1 ; i < 4 ; i++) {
+		pusb_cmmd_info->attr <<= 8;
+		pusb_cmmd_info->attr |= pusb_cmmd_dthxrw->attr[i];
+	}
+	// update length
+	pusb_cmmd_info->length = pusb_cmmd_dthxrw->length[0];
+	for (i = 1 ; i < 4 ; i++) {
+		pusb_cmmd_info->length <<= 8;
+		pusb_cmmd_info->length |= pusb_cmmd_dthxrw->length[i];
+	}
+
+	word_cnt = (pusb_cmmd_info->length);
+	for (i = 0 ; i < word_cnt ; i++) {
+		if (pusb_cmmd_info->access_little_endian == 0) {
+			pword_data[3] = (unsigned char)pbyte_data[3];
+			pword_data[2] = (unsigned char)pbyte_data[2];
+			pword_data[1] = (unsigned char)pbyte_data[1];
+			pword_data[0] = (unsigned char)pbyte_data[0];
+		} else {
+			pword_data[0] = (unsigned char)pbyte_data[3];
+			pword_data[1] = (unsigned char)pbyte_data[2];
+			pword_data[2] = (unsigned char)pbyte_data[1];
+			pword_data[3] = (unsigned char)pbyte_data[0];
+		}
+		pword_data += 4;
+		pbyte_data += 4;
+	}
+}
+
+static void aice_pack_usb_cmd_htdxrw(struct aice_usb_cmmd_info *pusb_cmmd_info)
+{
+	unsigned int i, word_cnt, get_data;
+	struct aice_usb_cmmd_htdxrw *pusb_cmmd_htdxrw = (struct aice_usb_cmmd_htdxrw *)pusb_cmmd_info->pusb_buffer;
+	unsigned char *pword_data = pusb_cmmd_info->pword_data;
+	unsigned char *pbyte_data = (unsigned char *)&pusb_cmmd_htdxrw->byte_data[0];
+	pusb_cmmd_htdxrw->cmd = pusb_cmmd_info->cmd;
+
+	// update attr
+	get_data = pusb_cmmd_info->attr;
+	for (i = 0 ; i < 4; i++) {
+		pusb_cmmd_htdxrw->attr[3-i] = (get_data & 0xFF);
+		get_data >>= 8;
+	}
+	// update length
+	get_data = pusb_cmmd_info->length;
+	for (i = 0 ; i < 4; i++) {
+		pusb_cmmd_htdxrw->length[3-i] = (get_data & 0xFF);
+		get_data >>= 8;
+	}
+	// update addr
+	get_data = pusb_cmmd_info->hi_addr;
+	for (i = 0 ; i < 4; i++) {
+		pusb_cmmd_htdxrw->addr[3-i] = (get_data & 0xFF);
+		get_data >>= 8;
+	}
+	get_data = pusb_cmmd_info->lo_addr;
+	for (i = 0 ; i < 4; i++) {
+		pusb_cmmd_htdxrw->addr[7-i] = (get_data & 0xFF);
+		get_data >>= 8;
+	}
+
+	if (pusb_cmmd_info->cmdtype == AICE_CMDTYPE_HTDXR)
+		return;
+
+	word_cnt = (pusb_cmmd_info->length);
+	for (i = 0 ; i < word_cnt ; i++) {
+		if (pusb_cmmd_info->access_little_endian == 0) {
+			pbyte_data[3] = (unsigned char)pword_data[3];
+			pbyte_data[2] = (unsigned char)pword_data[2];
+			pbyte_data[1] = (unsigned char)pword_data[1];
+			pbyte_data[0] = (unsigned char)pword_data[0];
+		} else {
+			pbyte_data[0] = (unsigned char)pword_data[3];
+			pbyte_data[1] = (unsigned char)pword_data[2];
+			pbyte_data[2] = (unsigned char)pword_data[1];
+			pbyte_data[3] = (unsigned char)pword_data[0];
+		}
+		pword_data += 4;
+		pbyte_data += 4;
+	}
+}
+
 void aice_pack_usb_cmd(struct aice_usb_cmmd_info *pusb_cmmd_info)
 {
 	if ((pusb_cmmd_info->cmdtype == AICE_CMDTYPE_HTDA) ||
@@ -318,6 +433,12 @@ void aice_pack_usb_cmd(struct aice_usb_cmmd_info *pusb_cmmd_info)
 	else if ((pusb_cmmd_info->cmdtype == AICE_CMDTYPE_DTHB) ||
 					 (pusb_cmmd_info->cmdtype == AICE_CMDTYPE_DTHMB))
 		aice_pack_usb_cmd_dthb(pusb_cmmd_info);
+	else if ((pusb_cmmd_info->cmdtype == AICE_CMDTYPE_DTHXR) ||
+					 (pusb_cmmd_info->cmdtype == AICE_CMDTYPE_DTHXW))
+		aice_pack_usb_cmd_dthxrw(pusb_cmmd_info);
+	else if ((pusb_cmmd_info->cmdtype == AICE_CMDTYPE_HTDXR) ||
+					 (pusb_cmmd_info->cmdtype == AICE_CMDTYPE_HTDXW))
+		aice_pack_usb_cmd_htdxrw(pusb_cmmd_info);
 }
 
 unsigned int aice_get_usb_cmd_size(unsigned int usb_cmmd_type)

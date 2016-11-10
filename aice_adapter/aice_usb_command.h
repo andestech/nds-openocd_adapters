@@ -82,6 +82,7 @@ enum aice_command_mode {
 #define AICE_WRITE_CTRL_RESERVED             0x03
 #define AICE_WRITE_CTRL_JTAG_PIN_STATUS      0x04
 #define AICE_WRITE_CTRL_TIMEOUT              0x07
+#define AICE_WRITE_CTRL_SDMCONN              0x08
 #define AICE_WRITE_CTRL_CUSTOM_DELAY         0x0D
 #define AICE_WRITE_CTRL_BATCH_CTRL           0x20
 #define AICE_WRITE_CTRL_BATCH_ITERATION      0x21
@@ -143,5 +144,9 @@ int aice_usb_execute_custom_script(const char *script);
 int aice_reset_aice_as_startup(void);
 int aice_usb_set_clock(uint32_t set_clock);
 int aice_set_write_pins_support(uint32_t if_support);
+int aice_icemem_xread(uint32_t lo_addr, uint32_t hi_addr,
+  uint32_t *pGetData, uint32_t num_of_words, uint32_t attr);
+int aice_icemem_xwrite(uint32_t lo_addr, uint32_t hi_addr,
+  uint32_t *pSetData, uint32_t num_of_words, uint32_t attr);
 
 #endif

@@ -32,6 +32,10 @@ enum aice_usb_cmmd_type {
 	AICE_CMDTYPE_DTHB,
 	AICE_CMDTYPE_DTHMA,
 	AICE_CMDTYPE_DTHMB,
+	AICE_CMDTYPE_HTDXR,
+	AICE_CMDTYPE_HTDXW,
+	AICE_CMDTYPE_DTHXR,
+	AICE_CMDTYPE_DTHXW,
 };
 
 /* Constants for AICE command format length */
@@ -47,6 +51,10 @@ enum aice_usb_cmmd_type {
 #define AICE_CMDSIZE_DTHB   2
 #define AICE_CMDSIZE_DTHMA  8
 #define AICE_CMDSIZE_DTHMB  4
+#define AICE_CMDSIZE_HTDXR  17
+#define AICE_CMDSIZE_HTDXW  21
+#define AICE_CMDSIZE_DTHXR  13
+#define AICE_CMDSIZE_DTHXW  5
 
 struct aice_usb_cmmd_info {
 	unsigned char *pusb_buffer;
@@ -54,9 +62,12 @@ struct aice_usb_cmmd_info {
 	unsigned char access_little_endian;
 	unsigned char cmd;
 	unsigned char target;
-	unsigned char length;
+	unsigned int length;
 	unsigned int addr;
 	unsigned char *pword_data;
+	unsigned int attr;
+	unsigned int hi_addr;
+	unsigned int lo_addr;
 };
 
 extern void aice_pack_usb_cmd(struct aice_usb_cmmd_info *pusb_cmmd_info);

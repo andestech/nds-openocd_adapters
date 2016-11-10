@@ -34,8 +34,8 @@
 /* AICE USB timeout value */
 #define AICE_USB_TIMEOUT				5000
 /* Global USB buffers */
-#define AICE_IN_BUFFER_SIZE            1032
-#define AICE_OUT_BUFFER_SIZE           1032
+#define AICE_IN_BUFFER_SIZE            0x4000//1032
+#define AICE_OUT_BUFFER_SIZE           0x4000//1032
 #define AICE_IN_PACKETS_BUFFER_SIZE    1032
 #define AICE_OUT_PACKETS_BUFFER_SIZE   1032
 #define AICE_IN_BATCH_COMMAND_SIZE     1032
@@ -99,6 +99,9 @@ struct aice_usb_cmmd_attr {
 #define AICE_CMD_WRITE_MISC       0x0C
 #define AICE_CMD_FASTWRITE_MEM    0x0D
 #define AICE_CMD_EXECUTE          0x0E
+#define AICE_CMD_XREAD            0x10
+#define AICE_CMD_XWRITE           0x11
+
 #define AICE_CMD_READ_MEM_B       0x14
 #define AICE_CMD_READ_MEM_H       0x15
 #define AICE_CMD_WRITE_PINS       0x18
@@ -948,7 +951,7 @@ int aice_usb_execute_custom_script(const char *script)
 	return result;
 
 aice_execute_custom_script_error:
-	LOG_ERROR("<-- Issue custom_script '%s' failed, abandon continue -->", curr_str);
+    LOG_ERROR("<-- Issue custom_script '%s' failed, abandon continue -->", curr_str);
 	fclose(script_fd);
 	return result;
 }
@@ -1032,3 +1035,124 @@ int aice_set_write_pins_support(uint32_t if_support)
 	aice_write_pins_support = if_support;
 	return ERROR_OK;
 }
+
+int aice_icemem_xread(uint32_t lo_addr, uint32_t hi_addr,
+  uint32_t *pGetData, uint32_t num_of_words, uint32_t attr)
+{
+	struct aice_usb_cmmd_info *pusb_tx_cmmd_info = &usb_cmmd_pack_info;
+	struct aice_usb_cmmd_info *pusb_rx_cmmd_info = &usb_cmmd_unpack_info;
+	int result;
+	unsigned int h2d_size, d2h_size;
+
+	h2d_size = aice_get_usb_cmd_size(AICE_CMDTYPE_HTDXR);
+	d2h_size = aice_get_usb_cmd_size(AICE_CMDTYPE_DTHXR);
+
+	pusb_tx_cmmd_info->cmdtype = AICE_CMDTYPE_HTDXR;
+	pusb_tx_cmmd_info->cmd = AICE_CMD_XREAD;
+	pusb_tx_cmmd_info->length = (num_of_words);
+	pusb_tx_cmmd_info->lo_addr = lo_addr;
+	pusb_tx_cmmd_info->hi_addr = hi_addr;
+	pusb_tx_cmmd_info->attr = attr;
+	//pusb_tx_cmmd_info->pword_data = (unsigned char *)pdata;
+	aice_pack_usb_cmd(pusb_tx_cmmd_info);
+
+	pusb_rx_cmmd_info->cmdtype = AICE_CMDTYPE_DTHXR;
+	pusb_rx_cmmd_info->length = (num_of_words);
+	pusb_rx_cmmd_info->pword_data = (unsigned char *)pGetData;
+
+	// read command
+	d2h_size += ((num_of_words - 1) * 4);
+
+	// Host to device, send usb packet to device
+	aice_usb_write(pusb_tx_cmmd_info->pusb_buffer, h2d_size);
+
+	while (1) {
+		// Device to host, receive usb packet from device
+		result = aice_usb_read(pusb_rx_cmmd_info->pusb_buffer, d2h_size);
+
+		if ((result < 0) ||
+			  (result != (int)d2h_size) ) { 
+				AICE_USBCMMD_MSG("XREAD, aice_usb_read failed (requested=%d, result=%d)", d2h_size, result);
+				return ERROR_FAIL;
+		}
+		aice_pack_usb_cmd(pusb_rx_cmmd_info);
+
+		AICE_USBCMMD_MSG("attr: 0x%x, length: 0x%x",
+			pusb_rx_cmmd_info->attr, pusb_rx_cmmd_info->length);
+		pusb_rx_cmmd_info->pword_data += (pusb_rx_cmmd_info->length * 4);
+		d2h_size -= (pusb_rx_cmmd_info->length * 4);
+		if (pusb_rx_cmmd_info->attr & 0x01) {
+			break;
+		}
+	}
+	AICE_USBCMMD_MSG("XREAD, lo_addr: 0x%x, hi_addr: 0x%x, data: 0x%x",
+			lo_addr, hi_addr, (unsigned int)*pGetData);
+	AICE_USBCMMD_MSG("XREAD response");
+	return ERROR_OK;
+}
+
+int aice_icemem_xwrite(uint32_t lo_addr, uint32_t hi_addr,
+  uint32_t *pSetData, uint32_t num_of_words, uint32_t attr)
+{
+	struct aice_usb_cmmd_info *pusb_tx_cmmd_info = &usb_cmmd_pack_info;
+	struct aice_usb_cmmd_info *pusb_rx_cmmd_info = &usb_cmmd_unpack_info;
+	int result;
+	unsigned int h2d_size, d2h_size, retry_times = 0;
+
+	h2d_size = aice_get_usb_cmd_size(AICE_CMDTYPE_HTDXW);
+	d2h_size = aice_get_usb_cmd_size(AICE_CMDTYPE_DTHXW);
+
+	pusb_tx_cmmd_info->cmdtype = AICE_CMDTYPE_HTDXW;
+	pusb_tx_cmmd_info->cmd = AICE_CMD_XWRITE;
+	pusb_tx_cmmd_info->length = (num_of_words);
+	pusb_tx_cmmd_info->lo_addr = lo_addr;
+	pusb_tx_cmmd_info->hi_addr = hi_addr;
+	pusb_tx_cmmd_info->attr = attr;
+	pusb_tx_cmmd_info->pword_data = (unsigned char *)pSetData;
+	aice_pack_usb_cmd(pusb_tx_cmmd_info);
+
+	pusb_rx_cmmd_info->cmdtype = AICE_CMDTYPE_DTHXW;
+	pusb_rx_cmmd_info->length = (num_of_words);
+	//pusb_rx_cmmd_info->pword_data = (unsigned char *)pSetData;
+
+	// write command
+	h2d_size += ((num_of_words - 1) * 4);
+
+	do {
+		// Host to device, send usb packet to device
+		aice_usb_write(pusb_tx_cmmd_info->pusb_buffer, h2d_size);
+
+		// Device to host, receive usb packet from device
+		result = aice_usb_read(pusb_rx_cmmd_info->pusb_buffer, d2h_size);
+		if ((result < 0) ||
+			  (result != (int)d2h_size) ) { 
+				AICE_USBCMMD_MSG("XWRITE, aice_usb_read failed (requested=%d, result=%d)", d2h_size, result);
+				return ERROR_FAIL;
+		}
+		aice_pack_usb_cmd(pusb_rx_cmmd_info);
+
+		AICE_USBCMMD_MSG("XWRITE, lo_addr: 0x%x, hi_addr: 0x%x, data: 0x%x",
+			lo_addr, hi_addr, (unsigned int)*pSetData);
+		if (pusb_rx_cmmd_info->cmd == AICE_CMD_XWRITE) {
+			AICE_USBCMMD_MSG("XWRITE response");
+			break;
+		} else {
+			if (retry_times > aice_max_retry_times) {
+				AICE_USBCMMD_MSG("aice command timeout (command=0x%x, response=0x%x)",
+					pusb_tx_cmmd_info->cmd, pusb_rx_cmmd_info->cmd);
+
+				return ERROR_FAIL;
+			}
+
+			/* clear timeout and retry */
+			if (aice_clear_timeout() != ERROR_OK)
+				return ERROR_FAIL;
+
+			retry_times++;
+		}
+	} while (1);
+
+	return ERROR_OK;
+}
+
+
