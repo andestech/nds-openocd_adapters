@@ -884,6 +884,77 @@ void parsing_config_file( char* top_filename )
 
 }
 
+static int aice_xwrite( const char *input )
+{
+    char response[MAXLINE];
+    uint32_t lo_addr, hi_addr, num_of_words, attr;
+    uint32_t *EDMData = EDMbuff;
+    int result = 0;
+
+    lo_addr = get_u32( input+2 );
+    hi_addr = get_u32( input+6 );
+    num_of_words = get_u32( input+10 );
+    attr = get_u32( input+14 );
+
+    aice_log_add (AICE_LOG_DEBUG, "<aice_xwrite>: lo_addr=0x%08X, num_of_words=0x%08X, attr=0x%08X ", \
+                                      lo_addr, num_of_words, attr);
+
+    for (int i = 0 ; i < num_of_words ; i++)
+    {
+        EDMData[i] = get_u32( input + 18 + i*4 );
+    }
+    result = aice_icemem_xwrite(lo_addr, hi_addr, EDMData, num_of_words, attr);
+  
+    if( result == ERROR_OK ) {
+        response[0] = AICE_OK;
+        pipe_write (response, 1);
+    }
+    else {
+        response[0] = AICE_ERROR;
+        pipe_write (response, 1);
+
+        aice_log_add (AICE_LOG_ERROR, "Write EDM Failed!!");
+    }
+
+    return result;
+}
+
+static int aice_xread( const char *input )
+{
+    char response[MAXLINE];
+    uint32_t lo_addr, hi_addr, num_of_words, attr;
+    uint32_t *EDMData = EDMbuff;
+    int result = 0;
+
+    lo_addr = get_u32( input+2 );
+    hi_addr = get_u32( input+6 );
+    num_of_words = get_u32( input+10 );
+    attr = get_u32( input+14 );
+
+    aice_log_add (AICE_LOG_DEBUG, "<aice_xread>: lo_addr=0x%08X, num_of_words=0x%08X, attr=0x%08X ", \
+                                      lo_addr, num_of_words, attr);
+
+    result = aice_icemem_xread(lo_addr, hi_addr, EDMData, num_of_words, attr);
+    if( result == ERROR_OK ) {
+        response[0] = AICE_OK;
+
+        for (int i = 0 ; i < num_of_words ; i++)
+        {
+            set_u32 (response + 1 + i*4, EDMData[i]);
+        }
+
+        pipe_write (response, 1 + num_of_words * 4);
+    }
+    else {
+        response[0] = AICE_ERROR;
+        pipe_write (response, 1);
+
+        aice_log_add (AICE_LOG_INFO, "Read EDM Failed!!");
+    }
+
+    return result;
+}
+
 int main ()
 {
     char line[MAXLINE];
@@ -953,6 +1024,12 @@ int main ()
                 break;
             case AICE_PACK_BUFFER_READ:
             		aice_set_pack_buffer_read(line);
+                break;
+            case AICE_XWRITE:
+                aice_xwrite(line);
+                break;
+            case AICE_XREAD:
+                aice_xread(line);
                 break;
             default:
                 aice_log_add (AICE_LOG_INFO, "Error command: 0x%x", line[0] );

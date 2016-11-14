@@ -38,6 +38,8 @@ enum aice_api_s {
     AICE_BATCH_BUFFER_WRITE,
     AICE_BATCH_BUFFER_READ,
     AICE_PACK_BUFFER_READ,
+    AICE_XWRITE,
+    AICE_XREAD,
 };
 
 #endif
