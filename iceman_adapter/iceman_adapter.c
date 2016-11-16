@@ -36,7 +36,7 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
+const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -60,6 +60,7 @@ struct option long_option[] = {
 	{"soft-reset-hold", optional_argument, 0, 'K'},
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
+    {"edm-dimb", required_argument, 0, 'M'},
 	{"custom-restart", required_argument, 0, 'N'},
 	{"reset-time", required_argument, 0, 'o'},
 	{"edm-port-operation", required_argument, 0, 'O'},
@@ -174,6 +175,9 @@ static void parse_edm_operation(const char *edm_operation);
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 static const char *log_output = NULL;
+
+#define DIMBR_DEFAULT (0xFFFF0000u)
+static unsigned int edm_dimb = DIMBR_DEFAULT;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
@@ -345,6 +349,9 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 'L': /* customer-trst */
 				custom_trst_script = optarg;
 				break;
+            case 'M':
+                sscanf(optarg, "0x%x", &edm_dimb);
+                break;
 			case 'N': /* customer-restart */
 				custom_restart_script = optarg;
 				break;
@@ -725,6 +732,9 @@ static void update_interface_cfg(void)
 	if (reset_aice_as_startup) {
 		fprintf(interface_cfg, "aice reset_aice_as_startup\n");
 	}
+    if (edm_dimb != DIMBR_DEFAULT) {
+        fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
+    }
 	fputs("\n", interface_cfg);
 }
 
