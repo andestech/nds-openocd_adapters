@@ -229,6 +229,8 @@ static void show_usage(void) {
 	printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
 	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
 	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
+	printf("-M, --edm-dimb:\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
+	printf("\t\t\t(default: 0xFFFF0000)\n");
 	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
 	//printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
 	printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
