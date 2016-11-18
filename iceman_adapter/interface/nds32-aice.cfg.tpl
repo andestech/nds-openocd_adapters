@@ -11,4 +11,5 @@ aice vid_pid 0x1CFC 0x0000
 aice port aice_pipe
 aice adapter aice_adapter
 #aice port aice_usb
+#aice tracer_disable
 reset_config trst_and_srst
