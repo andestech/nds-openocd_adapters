@@ -325,38 +325,48 @@ static void aice_pack_usb_cmd_dthxrw(struct aice_usb_cmmd_info *pusb_cmmd_info)
 	if (pusb_cmmd_info->cmdtype == AICE_CMDTYPE_DTHXW)
 		return;
 
-	unsigned char *pbyte_data = (unsigned char *)&pusb_cmmd_dthxrw->byte_data[0];
 	unsigned char *pword_data = pusb_cmmd_info->pword_data;
-	unsigned int i, word_cnt;
+	while(1) {
+		unsigned char *pbyte_data = (unsigned char *)&pusb_cmmd_dthxrw->byte_data[0];
+		unsigned int i, word_cnt;
+		unsigned int decoded_bytes = 0;
 
-	// update attr
-	pusb_cmmd_info->attr = pusb_cmmd_dthxrw->attr[0];
-	for (i = 1 ; i < 4 ; i++) {
-		pusb_cmmd_info->attr <<= 8;
-		pusb_cmmd_info->attr |= pusb_cmmd_dthxrw->attr[i];
-	}
-	// update length
-	pusb_cmmd_info->length = pusb_cmmd_dthxrw->length[0];
-	for (i = 1 ; i < 4 ; i++) {
-		pusb_cmmd_info->length <<= 8;
-		pusb_cmmd_info->length |= pusb_cmmd_dthxrw->length[i];
-	}
-
-	word_cnt = (pusb_cmmd_info->length);
-	for (i = 0 ; i < word_cnt ; i++) {
-		if (pusb_cmmd_info->access_little_endian == 0) {
-			pword_data[3] = (unsigned char)pbyte_data[3];
-			pword_data[2] = (unsigned char)pbyte_data[2];
-			pword_data[1] = (unsigned char)pbyte_data[1];
-			pword_data[0] = (unsigned char)pbyte_data[0];
-		} else {
-			pword_data[0] = (unsigned char)pbyte_data[3];
-			pword_data[1] = (unsigned char)pbyte_data[2];
-			pword_data[2] = (unsigned char)pbyte_data[1];
-			pword_data[3] = (unsigned char)pbyte_data[0];
+		// update attr
+		pusb_cmmd_info->attr = pusb_cmmd_dthxrw->attr[0];
+		for (i = 1 ; i < 4 ; i++) {
+			pusb_cmmd_info->attr <<= 8;
+			pusb_cmmd_info->attr |= pusb_cmmd_dthxrw->attr[i];
 		}
-		pword_data += 4;
-		pbyte_data += 4;
+		// update length
+		pusb_cmmd_info->length = pusb_cmmd_dthxrw->length[0];
+		for (i = 1 ; i < 4 ; i++) {
+			pusb_cmmd_info->length <<= 8;
+			pusb_cmmd_info->length |= pusb_cmmd_dthxrw->length[i];
+		}
+
+		word_cnt = (pusb_cmmd_info->length);
+		for (i = 0 ; i < word_cnt ; i++) {
+			if (pusb_cmmd_info->access_little_endian == 0) {
+				pword_data[3] = (unsigned char)pbyte_data[3];
+				pword_data[2] = (unsigned char)pbyte_data[2];
+				pword_data[1] = (unsigned char)pbyte_data[1];
+				pword_data[0] = (unsigned char)pbyte_data[0];
+			} else {
+				pword_data[0] = (unsigned char)pbyte_data[3];
+				pword_data[1] = (unsigned char)pbyte_data[2];
+				pword_data[2] = (unsigned char)pbyte_data[1];
+				pword_data[3] = (unsigned char)pbyte_data[0];
+			}
+			pword_data += 4;
+			pbyte_data += 4;
+		}
+		//LOG_DEBUG("attr=0x%x, length=0x%x", pusb_cmmd_info->attr, pusb_cmmd_info->length);
+		if (pusb_cmmd_info->attr & 0x01) {
+			return;
+		}
+		decoded_bytes += 9; // DTHXR header
+		decoded_bytes += (word_cnt << 2);
+		pusb_cmmd_dthxrw = (struct aice_usb_cmmd_dthxrw *)&pusb_cmmd_info->pusb_buffer[decoded_bytes];
 	}
 }
 

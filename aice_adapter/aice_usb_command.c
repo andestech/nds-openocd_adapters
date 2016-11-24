@@ -29,13 +29,14 @@
 #include "aice_jdp.h"
 
 #define AICE_LOG_USB_PACKET  0
+
 #define AICE_USBCMMD_MSG	LOG_DEBUG
 
 /* AICE USB timeout value */
 #define AICE_USB_TIMEOUT				5000
 /* Global USB buffers */
-#define AICE_IN_BUFFER_SIZE            0x4000//1032
-#define AICE_OUT_BUFFER_SIZE           0x4000//1032
+#define AICE_IN_BUFFER_SIZE            0x4100 // for XREAD, bulk-in: 9+0x2000+9+0x2000
+#define AICE_OUT_BUFFER_SIZE           0x4000
 #define AICE_IN_PACKETS_BUFFER_SIZE    1032
 #define AICE_OUT_PACKETS_BUFFER_SIZE   1032
 #define AICE_IN_BATCH_COMMAND_SIZE     1032
@@ -265,6 +266,8 @@ static int usb_bulk_with_retries(
 			char *bytes, int size, int timeout)
 {
 	int tries = 3, count = 0;
+	char *cur_bytes = bytes;
+	unsigned int cur_attr = 0, cur_length = 0, rx_length = 0;
 
 	while (tries && (count < size)) {
 		int result = f(dev, ep, bytes + count, size - count, timeout);
@@ -282,6 +285,23 @@ static int usb_bulk_with_retries(
 					case AICE_CMD_T_FASTREAD_MEM:
 						size = AICE_CMDSIZE_DTHMA + 4*bytes[2];
 						break;
+
+					case AICE_CMD_XREAD:
+						while (1) {
+							cur_attr = cur_bytes[4];
+							cur_length = cur_bytes[8];
+							cur_length |= (cur_bytes[7] << 8);
+							rx_length += 9;
+							rx_length += (cur_length << 2);
+							AICE_USBCMMD_MSG("cur_bytes=0x%x, result=0x%x, cur_attr=0x%x, cur_length=0x%x",
+							  (unsigned int)cur_bytes, result, cur_attr, cur_length);
+							if (cur_attr & 0x01) {
+								return rx_length;
+							}
+							cur_bytes += rx_length;
+							result = f(dev, ep, cur_bytes, size - (cur_length << 2), timeout);
+						}
+
 				}
 			}
 			count += result;
@@ -310,7 +330,7 @@ static inline int usb_bulk_write_ex(jtag_libusb_device_handle *dev, int ep,
 
 	sprintf ( pmsgbuffer, "bulk_out:");
 	pmsgbuffer += strlen(pmsgbuffer);
-	for (i=0; i<size; i++) {
+	for (i=0; i<(unsigned int)size; i++) {
 		sprintf ( pmsgbuffer, " %02x", (unsigned char)*pOutData++);
 		pmsgbuffer += 3;
 	}
@@ -325,13 +345,12 @@ static inline int usb_bulk_write_ex(jtag_libusb_device_handle *dev, int ep,
 static inline int usb_bulk_read_ex(jtag_libusb_device_handle *dev, int ep,
 		char *bytes, int size, int timeout)
 {
-	//return usb_bulk_with_retries(&jtag_libusb_bulk_read,
-	//		dev, ep, bytes, size, timeout);
 	int result;
 	char zero_buffer[512];
 
 	result = usb_bulk_with_retries(&jtag_libusb_bulk_read,
 			dev, ep, bytes, size, timeout);
+
 	if ((size % aice_usb_rx_max_packet) == 0) {
 		AICE_USBCMMD_MSG("usb_bulk_read_ex: zero packet!!\n");
 		jtag_libusb_bulk_read(dev, ep, &zero_buffer[0], aice_usb_rx_max_packet, timeout);
@@ -340,9 +359,11 @@ static inline int usb_bulk_read_ex(jtag_libusb_device_handle *dev, int ep,
 	unsigned int i;
 	char msgbuffer[4096] = {0};
 	char *pmsgbuffer = (char *)&msgbuffer[0];
-	sprintf ( pmsgbuffer, "bulk_in: size=0x%02x, buf=0x%x", size, (unsigned int )bytes);
+	sprintf ( pmsgbuffer, "bulk_in: size=0x%02x, buf=0x%x, timeout=0x%x", size, (unsigned int )bytes, timeout);
 	pmsgbuffer += strlen(pmsgbuffer);
-	for (i=0; i<size; i++) {
+	if (size > 128)
+		size = 128;
+	for (i=0; i<(unsigned int)size; i++) {
 		sprintf ( pmsgbuffer, " %02x", (unsigned char)bytes[i]);
 		pmsgbuffer += 3;
 	}
@@ -1066,25 +1087,15 @@ int aice_icemem_xread(uint32_t lo_addr, uint32_t hi_addr,
 	// Host to device, send usb packet to device
 	aice_usb_write(pusb_tx_cmmd_info->pusb_buffer, h2d_size);
 
-	while (1) {
-		// Device to host, receive usb packet from device
-		result = aice_usb_read(pusb_rx_cmmd_info->pusb_buffer, d2h_size);
+	// Device to host, receive usb packet from device
+	result = aice_usb_read(pusb_rx_cmmd_info->pusb_buffer, d2h_size);
 
-		if ((result < 0) ||
-			  (result != (int)d2h_size) ) { 
-				AICE_USBCMMD_MSG("XREAD, aice_usb_read failed (requested=%d, result=%d)", d2h_size, result);
-				return ERROR_FAIL;
-		}
-		aice_pack_usb_cmd(pusb_rx_cmmd_info);
-
-		AICE_USBCMMD_MSG("attr: 0x%x, length: 0x%x",
-			pusb_rx_cmmd_info->attr, pusb_rx_cmmd_info->length);
-		pusb_rx_cmmd_info->pword_data += (pusb_rx_cmmd_info->length * 4);
-		d2h_size -= (pusb_rx_cmmd_info->length * 4);
-		if (pusb_rx_cmmd_info->attr & 0x01) {
-			break;
-		}
+	aice_pack_usb_cmd(pusb_rx_cmmd_info);
+	if (result < 0) {
+			AICE_USBCMMD_MSG("XREAD, aice_usb_read failed (requested=%d, result=%d)", d2h_size, result);
+			return ERROR_FAIL;
 	}
+
 	AICE_USBCMMD_MSG("XREAD, lo_addr: 0x%x, hi_addr: 0x%x, data: 0x%x",
 			lo_addr, hi_addr, (unsigned int)*pGetData);
 	AICE_USBCMMD_MSG("XREAD response");
