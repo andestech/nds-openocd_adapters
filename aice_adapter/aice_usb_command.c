@@ -28,9 +28,18 @@
 #include "aice_usb_command.h"
 #include "aice_jdp.h"
 
-#define AICE_LOG_USB_PACKET  0
+#define _ADAPTER_USE_ 0x01
+
+#if _ADAPTER_USE_
+#include "aice_pipe_command.h"
+#else
+#include "aice_usb.h"
+#endif
 
 #define AICE_USBCMMD_MSG	LOG_DEBUG
+
+extern void aice_print_info(unsigned int pipe_cmmd, unsigned int address,
+	unsigned int *pInfoData, unsigned int target_id, unsigned int jdp_id);
 
 /* AICE USB timeout value */
 #define AICE_USB_TIMEOUT				5000
@@ -54,6 +63,7 @@ unsigned int aice_max_retry_times = 2;//50;
 unsigned int aice_usb_rx_max_packet = 512;
 unsigned int aice_usb_tx_max_packet = 512;
 uint32_t aice_write_pins_support = 0;
+unsigned int log_usb_packets = 0;
 
 struct aice_usb_cmmd_info usb_cmmd_pack_info = {
 		.pusb_buffer = &usb_out_buffer[0],
@@ -322,22 +332,22 @@ static int wrap_usb_bulk_write(jtag_libusb_device_handle *dev, int ep,
 static inline int usb_bulk_write_ex(jtag_libusb_device_handle *dev, int ep,
 		char *bytes, int size, int timeout)
 {
-#if (AICE_LOG_USB_PACKET == 1)
-	unsigned int i;
-	char *pOutData = bytes;
-	char msgbuffer[4096] = {0};
-	char *pmsgbuffer = (char *)&msgbuffer[0];
+	if (log_usb_packets == 1) {
+		unsigned int i;
+		char *pOutData = bytes;
+		char msgbuffer[4096] = {0};
+		char *pmsgbuffer = (char *)&msgbuffer[0];
 
-	sprintf ( pmsgbuffer, "bulk_out:");
-	pmsgbuffer += strlen(pmsgbuffer);
-	for (i=0; i<(unsigned int)size; i++) {
-		sprintf ( pmsgbuffer, " %02x", (unsigned char)*pOutData++);
-		pmsgbuffer += 3;
+		sprintf ( pmsgbuffer, "bulk_out:");
+		pmsgbuffer += strlen(pmsgbuffer);
+		for (i=0; i<(unsigned int)size; i++) {
+			sprintf ( pmsgbuffer, " %02x", (unsigned char)*pOutData++);
+			pmsgbuffer += 3;
+		}
+		*pmsgbuffer = 0x0;
+		pmsgbuffer = (char *)&msgbuffer[0];
+		AICE_USBCMMD_MSG("%s", msgbuffer);
 	}
-	*pmsgbuffer = 0x0;
-	pmsgbuffer = (char *)&msgbuffer[0];
-	aice_log_add(AICE_LOG_DEBUG, msgbuffer);
-#endif
 	return usb_bulk_with_retries(&wrap_usb_bulk_write,
 			dev, ep, bytes, size, timeout);
 }
@@ -355,22 +365,22 @@ static inline int usb_bulk_read_ex(jtag_libusb_device_handle *dev, int ep,
 		AICE_USBCMMD_MSG("usb_bulk_read_ex: zero packet!!\n");
 		jtag_libusb_bulk_read(dev, ep, &zero_buffer[0], aice_usb_rx_max_packet, timeout);
 	}
-#if (AICE_LOG_USB_PACKET == 1)
-	unsigned int i;
-	char msgbuffer[4096] = {0};
-	char *pmsgbuffer = (char *)&msgbuffer[0];
-	sprintf ( pmsgbuffer, "bulk_in: size=0x%02x, buf=0x%x, timeout=0x%x", size, (unsigned int )bytes, timeout);
-	pmsgbuffer += strlen(pmsgbuffer);
-	if (size > 128)
-		size = 128;
-	for (i=0; i<(unsigned int)size; i++) {
-		sprintf ( pmsgbuffer, " %02x", (unsigned char)bytes[i]);
-		pmsgbuffer += 3;
+	if (log_usb_packets == 1) {
+		unsigned int i;
+		char msgbuffer[4096] = {0};
+		char *pmsgbuffer = (char *)&msgbuffer[0];
+		sprintf ( pmsgbuffer, "bulk_in: size=0x%02x, buf=0x%x, timeout=0x%x", size, (unsigned int )bytes, timeout);
+		pmsgbuffer += strlen(pmsgbuffer);
+		if (size > 128)
+			size = 128;
+		for (i=0; i<(unsigned int)size; i++) {
+			sprintf ( pmsgbuffer, " %02x", (unsigned char)bytes[i]);
+			pmsgbuffer += 3;
+		}
+		*pmsgbuffer = 0x0;
+		pmsgbuffer = (char *)&msgbuffer[0];
+		AICE_USBCMMD_MSG("%s", msgbuffer);
 	}
-	*pmsgbuffer = 0x0;
-	pmsgbuffer = (char *)&msgbuffer[0];
-	aice_log_add(AICE_LOG_DEBUG, msgbuffer);
-#endif
 	return result;
 }
 
@@ -499,22 +509,26 @@ static int aice_usb_write_pins(unsigned int num_of_words, unsigned int *pWriteDa
 
 int aice_usb_write_ctrl(uint32_t address, uint32_t WriteData)
 {
-    unsigned int ctrl_data = WriteData;
-    int result;
-    result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&ctrl_data, 1);
-    return result;
+	unsigned int ctrl_data = WriteData;
+	int result;
+	aice_print_info(AICE_WRITE_CTRL, address, (unsigned int *)&ctrl_data, 0, 0);
+	result = aice_access_cmmd(AICE_CMDIDX_WRITE_CTRL, 0, address, (unsigned char *)&ctrl_data, 1);
+	return result;
 }
 
 int aice_usb_read_ctrl(uint32_t address, uint32_t *pReadData)
 {
-    int result;
-    result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)pReadData, 1);
-    return result;
+	int result = ERROR_FAIL;
+	result = aice_access_cmmd(AICE_CMDIDX_READ_CTRL, 0, address, (unsigned char *)pReadData, 1);
+	if (result == ERROR_OK) {
+		aice_print_info(AICE_READ_CTRL, address, (unsigned int *)pReadData, 0, 0);
+	}
+	return result;
 }
 
 int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words )
 {
-	//LOG_DEBUG("AICE Read EDM USB: target_id=0x%08X, cmd=0x%02X, addr=0x%08X", target_id, JDPInst, address);
+	int result = ERROR_FAIL;
 
 	if ( (JDPInst & 0x80) != 0 ) {
 		LOG_ERROR( "AICE Read EDM JDPInst Error: does not Read inst, inst code: 0x%02X", JDPInst );
@@ -523,28 +537,28 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 
 	switch ( JDPInst ) {
 		case JDP_R_DBG_SR:
-			return aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
-
+			result = aice_access_cmmd(AICE_CMDIDX_READ_EDMSR, target_id, address, (unsigned char *)EDMData, 1);
+			break;
 		case JDP_R_DTR:
-			return aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
-
+			result = aice_access_cmmd(AICE_CMDIDX_READ_DTR, target_id, 0, (unsigned char *)EDMData, 1);
+			break;
 		case JDP_R_MEM_W:
 			address = ((address >> 2) & 0x3FFFFFFF);
-			return aice_access_cmmd(AICE_CMDIDX_READ_MEM, target_id, address, (unsigned char *)EDMData, 1);
-
+			result = aice_access_cmmd(AICE_CMDIDX_READ_MEM, target_id, address, (unsigned char *)EDMData, 1);
+			break;
 		case JDP_R_MISC_REG:
-			return aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)EDMData, 1);
-
+			result = aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)EDMData, 1);
+			break;
 		case JDP_R_FAST_MEM:
-			return aice_access_cmmd(AICE_CMDIDX_FASTREAD_MEM, target_id, 0, (unsigned char *)EDMData, num_of_words);
-
+			result = aice_access_cmmd(AICE_CMDIDX_FASTREAD_MEM, target_id, 0, (unsigned char *)EDMData, num_of_words);
+			break;
 		case JDP_R_MEM_H:
 			address = ((address >> 1) & 0x7FFFFFFF);
-			return aice_access_cmmd(AICE_CMDIDX_READ_MEM_H, target_id, address, (unsigned char *)EDMData, 1);
-
+			result = aice_access_cmmd(AICE_CMDIDX_READ_MEM_H, target_id, address, (unsigned char *)EDMData, 1);
+			break;
 		case JDP_R_MEM_B:
-			return aice_access_cmmd(AICE_CMDIDX_READ_MEM_B, target_id, address, (unsigned char *)EDMData, 1);
-
+			result = aice_access_cmmd(AICE_CMDIDX_READ_MEM_B, target_id, address, (unsigned char *)EDMData, 1);
+			break;
 		case JDP_R_DIM:
 		case JDP_R_DBG_EVENT:
 		case JDP_R_IDCODE:
@@ -552,7 +566,10 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 			LOG_ERROR( "AICE Read EDM JDPInst Error: inst error, inst code: 0x%02X", JDPInst );
 			return ERROR_FAIL;
 	};
-	return ERROR_FAIL;
+	if (result == ERROR_OK) {
+		aice_print_info(AICE_READ_EDM, address, (unsigned int *)EDMData, target_id, JDPInst);
+	}
+	return result;
 }
 
 int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words )
@@ -569,6 +586,7 @@ int aice_usb_write_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, u
 		LOG_ERROR( "AICE Write EDM JDPInst Error: does not Write inst, inst code: 0x%02X", JDPInst );
 		return ERROR_FAIL;
 	}
+	aice_print_info(AICE_WRITE_EDM, address, (unsigned int *)EDMData, target_id, JDPInst);
 
 	switch ( JDPInst ) {
 		case JDP_W_DIM:
@@ -759,7 +777,7 @@ static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id,
 	struct aice_usb_cmmd_attr *pusb_cmmd_attr = &usb_all_cmmd_attr[cmdidx];
 	unsigned int h2d_size, d2h_size, retry_times = 0;
 	unsigned char cmd_ack_code; //extra_length, res_target_id;
-	unsigned int *pWordData = (unsigned int*)pdata;
+	//unsigned int *pWordData = (unsigned int*)pdata;
 
 	h2d_size = aice_get_usb_cmd_size(pusb_cmmd_attr->h2d_type);
 	d2h_size = aice_get_usb_cmd_size(pusb_cmmd_attr->d2h_type);
@@ -787,8 +805,8 @@ static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id,
 			(aice_command_mode == AICE_COMMAND_MODE_BATCH)) {
 			result = aice_usb_packet_append(pusb_tx_cmmd_info->pusb_buffer,
 							h2d_size, d2h_size);
-			AICE_USBCMMD_MSG("%s(pack), COREID: %d, address: 0x%x, data: 0x%x",
-				pusb_cmmd_attr->cmdname, target_id, address, (unsigned int)*pWordData);
+			//AICE_USBCMMD_MSG("%s(pack), COREID: %d, address: 0x%x, data: 0x%x",
+			//	pusb_cmmd_attr->cmdname, target_id, address, (unsigned int)*pWordData);
 			return result;
 	}
 	do {
@@ -806,10 +824,11 @@ static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id,
 		aice_pack_usb_cmd(pusb_rx_cmmd_info);
 		cmd_ack_code = pusb_rx_cmmd_info->cmd;
 
-		AICE_USBCMMD_MSG("%s, COREID: %d, address: 0x%x, data: 0x%x",
-			pusb_cmmd_attr->cmdname, target_id, address, (unsigned int)*pWordData);
+		//AICE_USBCMMD_MSG("%s, COREID: %d, address: 0x%x, data: 0x%x",
+		//	pusb_cmmd_attr->cmdname, target_id, address, (unsigned int)*pWordData);
+
 		if (cmd_ack_code == pusb_cmmd_attr->cmd) {
-			AICE_USBCMMD_MSG("%s response", pusb_cmmd_attr->cmdname);
+			//AICE_USBCMMD_MSG("%s response", pusb_cmmd_attr->cmdname);
 			break;
 		} else {
 			if (retry_times > aice_max_retry_times) {

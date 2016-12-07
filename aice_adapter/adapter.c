@@ -65,7 +65,6 @@ uint32_t EDMbuff[MAXLINE/4];
 
 /***************************************************************************/
 
-
 /********************************************************************************************/
 static int pipe_read(void *buffer, int length)
 {
@@ -359,10 +358,6 @@ static int aice_read_edm (const char *input)
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_DEBUG, "<aice_read_edm>: target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
-                                      target_id, JDPInst, address, num_of_words);
-
-
     //EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
     //if( EDMData == NULL ) {
     //    response[0] = AICE_ERROR;
@@ -414,9 +409,6 @@ static int aice_write_edm( const char *input )
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    aice_log_add (AICE_LOG_DEBUG, "<aice_write_edm>: target_id=0x%08X, cmd=0x%02X, addr=0x%08X, len=0x%08X ", \
-                                      target_id, JDPInst, address, num_of_words);
-
     //EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
     //if( EDMData == NULL ) {
     //    response[0] = AICE_ERROR;
@@ -455,7 +447,6 @@ static int aice_write_ctrls( const char *input )
     address   = get_u32 (input + 1);
     WriteData = get_u32 (input + 5);
 
-    aice_log_add (AICE_LOG_DEBUG, "<aice_write_ctrl>: addr=0x%08X, data=0x%08X ", address, WriteData);
     result = aice_usb_write_ctrl(address, WriteData);
 
     if( result == ERROR_OK )
@@ -479,7 +470,6 @@ static int aice_read_ctrls( const char *input )
     address   = get_u32 (input + 1);
     result = aice_usb_read_ctrl(address, &ReadData);
     if( result == ERROR_OK ) {
-        aice_log_add (AICE_LOG_DEBUG, "<aice_read_ctrl>: addr=0x%08X, recv=0x%08X", address, ReadData);
         response[0] = AICE_OK;
         set_u32(response+1, ReadData);
         pipe_write (response, 5);

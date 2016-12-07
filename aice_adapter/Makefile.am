@@ -6,6 +6,7 @@ bin_PROGRAMS = aice_adapter
 aice_adapter_SOURCES = adapter.c \
 					   aice_usb_command.c \
 					   aice_usb_pack_format.c \
+					   aice_print_info.c \
 					   aice_log.c
 
 

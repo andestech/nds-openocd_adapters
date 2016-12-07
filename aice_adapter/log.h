@@ -24,15 +24,15 @@ void aice_log_finalize (void);
 void aice_log_add (uint32_t a_level, const char *a_format, ...);
 
 #define aice_log_error(fmt, ...) aice_log_add (AICE_LOG_ERROR, fmt"\n", ##__VA_ARGS__)
-#define aice_log_debug(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt"\n", ##__VA_ARGS__)
+#define aice_log_debug(fmt, ...) aice_log_add (AICE_LOG_DEBUG, fmt, ##__VA_ARGS__)
 #define aice_log_info(fmt, ...) aice_log_add (AICE_LOG_INFO, fmt"\n", ##__VA_ARGS__)
 #define aice_log_detail(fmt, ...) aice_log_add (AICE_LOG_DETAIL, fmt"\n", ##__VA_ARGS__)
 
 void alive_sleep(uint64_t ms);
 
 #define LOG_ERROR   aice_log_error
-#define LOG_DEBUG   aice_log_detail 
-#define LOG_INFO    aice_log_detail
+#define LOG_DEBUG   aice_log_debug 
+#define LOG_INFO    aice_log_info
 #define LOG_WARNING aice_log_error
 
 #define keep_alive()   
