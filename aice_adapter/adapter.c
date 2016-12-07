@@ -64,7 +64,7 @@ int log_file_size = MINIMUM_DEBUG_LOG_SIZE;
 uint32_t EDMbuff[MAXLINE/4];
 
 /***************************************************************************/
-
+extern unsigned int log_usb_packets;
 /********************************************************************************************/
 static int pipe_read(void *buffer, int length)
 {
@@ -608,7 +608,14 @@ static int aice_custom_monitor_cmd( const char *input )
             ret_len = 1;
             break;
     };
-    
+    if( strncmp(command, "log_usb_packet", 14) == 0  ) {
+        log_usb_packets = 1;
+        aice_log_add( AICE_LOG_DEBUG, "log_usb_packet");
+        set_u32(response+1, 0);  // set return value size=0
+        ret_len = 1+4;
+        result = ERROR_OK;
+    }
+
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
     }
