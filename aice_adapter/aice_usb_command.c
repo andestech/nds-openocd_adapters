@@ -276,7 +276,7 @@ static int usb_bulk_with_retries(
 			char *bytes, int size, int timeout)
 {
 	int tries = 3, count = 0;
-	char *cur_bytes = bytes;
+	unsigned char *cur_bytes = (unsigned char *)bytes;
 	unsigned int cur_attr = 0, cur_length = 0, rx_length = 0;
 
 	while (tries && (count < size)) {
@@ -303,13 +303,13 @@ static int usb_bulk_with_retries(
 							cur_length |= (cur_bytes[7] << 8);
 							rx_length += 9;
 							rx_length += (cur_length << 2);
-							AICE_USBCMMD_MSG("cur_bytes=0x%x, result=0x%x, cur_attr=0x%x, cur_length=0x%x",
-							  (unsigned int)cur_bytes, result, cur_attr, cur_length);
+							AICE_USBCMMD_MSG("cur_bytes=0x%lx, result=0x%x, cur_attr=0x%x, cur_length=0x%x",
+							  (long)cur_bytes, result, cur_attr, cur_length);
 							if (cur_attr & 0x01) {
 								return rx_length;
 							}
 							cur_bytes += rx_length;
-							result = f(dev, ep, cur_bytes, size - (cur_length << 2), timeout);
+							result = f(dev, ep, (char *)cur_bytes, size - (cur_length << 2), timeout);
 						}
 
 				}
@@ -369,7 +369,7 @@ static inline int usb_bulk_read_ex(jtag_libusb_device_handle *dev, int ep,
 		unsigned int i;
 		char msgbuffer[4096] = {0};
 		char *pmsgbuffer = (char *)&msgbuffer[0];
-		sprintf ( pmsgbuffer, "bulk_in: size=0x%02x, buf=0x%x, timeout=0x%x", size, (unsigned int )bytes, timeout);
+		sprintf ( pmsgbuffer, "bulk_in: size=0x%02x, buf=0x%lx, timeout=0x%x", size, (long)bytes, timeout);
 		pmsgbuffer += strlen(pmsgbuffer);
 		if (size > 128)
 			size = 128;
