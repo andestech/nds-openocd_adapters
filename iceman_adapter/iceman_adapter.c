@@ -128,10 +128,9 @@ struct MEM_OPERATIONS resume_sequences[MAX_MEM_OPERATIONS_NUM];
 int stop_sequences_num = 0;
 int resume_sequences_num = 0;
 
-#define MAX_EDM_OPERATIONS_NUM 32
+extern struct EDM_OPERATIONS nds32_edm_ops[];
+extern uint32_t nds32_edm_ops_num;
 
-struct EDM_OPERATIONS edm_operations[MAX_EDM_OPERATIONS_NUM];
-int edm_operations_num = 0;
 
 static char *memory_stop_sequence = NULL;
 static char *memory_resume_sequence = NULL;
@@ -581,9 +580,11 @@ static void parse_edm_operation(const char *edm_operation) {
 		processing_str = end_ptr + 1;
 		value = strtoll(processing_str, &end_ptr, 0);
 
-		edm_operations[edm_operations_num].reg_no = reg_no;
-		edm_operations[edm_operations_num].data = value;
-		edm_operations_num++;
+		nds32_edm_ops[nds32_edm_ops_num].reg_no = reg_no;
+		nds32_edm_ops[nds32_edm_ops_num].data = value;
+		nds32_edm_ops_num++;
+		if (nds32_edm_ops_num >= 64)
+			break;
 
 		if (end_ptr[0] == ';')
 			break;
@@ -845,13 +846,13 @@ static void update_board_cfg(void)
 	if (edm_port_operations) {
 		parse_edm_operation(edm_port_operations);
 	}
-
-	if (edm_operations_num > 0) {
-		for (i = 0 ; i < edm_operations_num ; i++) {
-			fprintf(board_cfg, "nds32.cpu0 nds login_edm_operation 0x%x 0x%x\n", edm_operations[i].reg_no, edm_operations[i].data);
+/*
+	if (nds32_edm_ops_num > 0) {
+		for (i = 0 ; i < nds32_edm_ops_num ; i++) {
+			fprintf(board_cfg, "nds32.cpu0 nds login_edm_operation 0x%x 0x%x\n", nds32_edm_ops[i].reg_no, nds32_edm_ops[i].data);
 		}
 	}
-
+*/
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
