@@ -196,13 +196,13 @@ static void show_usage(void) {
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
 	//printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
-	printf("-c, --clock:\t\tSpecific JTAG clock setting\n");
+	printf("-c, --clock:\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
 	for (i=0; i<=15; i++)
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
 
-	printf("\t\t\tAICE-MCU only supports 8 ~ 15\n");
+	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
 	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
 	printf("-C, --check-times:\tCount/Second to check DBGER\n");
 	printf("\t\t\t(default: 500 times)\n");
