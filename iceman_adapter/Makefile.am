@@ -4,7 +4,7 @@ ICEman_SOURCES = iceman_adapter.c \
                  iceman_socket.h
 
 openocd_cfgdir = $(bindir)
-dist_openocd_cfg_DATA = openocd.cfg.tpl sw-reset-seq.tpl reset-hold-script.tpl
+dist_openocd_cfg_DATA = openocd.cfg.tpl sw-reset-seq.tpl reset-hold-script.tpl nds32_tdesc_bitfield.xml
 
 openocd_boardcfgdir = $(bindir)/board
 dist_openocd_boardcfg_DATA = board/nds32_xc5.cfg.tpl
