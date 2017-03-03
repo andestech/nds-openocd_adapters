@@ -36,8 +36,19 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
+#define LONGOPT_CP0     7
+#define LONGOPT_CP1     8
+#define LONGOPT_CP2     9
+#define LONGOPT_CP3     10
+int long_opt_flag = 0;
+uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
+	{"cp0reg", required_argument, &long_opt_flag, LONGOPT_CP0},
+	{"cp1reg", required_argument, &long_opt_flag, LONGOPT_CP1},
+	{"cp2reg", required_argument, &long_opt_flag, LONGOPT_CP2},
+	{"cp3reg", required_argument, &long_opt_flag, LONGOPT_CP3},
+
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
 	{"bport", required_argument, 0, 'b'},
@@ -267,21 +278,40 @@ static void show_usage(void) {
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
+	printf("--cp0reg/cp1reg/cp2reg/cp3reg:\t\tSpecify coprocessor register numbers\n");
+	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 }
 
 static int parse_param(int a_argc, char **a_argv) {
 	while(1) {
 		int c = 0;
-		int option_index;
+		int option_index = 0;
 		int optarg_len;
 		char tmpchar = 0;
+		int long_opt = 0;
+		uint32_t cop_nums = 0;
 		//uint32_t ms_check_dbger = 0;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
+
 		if (c == EOF)
 			break;
 
 		switch (c) {
+			case 0:
+				long_opt = *long_option[option_index].flag;
+				printf("option %s,", long_option[option_index].name);
+				if ((long_opt >= LONGOPT_CP0) &&
+					(long_opt <= LONGOPT_CP3)) {
+						cop_nums = strtol(optarg, NULL, 0);
+						if (cop_nums > 4096) {
+							printf("cop_nums max is 4096 \n");
+						} else {
+							cop_reg_nums[long_opt - LONGOPT_CP0] = cop_nums;
+							printf("cop_reg_nums[%d]=%d \n", long_opt - LONGOPT_CP0, cop_reg_nums[long_opt - LONGOPT_CP0]);
+						}
+				}
+				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
 				break;
@@ -770,9 +800,16 @@ static void update_interface_cfg(void)
 	if (reset_aice_as_startup) {
 		fprintf(interface_cfg, "aice reset_aice_as_startup\n");
 	}
-    if (edm_dimb != DIMBR_DEFAULT) {
-        fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
-    }
+	if (edm_dimb != DIMBR_DEFAULT) {
+		fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
+	}
+	unsigned int i;
+
+	for (i=0; i<4; i++) {
+		if (cop_reg_nums[i] != 0) {
+			fprintf(interface_cfg, "aice misc_config cop %d %d 1\n", i, cop_reg_nums[i]);
+		}
+	}
 	fputs("\n", interface_cfg);
 }
 
