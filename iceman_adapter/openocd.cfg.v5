@@ -1,0 +1,29 @@
+adapter_khz 2000
+
+#interface ftdi
+#transport select jtag
+#ftdi_vid_pid 0x0403 0x6010
+
+#Without it, error will occur in OpenOCD
+#ftdi_layout_signal SWD_EN -data 0
+#ftdi_layout_signal nSRST -data 0x0010
+
+#source [find interface/dp_busblaster.cfg]
+#transport select jtag
+
+source [find interface/olimex-arm-usb-tiny-h.cfg]
+
+set _CHIPNAME nds32_v5
+jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x10e31913
+
+set _TARGETNAME $_CHIPNAME.cpu
+target create $_TARGETNAME nds32_v5 -chain-position $_TARGETNAME
+$_TARGETNAME configure -work-area-phys 0x80000000 -work-area-size 10000 -work-area-backup 1
+
+flash bank my_first_flash fespi 0x20000000 0 0 0 $_TARGETNAME
+init
+#reset
+halt
+#flash protect 0 64 last off
+#program ./demo_gpio
+#resume 0x20400000

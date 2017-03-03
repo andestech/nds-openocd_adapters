@@ -106,6 +106,7 @@ enum TARGET_TYPE {
 	TARGET_V2 = 0,
 	TARGET_V3,
 	TARGET_V3m,
+	TARGET_V5,
 	TARGET_INVALID,
 };
 
@@ -428,6 +429,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					target_type[0] = TARGET_V3;
 				} else if (strncmp(optarg, "v3m", optarg_len) == 0) {
 					target_type[0] = TARGET_V3m;
+				} else if (strncmp(optarg, "v5", optarg_len) == 0) {
+					target_type[0] = TARGET_V5;
 				} else {
 					target_type[0] = TARGET_INVALID;
 				}
@@ -650,6 +653,38 @@ static void update_gdb_port_num(void)
 		port_id++;
 	}
 	//printf("total_num_of_ports %x, gdb_port=%x\n", total_num_of_ports, gdb_port[0]);
+}
+
+static void update_openocd_cfg_v5(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
+
+	openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
+	openocd_cfg = fopen("openocd.cfg", "w");
+	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
+		fprintf(stderr, "ERROR: No config file, openocd.cfg.v5\n");
+		exit(-1);
+	}
+	/* update openocd.cfg */
+	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
+	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
+	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
+	if( log_output == NULL )
+		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
+	else {
+		memset(line_buffer, 0, LINE_BUFFER_SIZE);
+		strncpy(line_buffer, log_output, strlen(log_output));
+		strncat(line_buffer, "iceman_debug0.log", 17);
+		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+	}
+	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
+	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
+	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
+
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
+		fputs(line_buffer, openocd_cfg);
+
+	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
 }
 
 static void update_openocd_cfg(void)
@@ -933,7 +968,6 @@ int main(int argc, char **argv) {
 
 	/* prepare all valid port num */
 	update_gdb_port_num();
-	open_config_files();
 
 	for(i = 0; i < total_num_of_ports; i++)
 	{
@@ -965,11 +999,15 @@ int main(int argc, char **argv) {
 	printf("TCL port: %d\n", tcl_port);
 
 	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
-	update_openocd_cfg();
-	update_interface_cfg();
-	update_target_cfg();
-	update_board_cfg();
-
+	if (target_type[0] == TARGET_V5) {
+		update_openocd_cfg_v5();
+	} else {
+		open_config_files();
+		update_openocd_cfg();
+		update_interface_cfg();
+		update_target_cfg();
+		update_board_cfg();
+	}
 	/* close config files */
 	close_config_files();
 

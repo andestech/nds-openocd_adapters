@@ -4,13 +4,13 @@ ICEman_SOURCES = iceman_adapter.c \
                  iceman_socket.h
 
 openocd_cfgdir = $(bindir)
-dist_openocd_cfg_DATA = openocd.cfg.tpl sw-reset-seq.tpl reset-hold-script.tpl nds32_tdesc_bitfield.xml
+dist_openocd_cfg_DATA = openocd.cfg.v5 openocd.cfg.tpl sw-reset-seq.tpl reset-hold-script.tpl nds32_tdesc_bitfield.xml
 
 openocd_boardcfgdir = $(bindir)/board
 dist_openocd_boardcfg_DATA = board/nds32_xc5.cfg.tpl
 
 openocd_interfacecfgdir = $(bindir)/interface
-dist_openocd_interfacecfg_DATA = interface/nds32-aice.cfg.tpl
+dist_openocd_interfacecfg_DATA = interface/nds32-aice.cfg.tpl interface/olimex-arm-usb-tiny-h.cfg
 
 openocd_targetcfgdir = $(bindir)/target
 dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl
