@@ -708,12 +708,12 @@ static void update_openocd_cfg_v5(void)
 		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
-	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
-	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
 		fputs(line_buffer, openocd_cfg);
 
+	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
+	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
 }
 
