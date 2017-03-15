@@ -41,7 +41,7 @@ if BUILD_MINGW_BINARY
 aice_adapter_LDADD = -lws2_32 -lusb
 else
 if BUILD_CYGWIN_BINARY
-aice_adapter_LDADD = -lusb -ldl -lpthread
+aice_adapter_LDADD = -lusb-1.0 -ldl -lpthread
 else
 aice_adapter_LDADD = -lusb-1.0 -ldl -lpthread -lrt
 endif
