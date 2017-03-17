@@ -27,3 +27,5 @@ flash bank my_first_flash fespi 0x20000000 0 0 0 $_TARGETNAME
 #flash protect 0 64 last off
 #program ./demo_gpio
 #resume 0x20400000
+
+nds configure tdesc_bit ndsv5_tdesc_bitfield.xml
