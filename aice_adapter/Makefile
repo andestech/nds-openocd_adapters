@@ -3,6 +3,7 @@ CFLAGS  = -Wall -std=gnu99 -I. -I./jtag/drivers -DHAVE_CONFIG_H
 LDFLAGS = 
 EXECUTABLE = aice_adapter
 SOURCES = adapter.c \
+		  aice_print_info.c \
 		  aice_usb_command.c \
 		  aice_usb_pack_format.c \
 		  aice_log.c
