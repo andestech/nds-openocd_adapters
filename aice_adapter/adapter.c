@@ -341,6 +341,16 @@ static void aice_idcode (const char *input)
     pipe_write (response, 1 + num_of_idcode * 4);
 }
 
+static int append_pipe_msg(char* response, char *msg, uint32_t *ret_len)
+{
+    aice_log_add (AICE_LOG_DEBUG, "Before append len=%d", *ret_len);
+    response[0] = 1;        // CMD #1: print string
+    set_u32(response+1, strlen(msg));
+    strncpy( response+1+4, msg, strlen(msg)); 
+    *ret_len += 1 + 4 + strlen(msg)+1; // 1:CMD, 4:length, strlen(msg):DATA
+    aice_log_add (AICE_LOG_DEBUG, "After append len=%d", *ret_len);
+    return 0;
+}
 
 static int aice_read_edm (const char *input)
 {
@@ -352,22 +362,17 @@ static int aice_read_edm (const char *input)
     uint32_t *EDMData = EDMbuff;
     int result = 0;
     //unsigned int value_edmsw = 0;
+    uint32_t ret_len = 0;
+    static char is_print = 0;
 
     JDPInst      = input[1];
     target_id    = get_u32( input+2 );
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
 
-    //EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
-    //if( EDMData == NULL ) {
-    //    response[0] = AICE_ERROR;
-    //    pipe_write (response, 1);
-
-    //    aice_log_add (AICE_LOG_INFO, "Allocate Read EDMData buffer Failed!!");
-    //    return ERROR_FAIL;
-    //}
     result = aice_usb_read_edm(target_id, JDPInst, address, EDMData, num_of_words);
     if( result == ERROR_OK ) {
+        memset(response, 0, MAXLINE);
         response[0] = AICE_OK;
 
         for (int i = 0 ; i < num_of_words ; i++)
@@ -375,7 +380,18 @@ static int aice_read_edm (const char *input)
             set_u32 (response + 1 + i*4, EDMData[i]);
         }
 
-        pipe_write (response, 1 + num_of_words * 4);
+        if( (JDPInst == JDP_R_MISC_REG) && (address == 0x3) &&      // Read EDM Misc. DBGER register
+            ((EDMData[0]&0x20000000) == 0x20000000) &&              // STANDBY mode 
+            is_print == 0                                      ) {  // Print only one time
+
+            ret_len = 1+num_of_words*4;
+            append_pipe_msg(response+ret_len, "Target in STANDBY mode!!", &ret_len);   
+            aice_log_add (AICE_LOG_INFO, "Append STANDBY mode msg!!");
+            pipe_write(response, ret_len);
+            is_print = 1;
+        } else {
+            pipe_write (response, 1 + num_of_words * 4);
+        }
     }
     else {
         response[0] = AICE_ERROR;
@@ -391,6 +407,7 @@ static int aice_read_edm (const char *input)
 }
 
 
+
 static int aice_write_edm( const char *input )
 {
     char response[MAXLINE];
@@ -400,23 +417,11 @@ static int aice_write_edm( const char *input )
     uint32_t num_of_words;
     uint32_t *EDMData = EDMbuff;
     int result = 0;
-    //unsigned int value_edmsw = 0;
-    //unsigned int write_data  = 0;
-
 
     JDPInst      = input[1];
     target_id    = get_u32( input+2 );
     address      = get_u32( input+6 );
     num_of_words = get_u32( input+10 );
-
-    //EDMData = malloc( sizeof(uint32_t) * (num_of_words+1) );
-    //if( EDMData == NULL ) {
-    //    response[0] = AICE_ERROR;
-    //    pipe_write (response, 1);
-
-    //    aice_log_add (AICE_LOG_ERROR, "Allocate Write EDMData buffer Failed!!");
-    //    return ERROR_FAIL;
-    //}
 
     for (int i = 0 ; i < num_of_words ; i++)
     {
@@ -455,8 +460,8 @@ static int aice_write_ctrls( const char *input )
         aice_log_add (AICE_LOG_ERROR, "Write ICE box ctrl Failed!!");
         response[0] = AICE_ERROR;
     }
-    pipe_write (response, 1);
 
+    pipe_write (response, 1);
     return result;
 }
 
@@ -472,6 +477,7 @@ static int aice_read_ctrls( const char *input )
     if( result == ERROR_OK ) {
         response[0] = AICE_OK;
         set_u32(response+1, ReadData);
+
         pipe_write (response, 5);
     }
     else {
@@ -525,14 +531,12 @@ static int aice_custom_monitor_cmd( const char *input )
     int ret_len = 1;
     //char *command;
     char command[MAXLINE];
-
     int coreid;
     int address;
     int size;
     char write_data[MAXLINE/4];
     char read_data[MAXLINE/4];
     int i;
-
 
     len = get_u32(input+1);
     memcpy(command, input+5, len);
@@ -599,7 +603,7 @@ static int aice_custom_monitor_cmd( const char *input )
             memcpy(response+5, (char*)read_data, size);
             ret_len = 1+4+size;     // 1:STATUS, 4:LENGTH, size:DATE
             result = ERROR_OK;
-
+            aice_log_add(AICE_LOG_DEBUG, "Test Monitor command #0 Success!!");
             break;
 
         default:
