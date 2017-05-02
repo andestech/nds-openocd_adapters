@@ -499,15 +499,15 @@ static char *clock_hz[] = {
 	"0",
 };
 
-static FILE *openocd_cfg_tpl;
-static FILE *openocd_cfg;
-static FILE *interface_cfg_tpl;
-static FILE *interface_cfg;
-static FILE *board_cfg_tpl;
-static FILE *board_cfg;
-static FILE *target_cfg_tpl;
+static FILE *openocd_cfg_tpl = NULL;
+static FILE *openocd_cfg = NULL;
+static FILE *interface_cfg_tpl = NULL;
+static FILE *interface_cfg = NULL;
+static FILE *board_cfg_tpl = NULL;
+static FILE *board_cfg = NULL;
+static FILE *target_cfg_tpl = NULL;
 static FILE *target_cfg[AICE_MAX_NUM_CORE];
-static FILE *openocd_cfg_usrdef;
+static FILE *openocd_cfg_usrdef = NULL;
 char target_cfg_name[64];
 char *target_cfg_name_str = (char *)&target_cfg_name[0];
 static void open_config_files(void) {
@@ -559,16 +559,34 @@ static void open_config_files(void) {
 static void close_config_files(void) {
 	int coreid;
 
-	fclose(openocd_cfg_tpl);
-	fclose(openocd_cfg);
-	fclose(interface_cfg_tpl);
-	fclose(interface_cfg);
-	fclose(board_cfg_tpl);
-	fclose(board_cfg);
-	fclose(target_cfg_tpl);
-	for (coreid = 0; coreid < 1; coreid ++)
-		fclose(target_cfg[coreid]);
-	fclose(openocd_cfg_usrdef);
+    if (openocd_cfg_tpl != NULL)
+    	fclose(openocd_cfg_tpl);
+	
+    if(openocd_cfg != NULL)
+        fclose(openocd_cfg);
+
+    if(interface_cfg_tpl != NULL)
+    	fclose(interface_cfg_tpl);
+	
+    if(interface_cfg != NULL)
+        fclose(interface_cfg);
+	
+    if(board_cfg_tpl != NULL)
+        fclose(board_cfg_tpl);
+	
+    if(board_cfg != NULL)
+        fclose(board_cfg);
+	
+    if(target_cfg_tpl != NULL)
+        fclose(target_cfg_tpl);
+	
+    for (coreid = 0; coreid < 1; coreid ++) {
+	    if(target_cfg[coreid] != NULL)
+            fclose(target_cfg[coreid]);
+    }
+
+    if(openocd_cfg_usrdef != NULL)
+    	fclose(openocd_cfg_usrdef);
 }
 
 static void parse_mem_operation(const char *mem_operation) {
@@ -714,6 +732,7 @@ static void update_openocd_cfg_v5(void)
 
 	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
 	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
+	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
 	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
 }
 
