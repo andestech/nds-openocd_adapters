@@ -198,6 +198,43 @@
 <field name="" start="0" end="31" type="mcause_exception"/>
 </struct>
 
+<flags id="dexc2dbg_flags" size="4">
+<field name="IAM" start="0" end="0"/>
+<field name="IAF" start="1" end="1"/>
+<field name="II" start="2" end="2"/>
+<field name="NMI" start="3" end="3"/>
+<field name="LAM" start="4" end="4"/>
+<field name="LAF" start="5" end="5"/>
+<field name="SAM" start="6" end="6"/>
+<field name="SAF" start="7" end="7"/>
+<field name="UEC" start="8" end="8"/>
+<field name="SEC" start="9" end="9"/>
+<field name="HEC" start="10" end="10"/>
+<field name="MEC" start="11" end="11"/>
+</flags>
+<struct id="reg_dexc2dbg" size="4">
+<field name="" start="0" end="31" type="dexc2dbg_flags"/>
+</struct>
+
+<enum id="ddcause_maintype" size="4">
+<evalue name="Software Breakpoint" value="0"/>
+<evalue name="Instruction Access Misaligned" value="1"/>
+<evalue name="Instruction Access Fault" value="2"/>
+<evalue name="Illegal Instruction" value="3"/>
+<evalue name="Non-Maskable Interrupt" value="4"/>
+<evalue name="Load Access Misaligned" value="5"/>
+<evalue name="Load Access Fault" value="6"/>
+<evalue name="Store Access Misaligned" value="7"/>
+<evalue name="Store Access Fault" value="8"/>
+<evalue name="U-mode Environment Call" value="9"/>
+<evalue name="S-mode Environment Call" value="10"/>
+<evalue name="H-mode Environment Call" value="11"/>
+<evalue name="M-mode Environment Call" value="12"/>
+</enum>
+<struct id="reg_ddcause" size="4">
+<field name="maintype" start="0" end="7" type="ddcause_maintype"/>
+<field name="subtype" start="8" end="15" type="uint32"/>
+</struct>
 
 <reg name="csr1953" bitsize="32" type="reg_tdata1"/>
 <reg name="csr1968" bitsize="32" type="reg_dcsr"/>
@@ -207,6 +244,8 @@
 <reg name="csr772" bitsize="32" type="reg_mie"/>
 <reg name="csr836" bitsize="32" type="reg_mip"/>
 <reg name="csr834" bitsize="32" type="reg_mcause"/>
+<reg name="csr2016" bitsize="32" type="reg_dexc2dbg"/>
+<reg name="csr2017" bitsize="32" type="reg_ddcause"/>
 
 </feature>
 </target>
