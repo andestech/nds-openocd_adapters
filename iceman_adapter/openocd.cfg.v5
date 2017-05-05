@@ -29,3 +29,5 @@ $_TARGETNAME configure -work-area-phys 0x80000000 -work-area-size 10000 -work-ar
 #resume 0x20400000
 
 nds configure tdesc_bit ndsv5_tdesc_bitfield.xml
+#nds configure ena_hit_exception 1
+
