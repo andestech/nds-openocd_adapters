@@ -714,9 +714,6 @@ static void update_openocd_cfg_v5(void)
 		exit(-1);
 	}
 	/* update openocd.cfg */
-	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
-	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
-	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 	if( log_output == NULL )
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
@@ -726,6 +723,9 @@ static void update_openocd_cfg_v5(void)
 		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
+	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
+	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
+	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
 		fputs(line_buffer, openocd_cfg);
@@ -741,21 +741,18 @@ static void update_openocd_cfg(void)
 	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
-	//while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
-	//	fputs(line_buffer, openocd_cfg);
-
+	if( log_output == NULL )
+		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
+	else {
+		memset(line_buffer, 0, LINE_BUFFER_SIZE);
+		strncpy(line_buffer, log_output, strlen(log_output));
+		strncat(line_buffer, "iceman_debug0.log", 17);
+		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+	}
+	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
-    if( log_output == NULL )
-    	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
-    else {
-        memset(line_buffer, 0, LINE_BUFFER_SIZE);
-        strncpy(line_buffer, log_output, strlen(log_output));
-        strncat(line_buffer, "iceman_debug0.log", 17);
-    	fprintf(openocd_cfg, "log_output %s\n", line_buffer);
-    }
-	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
 	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
 	fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
