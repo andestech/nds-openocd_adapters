@@ -754,8 +754,10 @@ static void update_openocd_cfg(void)
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 
-	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
-	fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
+	//fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
+	//fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
+		fputs(line_buffer, openocd_cfg);
 
 	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
 	if (custom_def_idlm_base)
