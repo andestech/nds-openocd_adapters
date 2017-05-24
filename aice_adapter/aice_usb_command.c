@@ -529,6 +529,7 @@ int aice_usb_read_ctrl(uint32_t address, uint32_t *pReadData)
 int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, uint32_t *EDMData, uint32_t num_of_words )
 {
 	int result = ERROR_FAIL;
+	uint32_t bak_addr = address;
 
 	if ( (JDPInst & 0x80) != 0 ) {
 		LOG_ERROR( "AICE Read EDM JDPInst Error: does not Read inst, inst code: 0x%02X", JDPInst );
@@ -545,6 +546,7 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 		case JDP_R_MEM_W:
 			address = ((address >> 2) & 0x3FFFFFFF);
 			result = aice_access_cmmd(AICE_CMDIDX_READ_MEM, target_id, address, (unsigned char *)EDMData, 1);
+			address = bak_addr;
 			break;
 		case JDP_R_MISC_REG:
 			result = aice_access_cmmd(AICE_CMDIDX_READ_MISC, target_id, address, (unsigned char *)EDMData, 1);
@@ -555,6 +557,7 @@ int aice_usb_read_edm( uint32_t target_id, uint8_t JDPInst, uint32_t address, ui
 		case JDP_R_MEM_H:
 			address = ((address >> 1) & 0x7FFFFFFF);
 			result = aice_access_cmmd(AICE_CMDIDX_READ_MEM_H, target_id, address, (unsigned char *)EDMData, 1);
+			address = bak_addr;
 			break;
 		case JDP_R_MEM_B:
 			result = aice_access_cmmd(AICE_CMDIDX_READ_MEM_B, target_id, address, (unsigned char *)EDMData, 1);

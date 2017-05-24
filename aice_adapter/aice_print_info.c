@@ -297,11 +297,11 @@ void aice_print_info(unsigned int pipe_cmmd, unsigned int address,
 		}
 		else if ((jdp_id == JDP_R_MEM_W) || (jdp_id == JDP_W_MEM_W)) {
 			if ((aice_get_command_mode() == AICE_COMMAND_MODE_PACK) && (jdp_id == JDP_R_MEM_W)) {
-				LOG_DEBUG("%s: TARGET: 0x%02X, ADDR: 0x%02X, DATA: N/A.",
+				LOG_DEBUG("%s: TARGET: 0x%02X, ADDR: 0x%08X, DATA: N/A.",
 					pStrUsbCmmd, target_id, address);
 				return;
 			}
-			LOG_DEBUG("%s: TARGET: 0x%02X, ADDR: 0x%02X, DATA: 0x%08X.",
+			LOG_DEBUG("%s: TARGET: 0x%02X, ADDR: 0x%08X, DATA: 0x%08X.",
 				pStrUsbCmmd, target_id, address, *pInfoData);
 			return;
 		}
