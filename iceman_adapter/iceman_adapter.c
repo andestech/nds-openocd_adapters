@@ -40,6 +40,7 @@
 #define LONGOPT_CP1     8
 #define LONGOPT_CP2     9
 #define LONGOPT_CP3     10
+#define LONGOPT_USE_SDM   11
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -48,6 +49,7 @@ struct option long_option[] = {
 	{"cp1reg", required_argument, &long_opt_flag, LONGOPT_CP1},
 	{"cp2reg", required_argument, &long_opt_flag, LONGOPT_CP2},
 	{"cp3reg", required_argument, &long_opt_flag, LONGOPT_CP3},
+	{"use-sdm", no_argument, &long_opt_flag, LONGOPT_USE_SDM},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -189,6 +191,7 @@ static const char *log_output = NULL;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
+static unsigned int use_sdm = 0;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
@@ -310,7 +313,10 @@ static int parse_param(int a_argc, char **a_argv) {
 							cop_reg_nums[long_opt - LONGOPT_CP0] = cop_nums;
 							printf("cop_reg_nums[%d]=%d \n", long_opt - LONGOPT_CP0, cop_reg_nums[long_opt - LONGOPT_CP0]);
 						}
+				} else if (long_opt == LONGOPT_USE_SDM) {
+					use_sdm = 1;
 				}
+
 				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
@@ -827,6 +833,10 @@ static void update_interface_cfg(void)
 		if (cop_reg_nums[i] != 0) {
 			fprintf(interface_cfg, "aice misc_config cop %d %d 1\n", i, cop_reg_nums[i]);
 		}
+	}
+	if (use_sdm == 1) {
+		fprintf(interface_cfg, "aice sdm use_sdm\n");
+		//fprintf(interface_cfg, "aice misc_config usb_timeout 1000\n");
 	}
 	fputs("\n", interface_cfg);
 }

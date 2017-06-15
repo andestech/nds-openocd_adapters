@@ -56,6 +56,22 @@ struct aice_print_info_attr {
 	char *cmdname;
 };
 
+#define NDS_SDM_MISC_SDM_CFG            0
+#define NDS_SDM_MISC_SBAR               1
+#define NDS_SDM_MISC_PROCESSOR_CTL      2
+#define NDS_SDM_MISC_PROCESSOR_STATUS   3
+#define NDS_SDM_MISC_SDM_CTL            4
+
+uint32_t aice_current_write_ctrl_sdm = 0;
+static struct aice_print_info_attr aice_print_info_sdm_misc[] = {
+	{ NDS_SDM_MISC_SDM_CFG,         "SDM_CFG", },
+	{ NDS_SDM_MISC_SBAR,            "SBAR", },
+	{ NDS_SDM_MISC_PROCESSOR_CTL,   "PROCESSOR_CTL", },
+	{ NDS_SDM_MISC_PROCESSOR_STATUS,"PROCESSOR_STATUS", },
+	{ NDS_SDM_MISC_SDM_CTL,         "SDM_CTL", },
+	{ 0xFFFFFFFF, "", },
+};
+
 static struct aice_print_info_attr aice_print_info_readctrl[] = {
 	{ AICE_READ_CTRL_GET_ICE_STATE,         "GET_ICE_STATE", },
 	{ AICE_READ_CTRL_GET_HARDWARE_VERSION,  "GET_HARDWARE_VERSION", },
@@ -265,6 +281,12 @@ void aice_print_info(unsigned int pipe_cmmd, unsigned int address,
 		else {
 			pStrUsbCmmd = "WRITE_CTRL";
 			pStrSubCmmd = aice_print_info_get_subcmmd(address, &aice_print_info_writectrl[0]);
+			if ((address == AICE_WRITE_CTRL_SDMCONN) &&
+				(*pInfoData & 0x80000000)) {
+				aice_current_write_ctrl_sdm = 1;
+			}
+			else
+				aice_current_write_ctrl_sdm = 0;
 		}
 
 		LOG_DEBUG("%s: ADDR: 0x%02X [%s], DATA: 0x%08X.",
@@ -274,7 +296,10 @@ void aice_print_info(unsigned int pipe_cmmd, unsigned int address,
 	else if ((pipe_cmmd == AICE_READ_EDM) || (pipe_cmmd == AICE_WRITE_EDM)) {
 		pStrUsbCmmd = aice_print_info_get_subcmmd(jdp_id, &aice_print_info_jdp[0]);
 		if ((jdp_id == JDP_R_MISC_REG) || (jdp_id == JDP_W_MISC_REG)) {
-			pStrSubCmmd = aice_print_info_get_subcmmd(address, &aice_print_info_edm_misc[0]);
+			if (aice_current_write_ctrl_sdm == 1)
+				pStrSubCmmd = aice_print_info_get_subcmmd(address, &aice_print_info_sdm_misc[0]);
+			else
+				pStrSubCmmd = aice_print_info_get_subcmmd(address, &aice_print_info_edm_misc[0]);
 			if ((aice_get_command_mode() == AICE_COMMAND_MODE_PACK) && (jdp_id == JDP_R_MISC_REG)) {
 				LOG_DEBUG("%s: TARGET: 0x%02X, ADDR: 0x%02X [%s], DATA: N/A.",
 					pStrUsbCmmd, target_id, address, pStrSubCmmd);
