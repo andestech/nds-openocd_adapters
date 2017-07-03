@@ -14,7 +14,8 @@ adapter_khz 2000
 source [find interface/olimex-arm-usb-tiny-h.cfg]
 
 set _CHIPNAME nds32_v5
-jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x10e31913
+#jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x10e31913
+jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x1000563D
 
 set _TARGETNAME $_CHIPNAME.cpu
 target create $_TARGETNAME nds32_v5 -chain-position $_TARGETNAME
