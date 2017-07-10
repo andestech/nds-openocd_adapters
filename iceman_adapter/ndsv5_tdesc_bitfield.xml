@@ -65,7 +65,7 @@
 <field name="cause" start="6" end="8" type="dcsr_cause"/>
 <field name="xdebugver" start="30" end="31" type="dcsr_xdebugver"/>
 </struct>
-<struct id="reg_priv" size="4">
+<struct id="reg_priv" size="1">
 <field name="prv" start="0" end="1" type="dcsr_prv"/>
 </struct>
 
@@ -238,7 +238,7 @@
 
 <reg name="csr1953" bitsize="32" type="reg_tdata1"/>
 <reg name="csr1968" bitsize="32" type="reg_dcsr"/>
-<reg name="priv" bitsize="32" type="reg_priv"/>
+<reg name="priv" bitsize="8" type="reg_priv"/>
 <reg name="csr768" bitsize="32" type="reg_mstatus"/>
 <reg name="csr769" bitsize="32" type="reg_misa"/>
 <reg name="csr772" bitsize="32" type="reg_mie"/>
