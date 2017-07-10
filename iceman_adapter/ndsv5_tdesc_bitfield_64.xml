@@ -1,0 +1,252 @@
+<?xml version="1.0"?>
+<!DOCTYPE target SYSTEM "gdb-target.dtd">
+<target version="1.0">
+<feature name="org.gnu.gdb.riscv.cpu">
+
+<enum id="levels_type" size="8">
+<evalue name="low" value="0"/>
+<evalue name="high" value="1"/>
+</enum>
+<enum id="endian_type" size="8">
+<evalue name="Little Endian" value="0"/>
+<evalue name="Big Endian" value="1"/>
+</enum>
+
+<enum id="tdata1_dmode" size="8">
+<evalue name="Both Debug and M Mode" value="0"/>
+<evalue name="Only Debug Mode" value="1"/>
+</enum>
+<enum id="tdata1_type" size="8">
+<evalue name="no trigger" value="0"/>
+<evalue name="legacy SiFive address match trigger" value="1"/>
+<evalue name="address/data match trigger" value="2"/>
+<evalue name="instruction count trigger" value="3"/>
+</enum>
+<struct id="reg_tdata1" size="8">
+<field name="data" start="0" end="26" type="uint32"/>
+<field name="dmode" start="27" end="27" type="tdata1_dmode"/>
+<field name="type" start="28" end="31" type="tdata1_type"/>
+</struct>
+
+<enum id="dcsr_xdebugver" size="8">
+<evalue name="no Debug Mode" value="0"/>
+<evalue name="Debug Mode exists" value="1"/>
+</enum>
+<enum id="dcsr_cause" size="8">
+<evalue name="software breakpoint" value="1"/>
+<evalue name="Trigger Module caused a halt" value="2"/>
+<evalue name="debug interrupt" value="3"/>
+<evalue name="hart single step" value="4"/>
+<evalue name="halt was set" value="5"/>
+</enum>
+<enum id="dcsr_prv" size="8">
+<evalue name="User/Application" value="0"/>
+<evalue name="Supervisor" value="1"/>
+<evalue name="Hypervisor" value="2"/>
+<evalue name="Machine" value="3"/>
+</enum>
+
+<flags id="dcsr_flags" size="8">
+<field name="step" start="2" end="2"/>
+<field name="halt" start="3" end="3"/>
+<field name="debugint" start="5" end="5"/>
+<field name="stoptime" start="9" end="9"/>
+<field name="stopcycle" start="10" end="10"/>
+<field name="ebreaku" start="12" end="12"/>
+<field name="ebreaks" start="13" end="13"/>
+<field name="ebreakh" start="14" end="14"/>
+<field name="ebreakm" start="15" end="15"/>
+<field name="fullreset" start="28" end="28"/>
+<field name="ndreset" start="29" end="29"/>
+</flags>
+<struct id="reg_dcsr" size="8">
+<field name="" start="0" end="31" type="dcsr_flags"/>
+<field name="prv" start="0" end="1" type="dcsr_prv"/>
+<field name="cause" start="6" end="8" type="dcsr_cause"/>
+<field name="xdebugver" start="30" end="31" type="dcsr_xdebugver"/>
+</struct>
+<struct id="reg_priv" size="1">
+<field name="prv" start="0" end="1" type="dcsr_prv"/>
+</struct>
+
+<enum id="mstatus_FS" size="8">
+<evalue name="Off" value="0"/>
+<evalue name="Initial" value="1"/>
+<evalue name="Clean" value="2"/>
+<evalue name="Dirty" value="3"/>
+</enum>
+<enum id="mstatus_XS" size="8">
+<evalue name="All off" value="0"/>
+<evalue name="None dirty or clean, some on" value="1"/>
+<evalue name="None dirty, some clean" value="2"/>
+<evalue name="Some dirty" value="3"/>
+</enum>
+
+<flags id="mstatus_flags" size="8">
+<field name="UIE" start="0" end="0"/>
+<field name="SIE" start="1" end="1"/>
+<field name="HIE" start="2" end="2"/>
+<field name="MIE" start="3" end="3"/>
+<field name="UPIE" start="4" end="4"/>
+<field name="SPIE" start="5" end="5"/>
+<field name="HPIE" start="6" end="6"/>
+<field name="MPIE" start="7" end="7"/>
+<field name="SPP" start="8" end="8"/>
+<field name="MPRV" start="17" end="17"/>
+<field name="PUM" start="18" end="18"/>
+<field name="MXR" start="19" end="19"/>
+<field name="SD" start="31" end="31"/>
+</flags>
+<struct id="reg_mstatus" size="8">
+<field name="" start="0" end="31" type="mstatus_flags"/>
+<field name="HPP" start="9" end="10" type="uint32"/>
+<field name="MPP" start="11" end="12" type="uint32"/>
+<field name="FS" start="13" end="14" type="mstatus_FS"/>
+<field name="XS" start="15" end="16" type="mstatus_XS"/>
+<field name="VM" start="24" end="28" type="uint32"/>
+</struct>
+
+<flags id="misa_extensions" size="8">
+<field name="A" start="0" end="0"/>
+<field name="B" start="1" end="1"/>
+<field name="C" start="2" end="2"/>
+<field name="D" start="3" end="3"/>
+<field name="E" start="4" end="4"/>
+<field name="F" start="5" end="5"/>
+<field name="G" start="6" end="6"/>
+<field name="H" start="7" end="7"/>
+<field name="I" start="8" end="8"/>
+<field name="J" start="9" end="9"/>
+<field name="K" start="10" end="10"/>
+<field name="L" start="11" end="11"/>
+<field name="M" start="12" end="12"/>
+<field name="N" start="13" end="13"/>
+<field name="O" start="14" end="14"/>
+<field name="P" start="15" end="15"/>
+<field name="Q" start="16" end="16"/>
+<field name="R" start="17" end="17"/>
+<field name="S" start="18" end="18"/>
+<field name="T" start="19" end="19"/>
+<field name="U" start="20" end="20"/>
+<field name="V" start="21" end="21"/>
+<field name="W" start="22" end="22"/>
+<field name="X" start="23" end="23"/>
+<field name="Y" start="24" end="24"/>
+<field name="Z" start="25" end="25"/>
+</flags>
+<enum id="misa_base" size="8">
+<evalue name="RV32" value="1"/>
+<evalue name="RV64" value="2"/>
+<evalue name="RV128" value="3"/>
+</enum>
+<struct id="reg_misa" size="8">
+<field name="" start="0" end="31" type="misa_extensions"/>
+<field name="base" start="30" end="31" type="misa_base"/>
+</struct>
+
+<flags id="mie_flags" size="8">
+<field name="USIE" start="0" end="0"/>
+<field name="SSIE" start="1" end="1"/>
+<field name="HSIE" start="2" end="2"/>
+<field name="MSIE" start="3" end="3"/>
+<field name="UTIE" start="4" end="4"/>
+<field name="STIE" start="5" end="5"/>
+<field name="HTIE" start="6" end="6"/>
+<field name="MTIE" start="7" end="7"/>
+<field name="UEIE" start="8" end="8"/>
+<field name="SEIE" start="9" end="9"/>
+<field name="HEIE" start="10" end="10"/>
+<field name="MEIE" start="11" end="11"/>
+</flags>
+<struct id="reg_mie" size="8">
+<field name="" start="0" end="31" type="mie_flags"/>
+</struct>
+
+<flags id="mip_flags" size="8">
+<field name="USIP" start="0" end="0"/>
+<field name="SSIP" start="1" end="1"/>
+<field name="HSIP" start="2" end="2"/>
+<field name="MSIP" start="3" end="3"/>
+<field name="UTIP" start="4" end="4"/>
+<field name="STIP" start="5" end="5"/>
+<field name="HTIP" start="6" end="6"/>
+<field name="MTIP" start="7" end="7"/>
+<field name="UEIP" start="8" end="8"/>
+<field name="SEIP" start="9" end="9"/>
+<field name="HEIP" start="10" end="10"/>
+<field name="MEIP" start="11" end="11"/>
+</flags>
+<struct id="reg_mip" size="8">
+<field name="" start="0" end="31" type="mip_flags"/>
+</struct>
+
+<enum id="mcause_exception" size="8">
+<evalue name="Instruction address misaligned" value="0"/>
+<evalue name="Instruction access fault" value="1"/>
+<evalue name="Illegal instruction" value="2"/>
+<evalue name="Breakpoint" value="3"/>
+<evalue name="Load address misaligned" value="4"/>
+<evalue name="Load access fault" value="5"/>
+<evalue name="Store/AMO address misaligned" value="6"/>
+<evalue name="Store/AMO access fault" value="7"/>
+<evalue name="Environment call from U-mode" value="8"/>
+<evalue name="Environment call from S-mode" value="9"/>
+<evalue name="Environment call from H-mode" value="10"/>
+<evalue name="Environment call from M-mode" value="11"/>
+</enum>
+<struct id="reg_mcause" size="8">
+<field name="" start="0" end="31" type="mcause_exception"/>
+</struct>
+
+<flags id="dexc2dbg_flags" size="8">
+<field name="IAM" start="0" end="0"/>
+<field name="IAF" start="1" end="1"/>
+<field name="II" start="2" end="2"/>
+<field name="NMI" start="3" end="3"/>
+<field name="LAM" start="4" end="4"/>
+<field name="LAF" start="5" end="5"/>
+<field name="SAM" start="6" end="6"/>
+<field name="SAF" start="7" end="7"/>
+<field name="UEC" start="8" end="8"/>
+<field name="SEC" start="9" end="9"/>
+<field name="HEC" start="10" end="10"/>
+<field name="MEC" start="11" end="11"/>
+</flags>
+<struct id="reg_dexc2dbg" size="8">
+<field name="" start="0" end="31" type="dexc2dbg_flags"/>
+</struct>
+
+<enum id="ddcause_maintype" size="8">
+<evalue name="Software Breakpoint" value="0"/>
+<evalue name="Instruction Access Misaligned" value="1"/>
+<evalue name="Instruction Access Fault" value="2"/>
+<evalue name="Illegal Instruction" value="3"/>
+<evalue name="Non-Maskable Interrupt" value="4"/>
+<evalue name="Load Access Misaligned" value="5"/>
+<evalue name="Load Access Fault" value="6"/>
+<evalue name="Store Access Misaligned" value="7"/>
+<evalue name="Store Access Fault" value="8"/>
+<evalue name="U-mode Environment Call" value="9"/>
+<evalue name="S-mode Environment Call" value="10"/>
+<evalue name="H-mode Environment Call" value="11"/>
+<evalue name="M-mode Environment Call" value="12"/>
+</enum>
+<struct id="reg_ddcause" size="8">
+<field name="maintype" start="0" end="7" type="ddcause_maintype"/>
+<field name="subtype" start="8" end="15" type="uint32"/>
+</struct>
+
+<reg name="csr1953" bitsize="64" type="reg_tdata1"/>
+<reg name="csr1968" bitsize="64" type="reg_dcsr"/>
+<reg name="priv" bitsize="8" type="reg_priv"/>
+<reg name="csr768" bitsize="64" type="reg_mstatus"/>
+<reg name="csr769" bitsize="64" type="reg_misa"/>
+<reg name="csr772" bitsize="64" type="reg_mie"/>
+<reg name="csr836" bitsize="64" type="reg_mip"/>
+<reg name="csr834" bitsize="64" type="reg_mcause"/>
+<reg name="csr2016" bitsize="64" type="reg_dexc2dbg"/>
+<reg name="csr2017" bitsize="64" type="reg_ddcause"/>
+
+</feature>
+</target>
+
