@@ -31,7 +31,8 @@ $_TARGETNAME configure -work-area-phys 0x80000000 -work-area-size 10000 -work-ar
 
 nds configure tdesc_bit ndsv5_tdesc_bitfield.xml
 #nds configure ena_hit_exception 1
-nds configure word_access
+#nds configure word_access
+nds configure aligned_access
 #nds configure reduce_csr
 
 
