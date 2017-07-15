@@ -34,5 +34,5 @@ nds configure tdesc_bit ndsv5_tdesc_bitfield.xml
 #nds configure word_access
 nds configure aligned_access
 nds configure reduce_csr
-
+nds configure csr_symbolic_name
 
