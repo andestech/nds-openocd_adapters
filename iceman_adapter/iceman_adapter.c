@@ -740,6 +740,9 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
 	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
+
+	if (startup_reset_halt == 1)
+		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
 }
 
 static void update_openocd_cfg(void)
