@@ -35,4 +35,4 @@ nds configure tdesc_bit ndsv5_tdesc_bitfield.xml
 nds configure aligned_access
 nds configure reduce_csr
 nds configure csr_symbolic_name
-
+nds configure scan_retry_times 3
