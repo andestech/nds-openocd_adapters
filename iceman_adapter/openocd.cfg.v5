@@ -1,5 +1,5 @@
 adapter_khz 2000
-adapter_nsrst_delay 1000
+adapter_nsrst_delay 500
 
 #interface ftdi
 #transport select jtag
