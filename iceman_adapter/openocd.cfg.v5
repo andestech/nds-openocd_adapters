@@ -37,5 +37,5 @@ nds configure aligned_access
 nds configure reduce_csr
 nds configure csr_symbolic_name
 nds configure scan_retry_times 3
-nds configure jtag_scans_optimize 2
+nds configure jtag_scans_optimize 3
 nds configure redirect_mem_func
