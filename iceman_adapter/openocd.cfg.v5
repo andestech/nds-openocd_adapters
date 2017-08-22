@@ -1,17 +1,6 @@
 adapter_khz 2000
 adapter_nsrst_delay 500
 
-#interface ftdi
-#transport select jtag
-#ftdi_vid_pid 0x0403 0x6010
-
-#Without it, error will occur in OpenOCD
-#ftdi_layout_signal SWD_EN -data 0
-#ftdi_layout_signal nSRST -data 0x0010
-
-#source [find interface/dp_busblaster.cfg]
-#transport select jtag
-
 source [find interface/olimex-arm-usb-tiny-h.cfg]
 
 set _CHIPNAME nds32_v5
