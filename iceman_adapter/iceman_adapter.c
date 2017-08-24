@@ -505,6 +505,26 @@ static char *clock_hz[] = {
 	"0",
 };
 
+static char *clock_v5_hz[] = {
+	"30000",
+	"15000",
+	"7500",
+	"3750",
+	"1875",
+	"937",
+	"468",
+	"234",
+	"48000",
+	"24000",
+	"12000",
+	"6000",
+	"3000",
+	"1500",
+	"750",
+	"375",
+	"10000",	// Default
+};
+
 static FILE *openocd_cfg_tpl = NULL;
 static FILE *openocd_cfg = NULL;
 static FILE *interface_cfg_tpl = NULL;
@@ -732,6 +752,7 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
+	fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
 
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
 		fputs(line_buffer, openocd_cfg);
