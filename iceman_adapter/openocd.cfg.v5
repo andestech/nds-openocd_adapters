@@ -28,6 +28,7 @@ nds configure scan_retry_times 3
 nds configure jtag_scans_optimize 4
 nds configure redirect_mem_func
 nds configure jtag_max_scans 64
+nds configure dis_condition_break
 
 #nds reset_memAccSize
 #nds memAccSize 0x00000000 0x80000000 32
