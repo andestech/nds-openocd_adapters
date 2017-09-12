@@ -16,12 +16,10 @@ dist_openocd_interfacecfg_DATA = interface/nds32-aice.cfg.tpl interface/olimex-a
 openocd_targetcfgdir = $(bindir)/target
 dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl
 
-if USE_LIBUSB0
-DRIVERLIBS = $(LIBUSB0_LIBS)
-DRIVERCFLAGS = $(LIBUSB0_CFLAGS)
-endif
-
-if USE_LIBUSB1
+if BUILD_CYGWIN_BINARY
+DRIVERLIBS = $(LIBUSB0_LIBS) $(LIBUSB1_LIBS) 
+DRIVERCFLAGS = $(LIBUSB0_CFLAGS) $(LIBUSB1_CFLAGS) 
+else
 DRIVERLIBS = $(LIBUSB1_LIBS)
 DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 endif
