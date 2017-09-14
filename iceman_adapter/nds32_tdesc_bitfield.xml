@@ -198,11 +198,15 @@
 <field name="BE" start="5" end="5" type="endian_type"/>
 <field name="CPL" start="16" end="18" type="uint32"/>
 </struct>
-
 <struct id="ir1_type" size="4">
-<field name="" start="0" end="31" type="ir0_type"/>
+<field name="" start="0" end="31" type="ir0_flags"/>
+<field name="INTL" start="1" end="2" type="uint32"/>
+<field name="POM" start="3" end="4" type="uint32"/>
+<field name="BE" start="5" end="5" type="endian_type"/>
+<field name="CPL" start="16" end="18" type="uint32"/>
 <field name="SP_ADJ" start="19" end="19" type="uint32"/>
 </struct>
+
 <enum id="PROG_PRI_LVL_type" size="4">
 <evalue name="Fixed priority" value="0"/>
 <evalue name="Programmable priority" value="1"/>
