@@ -302,15 +302,15 @@ static void show_usage(void) {
 	printf("-v, --version:\t\tVersion of ICEman\n");
 	//printf("-w, --backup-fw:\tBackup AICE F/W\n");
 	//printf("-W, --backup-fpga:\tBackup AICE FPGA\n");
-	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
+	printf("-x, --diagnosis (Only for V3):\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
-	printf("-y, --idlm-base:\t\tDefine ILM&DLM base and size\n");
-	printf("-z, --ace-conf :\t\tSpecify ACE file on each core\n");
+	printf("-y, --idlm-base (Only for V3):\t\tDefine ILM&DLM base and size\n");
+	printf("-z, --ace-conf (Only for V3):\t\tSpecify ACE file on each core\n");
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
-	printf("--cp0reg/cp1reg/cp2reg/cp3reg:\t\tSpecify coprocessor register numbers\n");
+	printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 }
 
