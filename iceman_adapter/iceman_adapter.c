@@ -115,6 +115,26 @@ const char *aice_clk_string[] = {
 	""
 };
 */
+const char *v5_clk_string[] = { 
+	"30 MHz",
+	"15 MHz",
+	"7.5 MHz",
+	"3.75 MHz",
+	"1.875 MHz",
+	"909.091 KHz",
+	"461.538 KHz",
+	"232.558 KHz",
+	"10 MHz",
+	"10 MHz",
+	"10 MHz",
+	"6 MHz",
+	"3 MHz",
+	"1.5 MHz",
+	"750 KHz",
+	"375 KHz",
+	""
+};
+
 enum TARGET_TYPE {
 	TARGET_V2 = 0,
 	TARGET_V3,
@@ -211,11 +231,20 @@ static void show_usage(void) {
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
 	//printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
-	printf("-c, --clock:\t\tSpecify JTAG clock setting\n");
+
+	// V3
+	printf("-c, --clock:\t\tSpecify JTAG clock setting (for V3)\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
 	for (i=0; i<=15; i++)
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
+
+	// V5
+	printf("-c, --clock:\t\tSpecify JTAG clock setting (for V5)\n");
+	printf("\t\tUsage: -c num\n");
+	printf("\t\t\tnum should be the following:\n");
+	for (i=0; i<=15; i++)
+		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
 
 	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
 	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
@@ -511,12 +540,12 @@ static char *clock_v5_hz[] = {
 	"7500",
 	"3750",
 	"1875",
-	"937",
-	"468",
-	"234",
-	"48000",
-	"24000",
-	"12000",
+	"909",
+	"461",
+	"232",
+	"10000",
+	"10000",
+	"10000",
 	"6000",
 	"3000",
 	"1500",
