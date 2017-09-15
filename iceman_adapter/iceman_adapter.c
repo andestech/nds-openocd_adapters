@@ -226,29 +226,29 @@ static void show_srccode_ver(void) {
 static void show_usage(void) {
 	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
-	printf("-a, --reset-aice:\tReset AICE as ICEman startup\n");
-	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
+	printf("-a, --reset-aice (Only for V3):\tReset AICE as ICEman startup\n");
+	printf("-A, --no-crst-detect (Only for V3):\tNo CRST detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
 	//printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
 
 	// V3
-	printf("-c, --clock:\t\tSpecify JTAG clock setting (for V3)\n");
+	printf("-c, --clock (For V3):\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
 	for (i=0; i<=15; i++)
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
+	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
+	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
 
 	// V5
-	printf("-c, --clock:\t\tSpecify JTAG clock setting (for V5)\n");
+	printf("-c, --clock (For V5):\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
 	for (i=0; i<=15; i++)
 		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
 
-	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
-	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
-	printf("-C, --check-times:\tCount/Second to check DBGER\n");
+	printf("-C, --check-times (Only for V3):\tCount/Second to check DBGER\n");
 	printf("\t\t\t(default: 500 times)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 times\n");
@@ -263,18 +263,18 @@ static void show_usage(void) {
 	printf("\t\t\twrite_edm 6:0x1111;\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
 	//printf("-g, --force-debug: \n");
-	printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
+	printf("-G, --enable-global-stop (Only for V3): Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
 	printf("-h, --help:\t\tThe usage is for ICEman\n");
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
 	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
 	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
-	printf("-k, --word-access-mem:\tAlways use word-aligned address to access device\n");
-	printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
-	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
-	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
-	printf("-M, --edm-dimb:\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
+	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
+	printf("-K, --soft-reset-hold (Only for V3):\tUse soft reset-and-hold\n");
+	printf("-l, --custom-srst (Only for V3):\tUse custom script to do SRST\n");
+	printf("-L, --custom-trst (Only for V3):\tUse custom script to do TRST\n");
+	printf("-M, --edm-dimb (Only for V3):\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
 	printf("\t\t\t(default: 0xFFFF0000)\n");
-	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
+	printf("-N, --custom-restart (Only for V3):\tUse custom script to do RESET-HOLD\n");
 	//printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
 	printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
 	printf("\t\t\t(default: 1000 milliseconds)\n");
@@ -283,7 +283,7 @@ static void show_usage(void) {
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
 	printf("-p, --port:\t\tSocket port number for gdb connection\n");
 	printf("-P, --passcode (Only for Secure MPU):\t\tPASSCODE of secure MPU\n");
-	printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
+	printf("-r, --ice-retry (Only for V3):\tRetry count when AICE command timeout\n");
 	printf("\t\t\t(default: 50 times)\n");
 	printf("-s, --source:\t\tShow commit ID of this version\n");
 	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
