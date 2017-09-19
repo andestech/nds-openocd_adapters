@@ -1,6 +1,7 @@
 adapter_nsrst_delay 500
 
 source [find interface/olimex-arm-usb-tiny-h.cfg]
+reset_config srst_only
 
 set _CHIPNAME nds_v5
 #jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x10e31913
