@@ -265,7 +265,7 @@ static void show_usage(void) {
 	//printf("-g, --force-debug: \n");
 	printf("-G, --enable-global-stop (Only for V3): Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
 	printf("-h, --help:\t\tThe usage is for ICEman\n");
-	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
+	printf("-H, --reset-hold (Only for V3):\tReset-and-hold while ICEman startup\n");
 	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
 	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
 	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
@@ -309,7 +309,7 @@ static void show_usage(void) {
 	printf("-z, --ace-conf (Only for V3):\t\tSpecify ACE file on each core\n");
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
-	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
+	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
 	printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 }
