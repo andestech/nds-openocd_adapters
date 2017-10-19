@@ -67,7 +67,7 @@
 <field name="xdebugver" start="30" end="31" type="dcsr_xdebugver"/>
 </struct>
 <struct id="reg_priv" size="1">
-<field name="" start="0" end=7" type="uint32"/>
+<field name="" start="0" end="7" type="uint32"/>
 <field name="prv" start="0" end="1" type="dcsr_prv"/>
 </struct>
 
