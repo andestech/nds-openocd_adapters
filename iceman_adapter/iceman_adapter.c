@@ -793,6 +793,8 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
 	if (diagnosis)
 		fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+	if (count_to_check_dbger)
+		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
 
 	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
 
