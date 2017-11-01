@@ -312,6 +312,7 @@ static void show_usage(void) {
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
 	printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
+	printf("--use-sdm:\t\tUse System Debug Module\n");
 }
 
 static int parse_param(int a_argc, char **a_argv) {
