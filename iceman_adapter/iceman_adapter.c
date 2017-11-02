@@ -248,7 +248,8 @@ static void show_usage(void) {
 	for (i=0; i<=15; i++)
 		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
 
-	printf("-C, --check-times (Only for V3):\tCount/Second to check DBGER\n");
+	printf("-C, --check-times (For V3):\tCount/Second to check DBGER\n");
+	printf("-C, --check-times (For V5):\tSecond to check DTM\n");
 	printf("\t\t\t(default: 500 times)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 times\n");
@@ -265,7 +266,7 @@ static void show_usage(void) {
 	//printf("-g, --force-debug: \n");
 	printf("-G, --enable-global-stop (Only for V3): Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
 	printf("-h, --help:\t\tThe usage is for ICEman\n");
-	printf("-H, --reset-hold (Only for V3):\tReset-and-hold while ICEman startup\n");
+	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
 	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
 	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
 	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
@@ -302,7 +303,7 @@ static void show_usage(void) {
 	printf("-v, --version:\t\tVersion of ICEman\n");
 	//printf("-w, --backup-fw:\tBackup AICE F/W\n");
 	//printf("-W, --backup-fpga:\tBackup AICE FPGA\n");
-	printf("-x, --diagnosis (Only for V3):\tDiagnose connectivity issue\n");
+	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
 	printf("-y, --idlm-base (Only for V3):\t\tDefine ILM&DLM base and size\n");
