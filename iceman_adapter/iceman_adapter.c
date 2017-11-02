@@ -226,7 +226,7 @@ static void show_srccode_ver(void) {
 static void show_usage(void) {
 	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
-	printf("-a, --reset-aice (Only for V3):\tReset AICE as ICEman startup\n");
+	printf("-a, --reset-aice (For AICE only):\tReset AICE as ICEman startup\n");
 	printf("-A, --no-crst-detect (Only for V3):\tNo CRST detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
@@ -312,7 +312,7 @@ static void show_usage(void) {
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
 	printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
-	printf("--use-sdm:\t\tUse System Debug Module\n");
+	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
 }
 
 static int parse_param(int a_argc, char **a_argv) {
