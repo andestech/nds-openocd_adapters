@@ -245,8 +245,12 @@ static void show_usage(void) {
 	printf("-c, --clock (For V5):\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
-	for (i=0; i<=15; i++)
+	for (i=0; i<=15; i++) {
+		if( (i==8) || (i==9) )
+			continue;
+
 		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
+	}
 
 	printf("-C, --check-times (For V3):\tCount/Second to check DBGER\n");
 	printf("-C, --check-times (For V5):\tSecond to check DTM\n");
@@ -311,7 +315,7 @@ static void show_usage(void) {
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
-	printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
+	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
 }
