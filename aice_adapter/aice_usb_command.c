@@ -853,23 +853,27 @@ static int aice_access_cmmd(unsigned char cmdidx, unsigned char target_id,
 }
 
 #define LINE_BUFFER_SIZE 1024
-enum AICE_CUSTOM_CMMD {
-	AICE_CUSTOM_CMMD_SET_SRST = 0,
-	AICE_CUSTOM_CMMD_CLEAR_SRST,
-	AICE_CUSTOM_CMMD_SET_DBGI,
-	AICE_CUSTOM_CMMD_CLEAR_DBGI,
-	AICE_CUSTOM_CMMD_SET_TRST,
-	AICE_CUSTOM_CMMD_CLEAR_TRST,
-	AICE_CUSTOM_CMMD_DELAY,
-	AICE_CUSTOM_CMMD_WRITE_PINS,
-	AICE_CUSTOM_CMMD_T_WRITE_MISC,
-	AICE_CUSTOM_CMMD_WRITE_CTRL,
-	AICE_CUSTOM_CMMD_SCAN_CHAIN,
-	AICE_CUSTOM_CMMD_TCK_SCAN,
-	AICE_CUSTOM_CMMD_MAX,
+enum AICE_CUSTOM_CMD {
+	AICE_CUSTOM_CMD_SET_SRST = 0,
+	AICE_CUSTOM_CMD_CLEAR_SRST,
+	AICE_CUSTOM_CMD_SET_DBGI,
+	AICE_CUSTOM_CMD_CLEAR_DBGI,
+	AICE_CUSTOM_CMD_SET_TRST,
+	AICE_CUSTOM_CMD_CLEAR_TRST,
+	AICE_CUSTOM_CMD_DELAY,
+	AICE_CUSTOM_CMD_WRITE_PINS,
+	AICE_CUSTOM_CMD_T_WRITE_MISC,
+	AICE_CUSTOM_CMD_WRITE_CTRL,
+	AICE_CUSTOM_CMD_SCAN_CHAIN,
+	AICE_CUSTOM_CMD_TCK_SCAN,
+	AICE_CUSTOM_CMD_T_WRITE_EDMSR,
+	AICE_CUSTOM_CMD_T_WRITE_EDMREG,
+	AICE_CUSTOM_CMD_T_READ_EDMREG,
+	AICE_CUSTOM_CMD_READ_CTRL,
+	AICE_CUSTOM_CMD_MAX,
 };
 
-static char *custom_script_cmmd[AICE_CUSTOM_CMMD_MAX]={
+static char *custom_script_cmmd[AICE_CUSTOM_CMD_MAX]={
 	"set srst",
 	"clear srst",
 	"set dbgi",
@@ -882,6 +886,10 @@ static char *custom_script_cmmd[AICE_CUSTOM_CMMD_MAX]={
 	"write_ctrl",
 	"scan_chain",
 	"tck_scan",
+	"t_write_edmsr",
+	"t_write_edmreg",
+	"t_read_edmreg",
+	"read_ctrl",
 };
 
 int aice_usb_execute_custom_script(const char *script)
@@ -894,48 +902,62 @@ int aice_usb_execute_custom_script(const char *script)
 	uint32_t delay, i, num_of_words;
 	uint32_t Nibble1 = 0, Nibble2 = 0, write_pins_num = 0;
 	uint32_t write_ctrl_value = 0, idx = 0;
-	uint32_t target_id = 0, write_misc_addr = 0, write_misc_data = 0;
+	uint32_t target_id = 0, argv[5];
+	uint32_t write_ctrl_addr, write_ctrl_data;
+	uint32_t write_misc_addr, write_misc_data;
+	uint32_t write_edmsr_addr, write_edmsr_data;
+	uint32_t write_edm_addr, write_edm_data, write_edm_reg;
+	uint32_t read_ctrl_addr, read_ctrl_exp_data, read_ctrl_mask;
+	uint32_t read_edm_addr, read_edm_exp_data, read_edm_mask, read_edm_reg;
 	int result = ERROR_OK;
 
 	script_fd = fopen(script, "r");
 	if (script_fd == NULL) {
+		LOG_DEBUG("custom_script open file fail: %s", script);
 		return ERROR_FAIL;
 	}
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, script_fd) != NULL) {
-		for (i = 0; i < AICE_CUSTOM_CMMD_MAX; i ++) {
+		for (i = 0; i < AICE_CUSTOM_CMD_MAX; i ++) {
 			compare_str = custom_script_cmmd[i];
 			curr_str = strstr(line_buffer, compare_str);
 			if (curr_str != NULL)
 				break;
 		}
-		if (i < AICE_CUSTOM_CMMD_MAX) {
-			LOG_DEBUG("custom_script %s, %s, %d, %d", curr_str, compare_str, (int)i, (int)strlen(compare_str));
+		if (i < AICE_CUSTOM_CMD_MAX) {
+			LOG_DEBUG("custom_script %s", curr_str);
 		}
-		if (i <= AICE_CUSTOM_CMMD_DELAY) {
-			sscanf(curr_str + strlen(compare_str), " %d", &delay);
-			if (i == AICE_CUSTOM_CMMD_SET_SRST)
+		if (i <= AICE_CUSTOM_CMD_DELAY) {
+			result = sscanf(curr_str + strlen(compare_str), " %d", &delay);
+			if (result != 1) {
+				result = sscanf(curr_str + strlen(compare_str), " 0x%x", &delay);
+				if (result != 1)
+					LOG_ERROR("expected exactly one argument");
+			}
+			//LOG_DEBUG("result = %d", result);
+			//sscanf(curr_str + strlen(compare_str), " %d", &delay);
+			if (i == AICE_CUSTOM_CMD_SET_SRST)
 				write_ctrl_value = AICE_CUSTOM_DELAY_SET_SRST;
-			else if (i == AICE_CUSTOM_CMMD_CLEAR_SRST)
+			else if (i == AICE_CUSTOM_CMD_CLEAR_SRST)
 				write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_SRST;
-			else if (i == AICE_CUSTOM_CMMD_SET_DBGI)
+			else if (i == AICE_CUSTOM_CMD_SET_DBGI)
 				write_ctrl_value = AICE_CUSTOM_DELAY_SET_DBGI;
-			else if (i == AICE_CUSTOM_CMMD_CLEAR_DBGI)
+			else if (i == AICE_CUSTOM_CMD_CLEAR_DBGI)
 				write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_DBGI;
-			else if (i == AICE_CUSTOM_CMMD_SET_TRST)
+			else if (i == AICE_CUSTOM_CMD_SET_TRST)
 				write_ctrl_value = AICE_CUSTOM_DELAY_SET_TRST;
-			else if (i == AICE_CUSTOM_CMMD_CLEAR_TRST)
+			else if (i == AICE_CUSTOM_CMD_CLEAR_TRST)
 				write_ctrl_value = AICE_CUSTOM_DELAY_CLEAN_TRST;
-			else if (i == AICE_CUSTOM_CMMD_DELAY)
+			else if (i == AICE_CUSTOM_CMD_DELAY)
 				write_ctrl_value = 0;
 
 			write_ctrl_value |= (1 << 16);
-			LOG_DEBUG("custom_script aice_write_ctrl, 0x%x", write_ctrl_value);
+			LOG_DEBUG("custom_script aice_write_ctrl = 0x%x, delay = 0x%x", write_ctrl_value, delay);
 			result = aice_usb_write_ctrl(AICE_WRITE_CTRL_CUSTOM_DELAY, write_ctrl_value);
 			if (result != ERROR_OK)
 				goto aice_execute_custom_script_error;
 			alive_sleep(delay);
 		}
-		else if (i == AICE_CUSTOM_CMMD_WRITE_PINS) {
+		else if (i == AICE_CUSTOM_CMD_WRITE_PINS) {
 			sscanf(curr_str + strlen(compare_str), " %s", &tmp_buffer[0]);
 			write_pins_num = strlen(&tmp_buffer[0]);
 			LOG_DEBUG("custom_script write_pins, %d %s", write_pins_num, &tmp_buffer[0]);
@@ -962,39 +984,141 @@ int aice_usb_execute_custom_script(const char *script)
 			if (result != ERROR_OK)
 				goto aice_execute_custom_script_error;
 		}
-		else if (i == AICE_CUSTOM_CMMD_T_WRITE_MISC) {
-			sscanf(curr_str + strlen(compare_str), " %d %d %d", &target_id, &write_misc_addr, &write_misc_data);
-			LOG_DEBUG("custom_script aice_write_misc, 0x%x, 0x%x, 0x%x", target_id, write_misc_addr, write_misc_data);
-			result = aice_usb_write_edm(target_id, JDP_W_MISC_REG, write_misc_addr, (uint32_t*)&write_misc_data, 1);
-			if (result != ERROR_OK)
-				goto aice_execute_custom_script_error;
+		else if ((i == AICE_CUSTOM_CMD_T_WRITE_MISC) || (i == AICE_CUSTOM_CMD_T_WRITE_EDMSR)) {
+			result = sscanf(curr_str + strlen(compare_str), " %d %d %d", &argv[0], &argv[1], &argv[2]);
+			if (result != 3) {
+				result = sscanf(curr_str + strlen(compare_str), " 0x%x 0x%x 0x%x", &argv[0], &argv[1], &argv[2]);
+				if (result != 3)
+					LOG_ERROR("expected exactly 3 argument");
+			}
+			if (result == 3) {
+				if (i == AICE_CUSTOM_CMD_T_WRITE_MISC) {
+					target_id = argv[0];
+					write_misc_addr = argv[1];
+					write_misc_data = argv[2];
+					LOG_DEBUG("custom_script aice_write_misc, 0x%x, 0x%x, 0x%x", target_id, write_misc_addr, write_misc_data);
+					result = aice_usb_write_edm(target_id, JDP_W_MISC_REG, write_misc_addr, (uint32_t*)&write_misc_data, 1);
+					if (result != ERROR_OK)
+						goto aice_execute_custom_script_error;
+				} else if (i == AICE_CUSTOM_CMD_T_WRITE_EDMSR) {
+					target_id = argv[0];
+					write_edmsr_addr = argv[1];
+					write_edmsr_data = argv[2];
+					LOG_DEBUG("custom_script aice_write_edmsr, 0x%x, 0x%x, 0x%x", target_id, write_edmsr_addr, write_edmsr_data);
+					result = aice_usb_write_edm(target_id, JDP_W_DBG_SR, write_edmsr_addr, (uint32_t*)&write_edmsr_data, 1);
+					if (result != ERROR_OK)
+						goto aice_execute_custom_script_error;
+				}
+			}
 		}
-		else if (i == AICE_CUSTOM_CMMD_WRITE_CTRL) {
-			uint32_t write_ctrl_addr = 0, write_ctrl_data = 0;
-			sscanf(curr_str + strlen(compare_str), " %d %d", &write_ctrl_addr, &write_ctrl_data);
-			LOG_DEBUG("custom_script aice_write_ctrl, 0x%x, 0x%x", write_ctrl_addr, write_ctrl_data);
-			result = aice_usb_write_ctrl(write_ctrl_addr, write_ctrl_data);
-			if (result != ERROR_OK)
-				goto aice_execute_custom_script_error;
+		else if (i == AICE_CUSTOM_CMD_WRITE_CTRL) {
+			result = sscanf(curr_str + strlen(compare_str), " %d %d", &argv[0], &argv[1]);
+			if (result != 2) {
+				result = sscanf(curr_str + strlen(compare_str), " 0x%x 0x%x", &argv[0], &argv[1]);
+				if (result != 2)
+					LOG_ERROR("expected exactly 2 argument");
+			}
+			if (result == 2) {
+				write_ctrl_addr = argv[0];
+				write_ctrl_data = argv[1];
+				LOG_DEBUG("custom_script aice_write_ctrl, 0x%x, 0x%x", write_ctrl_addr, write_ctrl_data);
+				result = aice_usb_write_ctrl(write_ctrl_addr, write_ctrl_data);
+				if (result != ERROR_OK)
+					goto aice_execute_custom_script_error;
+			}
 		}
-		else if (i == AICE_CUSTOM_CMMD_SCAN_CHAIN) {
+		else if (i == AICE_CUSTOM_CMD_T_WRITE_EDMREG) {
+			result = sscanf(curr_str + strlen(compare_str), " %d %d %d %d", &argv[0], &argv[1], &argv[2], &argv[3]);
+			if (result != 4) {
+				result = sscanf(curr_str + strlen(compare_str), " 0x%x 0x%x 0x%x 0x%x", &argv[0], &argv[1], &argv[2], &argv[3]);
+				if (result != 4)
+					LOG_ERROR("expected exactly 4 argument");
+			}
+			if (result == 4) {
+				target_id = argv[0];
+				write_edm_reg = argv[1];
+				write_edm_addr = argv[2];
+				write_edm_data = argv[3];
+				LOG_DEBUG("custom_script aice_write_edmreg, 0x%x, 0x%x, 0x%x", write_edm_reg, write_edm_addr, write_edm_data);
+				result = aice_usb_write_edm(target_id, write_edm_reg, write_edm_addr, (uint32_t*)&write_edm_data, 1);
+				if (result != ERROR_OK)
+					goto aice_execute_custom_script_error;
+			}
+		}
+		else if (i == AICE_CUSTOM_CMD_T_READ_EDMREG) {
+			result = sscanf(curr_str + strlen(compare_str), " %d %d %d %d %d", &argv[0], &argv[1], &argv[2], &argv[3], &argv[4]);
+			if (result != 5) {
+				result = sscanf(curr_str + strlen(compare_str), " 0x%x 0x%x 0x%x 0x%x 0x%x", &argv[0], &argv[1], &argv[2], &argv[3], &argv[4]);
+				if (result != 5)
+					LOG_ERROR("expected exactly 5 argument");
+			}
+			if (result == 5) {
+				target_id = argv[0];
+				read_edm_reg = argv[1];
+				read_edm_addr = argv[2];
+				read_edm_mask = argv[3];
+				read_edm_exp_data = argv[4];
+				LOG_DEBUG("custom_script aice_read_edm, 0x%x, 0x%x, 0x%x, 0x%x", read_edm_reg, read_edm_addr, read_edm_mask, read_edm_exp_data);
+				uint32_t get_edm_data=0;
+				i = 0;
+				while (1) {
+					aice_usb_read_edm(target_id, read_edm_reg, read_edm_addr, (uint32_t*)&get_edm_data, 1);
+					if ((get_edm_data & read_edm_mask) == read_edm_exp_data) {
+						break;
+					}
+					if (i > aice_count_to_check_dbger)
+						break;
+					alive_sleep(1);
+					i++;
+				}
+			}
+		}
+		else if (i == AICE_CUSTOM_CMD_READ_CTRL) {
+			result = sscanf(curr_str + strlen(compare_str), " %d %d %d", &argv[0], &argv[1], &argv[2]);
+			if (result != 3) {
+				result = sscanf(curr_str + strlen(compare_str), " 0x%x 0x%x 0x%x", &argv[0], &argv[1], &argv[2]);
+				if (result != 3)
+					LOG_ERROR("expected exactly 3 argument");
+			}
+			if (result == 3) {
+				read_ctrl_addr = argv[0];
+				read_ctrl_mask = argv[1];
+				read_ctrl_exp_data = argv[2];
+				LOG_DEBUG("custom_script aice_read_ctrl, 0x%x, 0x%x, 0x%x", read_ctrl_addr, read_ctrl_mask, read_ctrl_exp_data);
+				uint32_t get_ctrl_data=0;
+				i = 0;
+				while (1) {
+					aice_usb_read_ctrl(read_ctrl_addr, &get_ctrl_data);
+					if ((get_ctrl_data & read_ctrl_mask) == read_ctrl_exp_data) {
+						break;
+					}
+					if (i > aice_count_to_check_dbger)
+						break;
+					alive_sleep(1);
+					i++;
+				}
+			}
+		}
+		else if (i == AICE_CUSTOM_CMD_SCAN_CHAIN) {
 			unsigned int id_codes[16];
 			aice_access_cmmd(AICE_CMDIDX_SCAN_CHAIN, 0, 0, (unsigned char *)&id_codes[0], 16);
-			LOG_DEBUG("scan_chain, id_codes = %x", id_codes[0]);
+			LOG_DEBUG("custom_script scan_chain, id_codes = %x", id_codes[0]);
 			//alive_sleep(100);
 		}
-		else if (i == AICE_CUSTOM_CMMD_TCK_SCAN) {
+		else if (i == AICE_CUSTOM_CMD_TCK_SCAN) {
 			aice_usb_write_ctrl(AICE_WRITE_CTRL_TCK_CONTROL, AICE_TCK_CONTROL_TCK_SCAN);
-			LOG_DEBUG("tck_scan");
+			LOG_DEBUG("custom_script tck_scan");
 			//alive_sleep(100);
+		}
+		else {
+			LOG_DEBUG("custom_script unknown command: %s", line_buffer);
 		}
 	}
-
 	fclose(script_fd);
-	return result;
+	return ERROR_OK;
 
 aice_execute_custom_script_error:
-    LOG_ERROR("<-- Issue custom_script '%s' failed, abandon continue -->", curr_str);
+	LOG_DEBUG("<-- Issue custom_script '%s' failed, abandon continue -->", curr_str);
 	fclose(script_fd);
 	return result;
 }
