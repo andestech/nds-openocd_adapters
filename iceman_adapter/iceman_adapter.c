@@ -41,6 +41,7 @@
 #define LONGOPT_CP2     9
 #define LONGOPT_CP3     10
 #define LONGOPT_USE_SDM   11
+#define LONGOPT_AICE_INIT   12
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -50,6 +51,7 @@ struct option long_option[] = {
 	{"cp2reg", required_argument, &long_opt_flag, LONGOPT_CP2},
 	{"cp3reg", required_argument, &long_opt_flag, LONGOPT_CP3},
 	{"use-sdm", no_argument, &long_opt_flag, LONGOPT_USE_SDM},
+	{"custom-aice-initial", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -194,6 +196,7 @@ static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_V3};
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
 static const char *custom_restart_script = NULL;
+static const char *custom_initial_script = NULL;
 static const char *aceconf_desc_list = NULL;
 static int diagnosis = 0;
 static int diagnosis_memory = 0;
@@ -318,6 +321,7 @@ static void show_usage(void) {
 	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
+	printf("--custom-aice-initial (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
 static int parse_param(int a_argc, char **a_argv) {
@@ -350,6 +354,8 @@ static int parse_param(int a_argc, char **a_argv) {
 						}
 				} else if (long_opt == LONGOPT_USE_SDM) {
 					use_sdm = 1;
+				} else if (long_opt == LONGOPT_AICE_INIT) {
+					custom_initial_script = optarg;
 				}
 
 				break;
@@ -880,6 +886,9 @@ static void update_interface_cfg(void)
 	}
 	if (custom_restart_script) {
 		fprintf(interface_cfg, "aice custom_restart_script %s\n", custom_restart_script);
+	}
+	if (custom_initial_script) {
+		fprintf(interface_cfg, "aice custom_initial_script %s\n", custom_initial_script);
 	}
 	if (startup_reset_halt) {
 		if (soft_reset_halt)
