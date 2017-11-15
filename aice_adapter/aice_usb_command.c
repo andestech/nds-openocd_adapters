@@ -1040,7 +1040,7 @@ int aice_usb_execute_custom_script(const char *script)
 				write_edm_addr = argv[2];
 				write_edm_data = argv[3];
 				LOG_DEBUG("custom_script aice_write_edmreg, 0x%x, 0x%x, 0x%x", write_edm_reg, write_edm_addr, write_edm_data);
-				result = aice_usb_write_edm(target_id, write_edm_reg, write_edm_addr, (uint32_t*)&write_edm_data, 1);
+				result = aice_usb_write_edm(target_id, write_edm_reg|JDP_WRITE, write_edm_addr, (uint32_t*)&write_edm_data, 1);
 				if (result != ERROR_OK)
 					goto aice_execute_custom_script_error;
 			}

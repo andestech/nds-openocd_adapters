@@ -51,7 +51,7 @@ struct option long_option[] = {
 	{"cp2reg", required_argument, &long_opt_flag, LONGOPT_CP2},
 	{"cp3reg", required_argument, &long_opt_flag, LONGOPT_CP3},
 	{"use-sdm", no_argument, &long_opt_flag, LONGOPT_USE_SDM},
-	{"custom-aice-initial", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
+	{"custom-aice-init", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -321,7 +321,7 @@ static void show_usage(void) {
 	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
-	printf("--custom-aice-initial (Only for V3):\t\tUse custom script to do aice-initialization\n");
+	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
 static int parse_param(int a_argc, char **a_argv) {
