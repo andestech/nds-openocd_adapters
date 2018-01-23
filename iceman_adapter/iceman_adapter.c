@@ -24,6 +24,10 @@
 #define ICEMAN_VERSION     "v4.2.0"
 #define NDS32_USER_CFG     "nds32_user.cfg"
 
+#define MAX_LEN_ACECONF_NAME 2048
+#define TOSTR(x)	#x
+#define XTOSTR(x)	TOSTR(x)
+
 #ifdef __GNUC__
 #  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
 #else
@@ -812,6 +816,43 @@ static void update_openocd_cfg_v5(void)
 
 	if (startup_reset_halt == 1)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
+
+  // Handle ACE option
+  // Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
+  //       the path of conf or library and write the path to openocd_cfg
+  if (aceconf_desc_list) {
+    const char *aceconf_desc;
+    unsigned int core_id =0, read_byte = 0;
+    char aceconf[MAX_LEN_ACECONF_NAME + 1];
+    int ret;
+
+    aceconf_desc = aceconf_desc_list;
+    while (1) {
+      aceconf[0] = '\0';
+			core_id = 0;
+			ret = 0;
+
+			ret = sscanf(aceconf_desc, "core%u=%" XTOSTR(MAX_LEN_ACECONF_NAME) "[^,]%n",
+                   &core_id, aceconf, &read_byte);
+      if (ret != 2) {
+        printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
+        break;
+      }
+          
+      // Output the path of conf or library to V5 conf
+      // e.g.,     nds ace aceconf_path /home/wuiw/openocd/r6/lib/libacedbg.so
+      //       or  nds ace aceconf_path /home/wuiw/openocd/r6/lib/ICEman.conf
+      // OpenOCD will parse this command in V5 conf to load the shared library
+      fprintf(openocd_cfg, "nds ace aceconf_path %s\n", aceconf);
+
+		  /* TODO: support multi core */
+			aceconf_desc += read_byte;	/* aceconf points to ',' or '\0' */
+      if (*aceconf_desc == '\0')
+        break;
+      else
+        aceconf_desc += 1;	/* point to the one next to ',' */
+    }
+  }
 }
 
 static void update_openocd_cfg(void)
@@ -938,9 +979,6 @@ static void update_target_cfg(void)
 	}
 }
 
-#define MAX_LEN_ACECONF_NAME 2048
-#define TOSTR(x)	#x
-#define XTOSTR(x)	TOSTR(x)
 static void update_board_cfg(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
