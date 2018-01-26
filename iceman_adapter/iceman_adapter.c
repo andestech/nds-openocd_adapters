@@ -40,12 +40,13 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-#define LONGOPT_CP0     7
-#define LONGOPT_CP1     8
-#define LONGOPT_CP2     9
-#define LONGOPT_CP3     10
-#define LONGOPT_USE_SDM   11
-#define LONGOPT_AICE_INIT   12
+#define LONGOPT_CP0		7
+#define LONGOPT_CP1		8
+#define LONGOPT_CP2		9
+#define LONGOPT_CP3		10
+#define LONGOPT_USE_SDM		11
+#define LONGOPT_AICE_INIT	12
+#define LONGOPT_L2C		13
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -56,6 +57,7 @@ struct option long_option[] = {
 	{"cp3reg", required_argument, &long_opt_flag, LONGOPT_CP3},
 	{"use-sdm", no_argument, &long_opt_flag, LONGOPT_USE_SDM},
 	{"custom-aice-init", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
+	{"l2c", required_argument, &long_opt_flag, LONGOPT_L2C},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -79,7 +81,7 @@ struct option long_option[] = {
 	{"soft-reset-hold", optional_argument, 0, 'K'},
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
-    {"edm-dimb", required_argument, 0, 'M'},
+	{"edm-dimb", required_argument, 0, 'M'},
 	{"custom-restart", required_argument, 0, 'N'},
 	{"reset-time", required_argument, 0, 'o'},
 	{"edm-port-operation", required_argument, 0, 'O'},
@@ -220,6 +222,9 @@ static const char *log_output = NULL;
 static unsigned int edm_dimb = DIMBR_DEFAULT;
 static unsigned int use_sdm = 0;
 
+#define L2C_BASE (0x90F00000u)
+static unsigned int l2c_base = L2C_BASE;
+
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
 	printf("Copyright (C) 2007-2017 Andes Technology Corporation\n");
@@ -325,6 +330,7 @@ static void show_usage(void) {
 	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
+	printf("--l2c:<Address>:\t\tIndicate the base address of L2C\n");
 	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
@@ -360,6 +366,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					use_sdm = 1;
 				} else if (long_opt == LONGOPT_AICE_INIT) {
 					custom_initial_script = optarg;
+				} else if (long_opt == LONGOPT_L2C) {
+					sscanf(optarg, "0x%x", &l2c_base);
 				}
 
 				break;
@@ -942,6 +950,9 @@ static void update_interface_cfg(void)
 	}
 	if (edm_dimb != DIMBR_DEFAULT) {
 		fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
+	}
+	if (l2c_base != L2C_BASE) {
+		fprintf(interface_cfg, "aice l2c_base 0x%x\n", l2c_base);
 	}
 	unsigned int i;
 
