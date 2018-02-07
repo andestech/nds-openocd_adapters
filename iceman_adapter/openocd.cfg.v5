@@ -32,6 +32,7 @@ nds configure jtag_max_scans 64
 nds configure dis_condition_break
 nds configure wip_bytes_per_dot 0x2000
 nds configure dmi_quick_access 1
+#nds configure use_script
 
 #nds reset_memAccSize
 #nds memAccSize 0x00000000 0x80000000 32
