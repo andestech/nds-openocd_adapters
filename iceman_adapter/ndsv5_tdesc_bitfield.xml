@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE target SYSTEM "gdb-target.dtd">
 <target version="1.0">
-<feature name="org.gnu.gdb.riscv.cpu">
+<feature name="org.gnu.gdb.riscv.csr">
 
 <enum id="levels_type" size="4">
 <evalue name="low" value="0"/>
@@ -239,16 +239,16 @@
 <field name="subtype" start="8" end="15" type="uint32"/>
 </struct>
 
-<reg name="csr1953" bitsize="32" type="reg_tdata1"/>
-<reg name="csr1968" bitsize="32" type="reg_dcsr"/>
+<reg name="tdata1" bitsize="32" type="reg_tdata1"/>
+<reg name="dcsr" bitsize="32" type="reg_dcsr"/>
 <reg name="priv" bitsize="8" type="reg_priv"/>
-<reg name="csr768" bitsize="32" type="reg_mstatus"/>
-<reg name="csr769" bitsize="32" type="reg_misa"/>
-<reg name="csr772" bitsize="32" type="reg_mie"/>
-<reg name="csr836" bitsize="32" type="reg_mip"/>
-<reg name="csr834" bitsize="32" type="reg_mcause"/>
-<reg name="csr2016" bitsize="32" type="reg_dexc2dbg"/>
-<reg name="csr2017" bitsize="32" type="reg_ddcause"/>
+<reg name="mstatus" bitsize="32" type="reg_mstatus"/>
+<reg name="misa" bitsize="32" type="reg_misa"/>
+<reg name="mie" bitsize="32" type="reg_mie"/>
+<reg name="mip" bitsize="32" type="reg_mip"/>
+<reg name="mcause" bitsize="32" type="reg_mcause"/>
+<reg name="dexc2dbg" bitsize="32" type="reg_dexc2dbg"/>
+<reg name="ddcause" bitsize="32" type="reg_ddcause"/>
 
 </feature>
 </target>
