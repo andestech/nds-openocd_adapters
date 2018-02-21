@@ -7,6 +7,7 @@ openocd_cfgdir = $(bindir)
 dist_openocd_cfg_DATA = openocd.cfg.v5 openocd.cfg.tpl sw-reset-seq.tpl reset-hold-script.tpl nds32_tdesc_bitfield.xml ndsv5_tdesc_bitfield.xml
 dist_openocd_cfg_DATA += ndsv5_tdesc_bitfield_64.xml
 dist_openocd_cfg_DATA += algorithm.bin
+dist_openocd_cfg_DATA += dmi.tcl
 
 openocd_boardcfgdir = $(bindir)/board
 dist_openocd_boardcfg_DATA = board/nds32_xc5.cfg.tpl
