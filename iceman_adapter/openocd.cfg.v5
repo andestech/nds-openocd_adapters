@@ -1,6 +1,6 @@
 adapter_nsrst_delay 500
 
-source [find interface/olimex-arm-usb-tiny-h.cfg]
+##INTERFACE_REPLACE##
 reset_config srst_only
 source [find dmi.tcl]
 set _create_multi_targets   1

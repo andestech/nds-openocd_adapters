@@ -49,7 +49,7 @@
 #define LONGOPT_L2C		13
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
-const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
+const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
 	{"cp0reg", required_argument, &long_opt_flag, LONGOPT_CP0},
 	{"cp1reg", required_argument, &long_opt_flag, LONGOPT_CP1},
@@ -75,6 +75,7 @@ struct option long_option[] = {
 	{"enable-global-stop", no_argument, 0, 'G'},
 	{"help", no_argument, 0, 'h'},
 	{"reset-hold", no_argument, 0, 'H'},
+	{"interface", required_argument, 0, 'I'},
 	//{"enable-virtual-hosting", no_argument, 0, 'j'},
 	//{"disable-virtual-hosting", no_argument, 0, 'J'},
 	{"word-access-mem", no_argument, 0, 'k'},
@@ -217,6 +218,7 @@ static void parse_edm_operation(const char *edm_operation);
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 static const char *log_output = NULL;
+static const char *custom_interface = NULL;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
@@ -285,6 +287,7 @@ static void show_usage(void) {
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
 	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
 	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
+	printf("-I, --interface:\tSource interface config. The interface config must place in ice/interface folder!!\n");
 	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
 	printf("-K, --soft-reset-hold (Only for V3):\tUse soft reset-and-hold\n");
 	printf("-l, --custom-srst (Only for V3):\tUse custom script to do SRST\n");
@@ -422,6 +425,9 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'H':
 				startup_reset_halt = 1;
+				break;
+			case 'I':
+				custom_interface = optarg;	
 				break;
 			case 'k':
 				word_access_mem = 1;
@@ -807,8 +813,16 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 	fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
 
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
+		if( strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0 ) {	/// interface
+			if( custom_interface != NULL )
+				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
+			else
+				fprintf(openocd_cfg, "source [find interface/olimex-arm-usb-tiny-h.cfg]\n");
+			continue;
+		}
 		fputs(line_buffer, openocd_cfg);
+	}
 
 	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
 	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
