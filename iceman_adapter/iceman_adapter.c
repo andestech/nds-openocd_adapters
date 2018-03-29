@@ -47,6 +47,7 @@
 #define LONGOPT_USE_SDM		11
 #define LONGOPT_AICE_INIT	12
 #define LONGOPT_L2C		13
+#define LONGOPT_DMI_DELAY	14
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -58,6 +59,7 @@ struct option long_option[] = {
 	{"use-sdm", no_argument, &long_opt_flag, LONGOPT_USE_SDM},
 	{"custom-aice-init", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
 	{"l2c", required_argument, &long_opt_flag, LONGOPT_L2C},
+	{"dmi_busy_delay_count", required_argument, &long_opt_flag, LONGOPT_DMI_DELAY},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -226,6 +228,7 @@ static unsigned int use_sdm = 0;
 
 #define L2C_BASE (0x90F00000u)
 static unsigned int l2c_base = L2C_BASE;
+static unsigned int dmi_busy_delay_count = 0;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
@@ -371,6 +374,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					custom_initial_script = optarg;
 				} else if (long_opt == LONGOPT_L2C) {
 					sscanf(optarg, "0x%x", &l2c_base);
+				} else if (long_opt == LONGOPT_DMI_DELAY) {
+					sscanf(optarg, "%d", &dmi_busy_delay_count);
 				}
 
 				break;
@@ -838,6 +843,9 @@ static void update_openocd_cfg_v5(void)
 
 	if (startup_reset_halt == 1)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
+
+	if (dmi_busy_delay_count != 0)
+		fprintf(openocd_cfg, "nds dmi_busy_delay_count %d\n", dmi_busy_delay_count);
 
   // Handle ACE option
   // Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
