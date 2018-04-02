@@ -847,6 +847,15 @@ static void update_openocd_cfg_v5(void)
 	if (dmi_busy_delay_count != 0)
 		fprintf(openocd_cfg, "nds dmi_busy_delay_count %d\n", dmi_busy_delay_count);
 
+	if (custom_srst_script) {
+		fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
+	}
+	if (custom_trst_script) {
+		fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
+	}
+	if (custom_restart_script) {
+		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
+	}
   // Handle ACE option
   // Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
   //       the path of conf or library and write the path to openocd_cfg
