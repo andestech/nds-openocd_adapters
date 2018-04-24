@@ -240,15 +240,15 @@
 <field name="prv" start="0" end="1" type="dcsr_prv"/>
 </struct>
 
-<reg name="tdata1" bitsize="64" type="reg_tdata1"/>
-<reg name="dcsr" bitsize="64" type="reg_dcsr"/>
-<reg name="mstatus" bitsize="64" type="reg_mstatus"/>
-<reg name="misa" bitsize="64" type="reg_misa"/>
-<reg name="mie" bitsize="64" type="reg_mie"/>
-<reg name="mip" bitsize="64" type="reg_mip"/>
-<reg name="mcause" bitsize="64" type="reg_mcause"/>
-<reg name="dexc2dbg" bitsize="64" type="reg_dexc2dbg"/>
-<reg name="ddcause" bitsize="64" type="reg_ddcause"/>
+<reg name="csr1953" bitsize="64" type="reg_tdata1"/>
+<reg name="csr1968" bitsize="64" type="reg_dcsr"/>
+<reg name="csr768" bitsize="64" type="reg_mstatus"/>
+<reg name="csr769" bitsize="64" type="reg_misa"/>
+<reg name="csr772" bitsize="64" type="reg_mie"/>
+<reg name="csr836" bitsize="64" type="reg_mip"/>
+<reg name="csr834" bitsize="64" type="reg_mcause"/>
+<reg name="csr2016" bitsize="64" type="reg_dexc2dbg"/>
+<reg name="csr2017" bitsize="64" type="reg_ddcause"/>
 <reg name="priv" bitsize="8" type="reg_priv"/>
 </feature>
 
