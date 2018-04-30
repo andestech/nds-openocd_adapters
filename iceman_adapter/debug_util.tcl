@@ -23,8 +23,8 @@ proc init_dmi {tap} {
 	set DTM_IR_IDCODE	0x1
 	set ANDES_JDTM_IDCODE	0x1000563d
 
-	irscan target.dtm $DTM_IR_IDCODE
-	scan [drscan target.dtm 32 0] "%x" idcode
+	irscan $tap $DTM_IR_IDCODE
+	scan [drscan $tap 32 0] "%x" idcode
 	assert {[expr $idcode eq $ANDES_JDTM_IDCODE]} [format "IDCODE 0x%x is not expected Andes JDTM IDCODE (0x%x)]" $idcode $ANDES_JDTM_IDCODE]
 
 	irscan $tap $DTM_IR_DTMCS
@@ -134,7 +134,7 @@ proc reset_dm {tap} {
 	write_dmi_dmcontrol $tap 0x1
 
 	# check dmstatus
-	set dmstatus [read_dmi_dmstatus target.dtm]
+	set dmstatus [read_dmi_dmstatus $tap]
 
 	set dmstatus_version [expr $dmstatus&0xF]
 	set dmstatus_authenticated [expr ($dmstatus>>7)&0x1]
@@ -262,7 +262,7 @@ proc resume_hart {tap hartsel} {
 proc scan_harts {tap} {
 	set MAX_NHARTS 16
 	for {set hartsel 0} {$hartsel < $MAX_NHARTS} {incr $hartsel} {
-		if {[select_single_hart target.dtm $hartsel]} {
+		if {[select_single_hart $tap $hartsel]} {
 			break;
 		}
 		set dmstatus [read_dmi_dmstatus $tap]
@@ -284,7 +284,7 @@ proc scan_harts {tap} {
 		assert {$dmstatus_anynonexistent == $dmstatus_allnonexistent}
 		assert {$dmstatus_anyhavereset == $dmstatus_allhavereset}
 
-		set hartinfo [read_dmi_hartinfo target.dtm]
+		set hartinfo [read_dmi_hartinfo $tap]
 		set hartinfo_datasize [expr ($hartinfo >> 12) & 0xF]
 		set hartinfo_nscratch [expr ($hartinfo >> 20) & 0xF]
 
@@ -314,7 +314,7 @@ proc reset_and_halt_all_harts {tap} {
 			break;
 		}
 
-		set dmstatus [read_dmi_dmstatus target.dtm]
+		set dmstatus [read_dmi_dmstatus $tap]
 		set dmstatus_anynonexistent [expr ($dmstatus>>14)&0x1]
 
 		if {$dmstatus_anynonexistent} {

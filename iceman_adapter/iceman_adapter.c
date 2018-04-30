@@ -175,7 +175,7 @@ int resume_sequences_num = 0;
 
 extern struct EDM_OPERATIONS nds32_edm_ops[];
 extern uint32_t nds32_edm_ops_num;
-
+extern uint32_t nds_skip_dmi;
 
 static char *memory_stop_sequence = NULL;
 static char *memory_resume_sequence = NULL;
@@ -793,6 +793,27 @@ static void update_gdb_port_num(void)
 	//printf("total_num_of_ports %x, gdb_port=%x\n", total_num_of_ports, gdb_port[0]);
 }
 
+static void update_debug_diag_v5(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
+	FILE *debug_diag_tcl = NULL;
+	FILE *debug_diag_tcl_new = NULL;
+
+	debug_diag_tcl = fopen("debug_diag.tcl", "r");
+	debug_diag_tcl_new = fopen("debug_diag_new.tcl", "w");
+	if (debug_diag_tcl == NULL) {
+		fprintf(stderr, "ERROR: No debug_diag file, debug_diag.tcl\n");
+		exit(-1);
+	}
+	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
+
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL) {
+		fputs(line_buffer, debug_diag_tcl_new);
+	}
+	fclose(debug_diag_tcl_new);
+	fclose(debug_diag_tcl);
+}
+
 static void update_openocd_cfg_v5(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
@@ -834,8 +855,8 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
 	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
-	if (diagnosis)
-		fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+	//if (diagnosis)
+	//	fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
 	if (count_to_check_dbger)
 		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
 
@@ -1238,6 +1259,16 @@ int main(int argc, char **argv) {
 
 	/* reset "optind", for the next getopt_long() usage */
 	optind = 1;
+
+	if ((target_type[0] == TARGET_V5) && (diagnosis == 1)) {
+		update_debug_diag_v5();
+		nds_skip_dmi = 1;
+		openocd_argv[2] = "-f";
+		openocd_argv[3] = "debug_diag_new.tcl";
+		openocd_main(4, openocd_argv);
+		return 0;
+	}
+
 	openocd_main(2, openocd_argv);
 	//printf("return from openocd_main WOW!\n");
 	return 0;
