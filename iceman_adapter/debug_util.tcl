@@ -260,6 +260,7 @@ proc resume_hart {tap hartsel} {
 }
 
 proc scan_harts {tap} {
+	set scan_hart_nums 0
 	set MAX_NHARTS 16
 	for {set hartsel 0} {$hartsel < $MAX_NHARTS} {incr $hartsel} {
 		if {[select_single_hart $tap $hartsel]} {
@@ -292,8 +293,9 @@ proc scan_harts {tap} {
 			break;
 		}
 		print_info [format "Hart %d dmstatus=0x%x (halted=%d, running=%d, unavail=%d, havereset=%d, datasize=%d, nscratch=%d)" $hartsel $dmstatus $dmstatus_anyhalted $dmstatus_anyrunning $dmstatus_anyunavail $dmstatus_anyhavereset $hartinfo_datasize $hartinfo_nscratch]
+		set scan_hart_nums [expr $scan_hart_nums + 1]
 	}
-
+	return $scan_hart_nums
 }
 
 proc reset_and_halt_all_harts {tap} {
