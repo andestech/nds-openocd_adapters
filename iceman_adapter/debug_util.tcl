@@ -140,9 +140,9 @@ proc reset_dm {tap} {
 	set dmstatus_authenticated [expr ($dmstatus>>7)&0x1]
 	set dmstatus_impebreak [expr ($dmstatus>>22)&0x1]
 
-	print_info [format "dmstatus=0x%x" $dmstatus]
-	print_info [format "\tversion=0x%x" $dmstatus_version]
-	print_info [format "\timpebreak=0x%x" $dmstatus_impebreak]
+	#print_info [format "dmstatus=0x%x" $dmstatus]
+	#print_info [format "\tversion=0x%x" $dmstatus_version]
+	#print_info [format "\timpebreak=0x%x" $dmstatus_impebreak]
 
 }
 
@@ -292,7 +292,7 @@ proc scan_harts {tap} {
 		if {$dmstatus_anynonexistent} {
 			break;
 		}
-		print_info [format "Hart %d dmstatus=0x%x (halted=%d, running=%d, unavail=%d, havereset=%d, datasize=%d, nscratch=%d)" $hartsel $dmstatus $dmstatus_anyhalted $dmstatus_anyrunning $dmstatus_anyunavail $dmstatus_anyhavereset $hartinfo_datasize $hartinfo_nscratch]
+		#print_info [format "Hart %d dmstatus=0x%x (halted=%d, running=%d, unavail=%d, havereset=%d, datasize=%d, nscratch=%d)" $hartsel $dmstatus $dmstatus_anyhalted $dmstatus_anyrunning $dmstatus_anyunavail $dmstatus_anyhavereset $hartinfo_datasize $hartinfo_nscratch]
 		set scan_hart_nums [expr $scan_hart_nums + 1]
 	}
 	return $scan_hart_nums
