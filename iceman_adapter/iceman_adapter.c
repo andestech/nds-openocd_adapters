@@ -873,7 +873,7 @@ static void update_openocd_cfg_v5(void)
 			if( custom_interface != NULL )
 				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 			else
-				fprintf(openocd_cfg, "source [find interface/olimex-arm-usb-tiny-h.cfg]\n");
+				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 			continue;
 		}
 		fputs(line_buffer, openocd_cfg);
