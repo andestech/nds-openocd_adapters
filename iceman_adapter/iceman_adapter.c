@@ -221,6 +221,7 @@ extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 static const char *log_output = NULL;
 static const char *custom_interface = NULL;
+static unsigned int efreq_range = 0;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
@@ -257,6 +258,8 @@ static void show_usage(void) {
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
 	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
 	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
+	printf("\t\t\tAICE-2 support extended TCK frequency range\n");
+	printf("\t\t\t\tUsage: -c <clock range>Hz/KHz/MHz\n");
 
 	// V5
 	printf("-c, --clock (For V5):\t\tSpecify JTAG clock setting\n");
@@ -348,7 +351,9 @@ static int parse_param(int a_argc, char **a_argv) {
 		char tmpchar = 0;
 		int long_opt = 0;
 		uint32_t cop_nums = 0;
+		char tmpstr[10] = {0};
 		//uint32_t ms_check_dbger = 0;
+		int i;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
 
@@ -392,12 +397,36 @@ static int parse_param(int a_argc, char **a_argv) {
 				boot_code_debug = 1;
 				break;
 			case 'c':
+				sscanf(optarg, "%u%s", &efreq_range, &tmpstr);
+				if( strlen(tmpstr) != 0 ) {
+					for( i = 0; i < strlen(tmpstr); i++ )
+						tmpstr[i] = tolower(tmpstr[i]);
+
+					if( strncmp(tmpstr, "hz", 2)  == 0 )
+						;
+					else if( strncmp(tmpstr, "khz", 3) == 0 ) 
+						efreq_range *= 1000;
+					else if( strncmp(tmpstr, "mhz", 3) == 0 )
+						efreq_range *= 1000 * 1000;
+
+					if( efreq_range < 1 ||
+					    efreq_range > (48*1000*1000) ) {
+
+						printf("Unsupport efreq range!!\n");
+						return ERROR_FAIL;
+					}
+
+					break;
+				}
+
+				efreq_range = 0;
 				clock_setting = strtol(optarg, NULL, 0);
 				if ((clock_setting < 0) ||
-					(clock_setting > 15)) {
+				    (clock_setting > 15)   ) {
 					printf("-c %d is an invalid option, the valid range for '-c' is 0-15.\n", clock_setting);
 					return ERROR_FAIL;
 				}
+
 				break;
 			case 'C':
 				sscanf(optarg, "%u%c", &count_to_check_dbger, &tmpchar);
@@ -968,7 +997,12 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 	if (diagnosis)
 		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
-	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
+	
+	if( efreq_range != 0 ) {
+		fprintf(interface_cfg, "aice efreq_hz %d\n", efreq_range);
+		fprintf(interface_cfg, "adapter_khz 0\n");
+	} else
+		fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
 	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
