@@ -233,7 +233,7 @@ static unsigned int dmi_busy_delay_count = 0;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
-	printf("Copyright (C) 2007-2017 Andes Technology Corporation\n");
+	printf("Copyright (C) 2007-2018 Andes Technology Corporation\n");
 }
 
 static void show_srccode_ver(void) {
