@@ -23,10 +23,10 @@
 <evalue name="instruction count trigger" value="3"/>
 </enum>
 <struct id="reg_tdata1" size="8">
-<field name="" start="0" end="31" type="uint32"/>
-<field name="data" start="0" end="26" type="uint32"/>
-<field name="dmode" start="27" end="27" type="tdata1_dmode"/>
-<field name="type" start="28" end="31" type="tdata1_type"/>
+<field name="" start="0" end="63" type="uint64"/>
+<field name="data" start="0" end="58" type="uint64"/>
+<field name="dmode" start="59" end="59" type="tdata1_dmode"/>
+<field name="type" start="60" end="63" type="tdata1_type"/>
 </struct>
 
 <enum id="dcsr_xdebugver" size="8">
@@ -93,15 +93,17 @@
 <field name="MPRV" start="17" end="17"/>
 <field name="PUM" start="18" end="18"/>
 <field name="MXR" start="19" end="19"/>
-<field name="SD" start="31" end="31"/>
+<field name="SD" start="63" end="63"/>
 </flags>
 <struct id="reg_mstatus" size="8">
-<field name="" start="0" end="31" type="mstatus_flags"/>
+<field name="" start="0" end="63" type="mstatus_flags"/>
 <field name="HPP" start="9" end="10" type="uint32"/>
 <field name="MPP" start="11" end="12" type="uint32"/>
 <field name="FS" start="13" end="14" type="mstatus_FS"/>
 <field name="XS" start="15" end="16" type="mstatus_XS"/>
 <field name="VM" start="24" end="28" type="uint32"/>
+<field name="UXL" start="32" end="33" type="misa_base"/>
+<field name="SXL" start="34" end="35" type="misa_base"/>
 </struct>
 
 <flags id="misa_extensions" size="8">
@@ -138,8 +140,8 @@
 <evalue name="RV128" value="3"/>
 </enum>
 <struct id="reg_misa" size="8">
-<field name="" start="0" end="31" type="misa_extensions"/>
-<field name="base" start="30" end="31" type="misa_base"/>
+<field name="" start="0" end="63" type="misa_extensions"/>
+<field name="base" start="62" end="63" type="misa_base"/>
 </struct>
 
 <flags id="mie_flags" size="8">
@@ -157,7 +159,7 @@
 <field name="MEIE" start="11" end="11"/>
 </flags>
 <struct id="reg_mie" size="8">
-<field name="" start="0" end="31" type="mie_flags"/>
+<field name="" start="0" end="63" type="mie_flags"/>
 </struct>
 
 <flags id="mip_flags" size="8">
@@ -175,7 +177,7 @@
 <field name="MEIP" start="11" end="11"/>
 </flags>
 <struct id="reg_mip" size="8">
-<field name="" start="0" end="31" type="mip_flags"/>
+<field name="" start="0" end="63" type="mip_flags"/>
 </struct>
 
 <enum id="mcause_exception" size="8">
@@ -193,7 +195,8 @@
 <evalue name="Environment call from M-mode" value="11"/>
 </enum>
 <struct id="reg_mcause" size="8">
-<field name="" start="0" end="31" type="mcause_exception"/>
+<field name="Exception" start="0" end="62" type="mcause_exception"/>
+<field name="Interrupt" start="63" end="63" type="uint32"/>
 </struct>
 
 <flags id="dexc2dbg_flags" size="8">
@@ -211,7 +214,7 @@
 <field name="MEC" start="11" end="11"/>
 </flags>
 <struct id="reg_dexc2dbg" size="8">
-<field name="" start="0" end="31" type="dexc2dbg_flags"/>
+<field name="" start="0" end="63" type="dexc2dbg_flags"/>
 </struct>
 
 <enum id="ddcause_maintype" size="8">
@@ -230,7 +233,7 @@
 <evalue name="M-mode Environment Call" value="12"/>
 </enum>
 <struct id="reg_ddcause" size="8">
-<field name="" start="0" end="31" type="uint32"/>
+<field name="" start="0" end="63" type="uint64"/>
 <field name="maintype" start="0" end="7" type="ddcause_maintype"/>
 <field name="subtype" start="8" end="15" type="uint32"/>
 </struct>
