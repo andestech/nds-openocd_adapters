@@ -1223,6 +1223,85 @@ static void update_board_cfg(void)
 	}
 }
 
+static void update_board_cfg_v5(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
+	int coreid;
+	int i;
+
+	board_cfg_tpl = fopen("board/nds_v5.cfg.tpl", "r");
+	board_cfg = fopen("board/nds_v5.cfg", "w");
+	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
+		fprintf(stderr, "ERROR: No board config file, nds_v5.cfg\n");
+		exit(-1);
+	}
+
+	/* update nds_v5.cfg */
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
+		fputs(line_buffer, board_cfg);
+	}
+	fputs("\n", board_cfg);
+
+	/* open sw-reset-seq.txt */
+	FILE *sw_reset_fd = NULL;
+	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
+	if (sw_reset_fd != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL) {
+			parse_mem_operation(line_buffer);
+		}
+		fclose(sw_reset_fd);
+	}
+	if (memory_stop_sequence) {
+		parse_mem_operation(memory_stop_sequence);
+	}
+	if (memory_resume_sequence) {
+		parse_mem_operation(memory_resume_sequence);
+	}
+
+	for (i = 0 ; i < stop_sequences_num ; i++) {
+		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
+	}
+
+	for (coreid = 0; coreid < 1; coreid++) {
+		if (stop_sequences_num > 0) {
+			fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			for (i = 0 ; i < stop_sequences_num ; i++) {
+				int stop_addr, stop_mask, stop_data;
+				stop_addr = stop_sequences[i].address;
+				stop_mask = stop_sequences[i].mask;
+				stop_data = stop_sequences[i].data;
+				fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_addr);
+				fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_addr, stop_addr);
+				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
+				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
+			}
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
+		}
+		if (resume_sequences_num > 0) {
+			fprintf(board_cfg, "nds_v5.cpu%d configure -event resumed {\n", coreid);
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			for (i = 0 ; i < resume_sequences_num ; i++) {
+				int resume_addr, resume_mask, resume_data;
+				resume_addr = resume_sequences[i].address;
+				resume_mask = resume_sequences[i].mask;
+				resume_data = resume_sequences[i].data;
+				if (resume_sequences[i].restore) {
+					fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_addr);
+					fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_addr, resume_addr);
+				} else {
+					fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", resume_addr, resume_addr);
+					fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
+					fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
+				}
+			}
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
+		}
+	}
+}
+
 int main(int argc, char **argv) {
 	int i;
 	char *openocd_argv[6] = {0, 0, 0, 0, 0, 0};
@@ -1276,6 +1355,7 @@ int main(int argc, char **argv) {
 	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
 	if (target_type[0] == TARGET_V5) {
 		update_openocd_cfg_v5();
+		update_board_cfg_v5();
 	} else {
 		open_config_files();
 		update_openocd_cfg();
