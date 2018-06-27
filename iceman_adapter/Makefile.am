@@ -10,7 +10,8 @@ dist_openocd_cfg_DATA += algorithm.bin
 dist_openocd_cfg_DATA += debug_diag.tcl nds_custom_reset_func.tcl nds_diagnosis_funcs.tcl nds_dmi_write-bak.tcl debug_util.tcl nds_custom_reset.tcl nds_diagnosis.tcl nds_reg_read.tcl dmi.tcl nds_debug_defines.tcl nds_dmi_read-bak.tcl nds_reg_write.tcl
 
 openocd_boardcfgdir = $(bindir)/board
-dist_openocd_boardcfg_DATA = board/nds32_xc5.cfg.tpl
+dist_openocd_boardcfg_DATA = board/nds32_xc5.cfg.tpl \
+			     board/nds_v5.cfg.tpl
 
 openocd_interfacecfgdir = $(bindir)/interface
 dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
