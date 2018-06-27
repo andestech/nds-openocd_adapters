@@ -4,10 +4,31 @@ ICEman_SOURCES = iceman_adapter.c \
                  iceman_socket.h
 
 openocd_cfgdir = $(bindir)
-dist_openocd_cfg_DATA = openocd.cfg.v5 openocd.cfg.tpl sw-reset-seq.tpl reset-hold-script.tpl nds32_tdesc_bitfield.xml ndsv5_tdesc_bitfield.xml
-dist_openocd_cfg_DATA += ndsv5_tdesc_bitfield_64.xml
+dist_openocd_cfg_DATA = openocd.cfg.v5 \
+			openocd.cfg.tpl \
+			sw-reset-seq.tpl \
+			reset-hold-script.tpl \
+			hw_reset_hold_script.tpl \
+			ICEman.sh
+dist_openocd_cfg_DATA += ndsv5_tdesc_bitfield_64.xml \
+			 ndsv5_tdesc_bitfield.xml \
+			 nds32_tdesc_bitfield.xml
 dist_openocd_cfg_DATA += algorithm.bin
-dist_openocd_cfg_DATA += debug_diag.tcl nds_custom_reset_func.tcl nds_diagnosis_funcs.tcl nds_dmi_write-bak.tcl debug_util.tcl nds_custom_reset.tcl nds_diagnosis.tcl nds_reg_read.tcl dmi.tcl nds_debug_defines.tcl nds_dmi_read-bak.tcl nds_reg_write.tcl
+dist_openocd_cfg_DATA += custom_lib.tcl \
+			 debug_diag.tcl \
+			 debug_util.tcl \
+			 dmi.tcl \
+			 example_custom.tcl \
+			 nds_custom_reset_func.tcl \
+			 nds_custom_reset.tcl \
+			 nds_debug_defines.tcl \
+			 nds_diagnosis_funcs.tcl \
+			 nds_diagnosis.tcl \
+			 nds_dmi_read-bak.tcl \
+			 nds_dmi_write-bak.tcl \
+			 nds_reg_read.tcl \
+			 nds_reg_write.tcl
+
 
 openocd_boardcfgdir = $(bindir)/board
 dist_openocd_boardcfg_DATA = board/nds32_xc5.cfg.tpl \
@@ -91,8 +112,8 @@ openocd_targetcfgdir = $(bindir)/target
 dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl
 
 if BUILD_CYGWIN_BINARY
-DRIVERLIBS = $(LIBUSB0_LIBS) $(LIBUSB1_LIBS) 
-DRIVERCFLAGS = $(LIBUSB0_CFLAGS) $(LIBUSB1_CFLAGS) 
+DRIVERLIBS = $(LIBUSB0_LIBS) $(LIBUSB1_LIBS)
+DRIVERCFLAGS = $(LIBUSB0_CFLAGS) $(LIBUSB1_CFLAGS)
 else
 DRIVERLIBS = $(LIBUSB1_LIBS)
 DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
