@@ -6,6 +6,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <signal.h>
+#include <ctype.h>
 
 #ifndef ERROR_OK
 #define ERROR_OK           (0)
@@ -230,6 +231,7 @@ static unsigned int use_sdm = 0;
 #define L2C_BASE (0x90F00000u)
 static unsigned int l2c_base = L2C_BASE;
 static unsigned int dmi_busy_delay_count = 0;
+static unsigned int nds_v3_ftdi = 0;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
@@ -353,7 +355,7 @@ static int parse_param(int a_argc, char **a_argv) {
 		uint32_t cop_nums = 0;
 		char tmpstr[10] = {0};
 		//uint32_t ms_check_dbger = 0;
-		int i;
+		unsigned int i;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
 
@@ -397,7 +399,7 @@ static int parse_param(int a_argc, char **a_argv) {
 				boot_code_debug = 1;
 				break;
 			case 'c':
-				sscanf(optarg, "%u%s", &efreq_range, &tmpstr);
+				sscanf(optarg, "%u%s", &efreq_range, (char *)&tmpstr[0]);
 				if( strlen(tmpstr) != 0 ) {
 					for( i = 0; i < strlen(tmpstr); i++ )
 						tmpstr[i] = tolower(tmpstr[i]);
@@ -637,13 +639,14 @@ static void open_config_files(void) {
 		exit(-1);
 	}
 
-	interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
-	interface_cfg = fopen("interface/nds32-aice.cfg", "w");
-	if ((interface_cfg_tpl == NULL) || (interface_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No interface config file, nds32-aice.cfg\n");
-		exit(-1);
+	if (nds_v3_ftdi == 0) {
+		interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
+		interface_cfg = fopen("interface/nds32-aice.cfg", "w");
+		if ((interface_cfg_tpl == NULL) || (interface_cfg == NULL)) {
+			fprintf(stderr, "ERROR: No interface config file, nds32-aice.cfg\n");
+			exit(-1);
+		}
 	}
-
 	board_cfg_tpl = fopen("board/nds32_xc5.cfg.tpl", "r");
 	board_cfg = fopen("board/nds32_xc5.cfg", "w");
 	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
@@ -651,26 +654,26 @@ static void open_config_files(void) {
 		exit(-1);
 	}
 
-	target_cfg_tpl = fopen("target/nds32.cfg.tpl", "r");
-
-	int coreid;
-	char *target_str = NULL;
-	char line_buffer[LINE_BUFFER_SIZE];
-
-	for (coreid = 0; coreid < 1; coreid++){
-		if (target_type[coreid] == TARGET_V3) {
-			target_str = "target/nds32v3_%d.cfg";
-		} else if (target_type[coreid] == TARGET_V2) {
-			target_str = "target/nds32v2_%d.cfg";
-		} else if (target_type[coreid] == TARGET_V3m) {
-			target_str = "target/nds32v3m_%d.cfg";
-		} else {
-			fprintf(stderr, "No target specified\n");
-			exit(0);
+	if (nds_v3_ftdi == 0) {
+		target_cfg_tpl = fopen("target/nds32.cfg.tpl", "r");
+		int coreid;
+		char *target_str = NULL;
+		char line_buffer[LINE_BUFFER_SIZE];
+		for (coreid = 0; coreid < 1; coreid++){
+			if (target_type[coreid] == TARGET_V3) {
+				target_str = "target/nds32v3_%d.cfg";
+			} else if (target_type[coreid] == TARGET_V2) {
+				target_str = "target/nds32v2_%d.cfg";
+			} else if (target_type[coreid] == TARGET_V3m) {
+				target_str = "target/nds32v3m_%d.cfg";
+			} else {
+				fprintf(stderr, "No target specified\n");
+				exit(0);
+			}
+			sprintf(target_cfg_name_str, target_str, coreid);
+			sprintf(line_buffer, target_str, coreid);
+			target_cfg[coreid] = fopen(line_buffer, "w");
 		}
-		sprintf(target_cfg_name_str, target_str, coreid);
-		sprintf(line_buffer, target_str, coreid);
-		target_cfg[coreid] = fopen(line_buffer, "w");
 	}
 	openocd_cfg_usrdef = fopen(NDS32_USER_CFG, "a");
 }
@@ -964,9 +967,20 @@ static void update_openocd_cfg(void)
 
 	//fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
 	//fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
-		fputs(line_buffer, openocd_cfg);
-
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
+		if (nds_v3_ftdi == 1) {
+			if( strncmp(line_buffer, "source [find interface", 22) == 0 ) {
+				fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
+				fprintf(openocd_cfg, "adapter_nsrst_delay 500\n");
+				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
+				fprintf(openocd_cfg, "reset_config trst_only\n");
+			} else {
+				fputs(line_buffer, openocd_cfg);
+			}
+		} else {
+			fputs(line_buffer, openocd_cfg);
+		}
+	}
 	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
 	if (custom_def_idlm_base)
 		fprintf(openocd_cfg, "nds idlm_base_size %d %d %d %d\n", ilm_base, ilm_size, dlm_base, dlm_size);
@@ -1054,6 +1068,61 @@ static void update_interface_cfg(void)
 	fputs("\n", interface_cfg);
 }
 
+static void update_ftdi_v3_board_cfg(void)
+{
+	if (diagnosis)
+		fprintf(board_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+
+	//fprintf(board_cfg, "nds retry_times %d\n", aice_retry_time);
+	fprintf(board_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
+	//fprintf(board_cfg, "nds port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
+
+	if (count_to_check_dbger)
+		fprintf(board_cfg, "nds runtest_num_clocks %d\n", count_to_check_dbger);
+	else
+		fprintf(board_cfg, "nds runtest_num_clocks 20\n");
+
+	/* custom srst/trst/restart scripts */
+	if (custom_srst_script) {
+		fprintf(board_cfg, "nds custom_srst_script %s\n", custom_srst_script);
+	}
+	if (custom_trst_script) {
+		fprintf(board_cfg, "nds custom_trst_script %s\n", custom_trst_script);
+	}
+	if (custom_restart_script) {
+		fprintf(board_cfg, "nds custom_restart_script %s\n", custom_restart_script);
+	}
+	if (custom_initial_script) {
+		fprintf(board_cfg, "nds custom_initial_script %s\n", custom_initial_script);
+	}
+	if (startup_reset_halt) {
+		if (soft_reset_halt)
+			fprintf(board_cfg, "nds reset_halt_as_init %d\n", soft_reset_halt);
+		else
+			fprintf(board_cfg, "nds reset_halt_as_init 1\n");
+	}
+	//if (reset_aice_as_startup) {
+	//	fprintf(board_cfg, "nds reset_aice_as_startup\n");
+	//}
+	if (edm_dimb != DIMBR_DEFAULT) {
+		fprintf(board_cfg, "nds edm_dimb 0x%x\n", edm_dimb);
+	}
+	if (l2c_base != L2C_BASE) {
+		fprintf(board_cfg, "nds l2c_base 0x%x\n", l2c_base);
+	}
+	unsigned int i;
+
+	for (i=0; i<4; i++) {
+		if (cop_reg_nums[i] != 0) {
+			fprintf(board_cfg, "nds misc_config cop %d %d 1\n", i, cop_reg_nums[i]);
+		}
+	}
+	if (use_sdm == 1) {
+		fprintf(board_cfg, "nds sdm use_sdm\n");
+	}
+	fputs("\n", board_cfg);
+}
+
 static void update_target_cfg(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
@@ -1090,20 +1159,24 @@ static void update_board_cfg(void)
 	char *target_str = NULL;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
-			for (coreid = 0; coreid < 1; coreid++){
-				if(target_str)
-					fputs(line_buffer, board_cfg);
-				if (target_type[coreid] == TARGET_V3) {
-					target_str = "source [find target/nds32v3_%d.cfg]\n";
-				} else if (target_type[coreid] == TARGET_V2) {
-					target_str = "source [find target/nds32v2_%d.cfg]\n";
-				} else if (target_type[coreid] == TARGET_V3m) {
-					target_str = "source [find target/nds32v3m_%d.cfg]\n";
-				} else {
-					fprintf(stderr, "No target specified\n");
-					exit(0);
+			if (nds_v3_ftdi == 1) {
+				strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
+			} else {
+				for (coreid = 0; coreid < 1; coreid++){
+					if(target_str)
+						fputs(line_buffer, board_cfg);
+					if (target_type[coreid] == TARGET_V3) {
+						target_str = "source [find target/nds32v3_%d.cfg]\n";
+					} else if (target_type[coreid] == TARGET_V2) {
+						target_str = "source [find target/nds32v2_%d.cfg]\n";
+					} else if (target_type[coreid] == TARGET_V3m) {
+						target_str = "source [find target/nds32v3m_%d.cfg]\n";
+					} else {
+						fprintf(stderr, "No target specified\n");
+						exit(0);
+					}
+					sprintf(line_buffer, target_str, coreid);
 				}
-				sprintf(line_buffer, target_str, coreid);
 			}
 		} else if ((find_pos = strstr(line_buffer, "--soft-reset-halt")) != NULL) {
 			if (soft_reset_halt) {
@@ -1135,6 +1208,10 @@ static void update_board_cfg(void)
 					else
 						aceconf_desc += 1;	/* point to the one next to ',' */
 				}
+			}
+		} else if ((find_pos = strstr(line_buffer, "jtag init")) != NULL) {
+			if (nds_v3_ftdi == 1) {
+				strcpy(line_buffer, "#jtag init\n");
 			}
 		}
 
@@ -1356,6 +1433,15 @@ int main(int argc, char **argv) {
 	if (target_type[0] == TARGET_V5) {
 		update_openocd_cfg_v5();
 		update_board_cfg_v5();
+	} else if (custom_interface != NULL) {
+		// && (target_type[0] != TARGET_V5)
+		nds_v3_ftdi = 1;
+		open_config_files();
+		update_openocd_cfg();       // source [find interface/
+		//update_interface_cfg();   // move aice monitor-cmd to target monitor-cmd (update_ftdi_v3_board_cfg)
+		//update_target_cfg();      // must be user-define
+		update_board_cfg();
+		update_ftdi_v3_board_cfg();
 	} else {
 		open_config_files();
 		update_openocd_cfg();
