@@ -46,21 +46,6 @@ proc clear_trst {delay_ms} {
 	sleep $delay_ms
 }
 
-proc write_pins {pattern} {
-	puts $pattern
-	set pattern_len [string length $pattern]
-
-	for {set i 0} {$i < $pattern_len} {incr i} {
-		scan [string index $pattern $i] %d nibble
-
-		set tms [expr [expr $nibble & 0x2] >> 1]
-		set tdi [expr [expr $nibble & 0x4] >> 2]
-		#puts [format "tms: %d, tdi: %d" $tms $tdi]
-		ftdi_clock_tms_out $tms $tdi
-	}
-
-}
-
 proc delay {delay_ms} {
 	sleep $delay_ms
 }
