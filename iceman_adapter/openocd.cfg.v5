@@ -3,6 +3,7 @@ adapter_nsrst_delay 500
 ##INTERFACE_REPLACE##
 reset_config srst_only
 source [find dmi.tcl]
+source [find custom_lib.tcl]
 set _create_multi_targets   1
 set _number_of_core   1
 set _CHIPNAME nds_v5
