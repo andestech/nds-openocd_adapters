@@ -110,11 +110,19 @@ proc test_frequency {tap} {
 }
 
 proc get_march_name {marchid} {
-	set arch_name_list {"N" "D" "E" "S" "" "" "" "" "NX" "DX" "EX" "SX"}
-	set name_idx [expr ($marchid>>12)&0xf]
+	#set arch_name_list {"N" "D" "E" "S" "" "" "" "" "NX" "DX" "EX" "SX"}
+	#set name_idx [expr ($marchid>>12)&0xf]
+	#set march_name [lindex $arch_name_list $name_idx]
+	#set march_name_out [format "%s%d%d" $march_name [expr ($marchid>>4)&0xf] [expr ($marchid>>0)&0xf] ]
+	##puts [format "march_name_1 %s" $march_name_out]
+	set arch_name_list {"N" "" "" "" "" "" "" "" "" "" "A" "" "" "D"}
+	set name_idx [expr ($marchid>>8)&0xF]
 	set march_name [lindex $arch_name_list $name_idx]
-	set march_name_out [format "%s%d%d" $march_name [expr ($marchid>>4)&0xf] [expr ($marchid>>0)&0xf] ]
-	#puts [format "march_name_1 %s" $march_name_out]
+	if { [expr ($marchid>>15)&0x1] == 1} {
+		set march_name_out [format "%sX%d%d" $march_name [expr ($marchid>>4)&0xf] [expr ($marchid>>0)&0xf] ]
+	} else {
+		set march_name_out [format "%s%d%d" $march_name [expr ($marchid>>4)&0xf] [expr ($marchid>>0)&0xf] ]
+	}
 	return $march_name_out
 }
 
