@@ -298,11 +298,11 @@ static void show_usage(void) {
 	printf("-I, --interface:\tSource interface config. The interface config must place in ice/interface folder!!\n");
 	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
 	printf("-K, --soft-reset-hold (Only for V3):\tUse soft reset-and-hold\n");
-	printf("-l, --custom-srst (Only for V3):\tUse custom script to do SRST\n");
-	printf("-L, --custom-trst (Only for V3):\tUse custom script to do TRST\n");
+	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
+	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
 	printf("-M, --edm-dimb (Only for V3):\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
 	printf("\t\t\t(default: 0xFFFF0000)\n");
-	printf("-N, --custom-restart (Only for V3):\tUse custom script to do RESET-HOLD\n");
+	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
 	//printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
 	printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
 	printf("\t\t\t(default: 1000 milliseconds)\n");
