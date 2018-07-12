@@ -295,7 +295,7 @@ static void show_usage(void) {
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
 	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
 	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
-	printf("-I, --interface:\tSource interface config. The interface config must place in ice/interface folder!!\n");
+	printf("-I, --interface:\tSpecify an interface config file in ice/interface.\n");
 	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
 	printf("-K, --soft-reset-hold (Only for V3):\tUse soft reset-and-hold\n");
 	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
