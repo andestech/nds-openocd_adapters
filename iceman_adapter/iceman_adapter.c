@@ -334,7 +334,7 @@ static void show_usage(void) {
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
 	printf("-y, --idlm-base (Only for V3):\t\tDefine ILM&DLM base and size\n");
-	printf("-z, --ace-conf (Only for V3):\t\tSpecify ACE file on each core\n");
+	printf("-z, --ace-conf:\t\tSpecify ACE file on each core\n");
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
