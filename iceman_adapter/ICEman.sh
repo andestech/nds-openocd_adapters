@@ -15,4 +15,9 @@ chmod +s ICEman openocd
 if [ "$?" != "0" ]; then
 	exit 4
 fi
+
+rmmod ftdi_sio
+echo 'blacklist ftdi_sio' >> /etc/modprobe.d/blacklist
+echo 'blacklist ftdi_sio' >> /etc/modprobe.d/blacklist.conf
+
 echo "Done!"
