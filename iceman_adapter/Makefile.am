@@ -8,8 +8,7 @@ dist_openocd_cfg_DATA = openocd.cfg.v5 \
 			openocd.cfg.tpl \
 			sw-reset-seq.tpl \
 			reset-hold-script.tpl \
-			hw_reset_hold_script.tpl \
-			ICEman.sh
+			hw_reset_hold_script.tpl 
 dist_openocd_cfg_DATA += ndsv5_tdesc_bitfield_64.xml \
 			 ndsv5_tdesc_bitfield.xml \
 			 nds32_tdesc_bitfield.xml
