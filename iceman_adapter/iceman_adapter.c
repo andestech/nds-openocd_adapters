@@ -275,10 +275,14 @@ static void show_usage(void) {
 	}
 
 	printf("-C, --check-times (For V3):\tCount/Second to check DBGER\n");
-	printf("-C, --check-times (For V5):\tSecond to check DTM\n");
 	printf("\t\t\t(default: 500 times)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 times\n");
+	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
+	printf("-C, --check-times (For V5):\tSecond to check DTM\n");
+	printf("\t\t\t(default: 3 seconds)\n");
+	printf("\t\tExample:\n");
+	printf("\t\t\t1. -C 100 to check 100 millisecond\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
 	//printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
 	printf("-D, --larger-logfile:\tThe maximum size of the log file is 1MBx2. The size is increased to 512MBx2 with this option.\n");
