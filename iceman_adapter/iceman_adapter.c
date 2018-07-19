@@ -247,7 +247,7 @@ static void show_usage(void) {
 	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
 	printf("-a, --reset-aice (For AICE only):\tReset AICE as ICEman startup\n");
-	printf("-A, --no-crst-detect (Only for V3):\tNo CRST detection in debug session\n");
+	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
 	//printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
@@ -913,6 +913,10 @@ static void update_openocd_cfg_v5(void)
 	if (custom_restart_script) {
 		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
 	}
+
+	if( aice_no_crst_detect != 0 )
+		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
+
   // Handle ACE option
   // Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
   //       the path of conf or library and write the path to openocd_cfg
