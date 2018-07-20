@@ -18,8 +18,14 @@ fi
 
 function func_yes {
 	rmmod ftdi_sio 2> /dev/null
-	echo 'blacklist ftdi_sio' >> /etc/modprobe.d/blacklist 2> /dev/null
-	echo 'blacklist ftdi_sio' >> /etc/modprobe.d/blacklist.conf 2> /dev/null
+
+	if [ ! -f /etc/modprobe.d/blacklist-ftdi_sio ]; then
+		echo 'blacklist ftdi_sio' >> /etc/modprobe.d/blacklist-ftdi_sio 2> /dev/null
+	fi
+
+	if [ ! -f /etc/modprobe.d/blacklist-ftdi_sio.conf ]; then
+		echo 'blacklist ftdi_sio' >> /etc/modprobe.d/blacklist-ftdi_sio.conf 2> /dev/null
+	fi
 }
 
 function func_no {
