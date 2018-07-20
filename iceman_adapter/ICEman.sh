@@ -39,7 +39,7 @@ Are you sure you want to continue? (Please enter a number)"
 select yn in "Yes" "No"; do
 	case $yn in
 		Yes ) func_yes; break;;
-		No  ) func_no;  exit;;
+		No  ) func_no;  break;;
 		*   ) echo "Please type a number corresponding to your choice!"
 	esac
 done
