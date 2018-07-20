@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 chmod +x ICEman openocd
 if [ "$?" != "0" ]; then
 	exit 1
