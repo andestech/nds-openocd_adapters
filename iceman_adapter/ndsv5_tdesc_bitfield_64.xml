@@ -70,7 +70,7 @@
 <field name="SEIE" start="9" end="9"/>
 <field name="HEIE" start="10" end="10"/>
 <field name="MEIE" start="11" end="11"/>
-<field name="SPECCI" start="16" end="16"/>
+<field name="IMECCI" start="16" end="16"/>
 <field name="BWEI" start="17" end="17"/>
 <field name="PMOVI" start="18" end="18"/>
 </flags>
@@ -91,7 +91,7 @@
 <field name="SEIP" start="9" end="9"/>
 <field name="HEIP" start="10" end="10"/>
 <field name="MEIP" start="11" end="11"/>
-<field name="SPECCI" start="16" end="16"/>
+<field name="IMECCI" start="16" end="16"/>
 <field name="BWEI" start="17" end="17"/>
 <field name="PMOVI" start="18" end="18"/>
 </flags>
@@ -570,7 +570,7 @@
 </struct>
 
 <flags id="mslideleg_flags" size="8">
-<field name="specci" start="16" end="16"/>
+<field name="imecci" start="16" end="16"/>
 <field name="bwei" start="17" end="17"/>
 <field name="pmovi" start="18" end="18"/>
 </flags>
@@ -639,8 +639,9 @@
 <evalue name="M-mode Environment Call" value="12"/>
 <evalue name="Load page fault" value="13"/>
 <evalue name="Store/AMO page fault" value="15"/>
-<evalue name="Slave port ECC error" value="16"/>
+<evalue name="Imprecise ECC error" value="16"/>
 <evalue name="Bus write transaction error" value="17"/>
+<evalue name="Performance Counter overflow" value="18"/>
 <evalue name="Stack overflow exception" value="32"/>
 <evalue name="Stack underflow exception" value="33"/>
 <evalue name="ACE disabled exception" value="34"/>
