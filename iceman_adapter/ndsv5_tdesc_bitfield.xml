@@ -251,49 +251,27 @@
 <evalue name="Legacy SiFive address match trigger" value="1"/>
 <evalue name="Address/data match trigger" value="2"/>
 <evalue name="Instruction count trigger" value="3"/>
+<evalue name="Interrupt trigger" value="4"/>
+<evalue name="Exception trigger" value="5"/>
 <evalue name="Trigger exists, but is not currently available." value="15"/>
 </enum>
 <struct id="reg_tdata1" size="4">
 <field name="" start="0" end="31" type="uint32"/>
 <field name="data" start="0" end="26" type="uint32"/>
-<field name="hmode" start="27" end="27" type="tdata1_hmode"/>
+<field name="dmode" start="27" end="27" type="tdata1_hmode"/>
 <field name="type" start="28" end="31" type="tdata1_type"/>
 </struct>
 
-<enum id="mcontrol_action" size="4">
-<evalue name="Raise a breakpoint exception.(Used when software wants to use the trigger module without an external debugger attached.)" value="0"/>
-<evalue name="Enter Halt Mode.(Only supported when hmode is 1.)" value="1"/>
-<evalue name="Start tracing" value="2"/>
-<evalue name="Stop tracing" value="3"/>
-<evalue name="Emit trace data for this match. If it is a data access match, emit appropriate Load/Store Address/Data.If it is an instruction execution, emit its PC." value="4"/>
-</enum>
-<enum id="mcontrol_match" size="4">
-<evalue name="V == TDATA2" value="0"/>
-<evalue name="N=Count_Trailing_Zero(TDATA2);V(XLEN-1,N) == TDATA2(XLEN-1,N)" value="1"/>
-<evalue name="V >= TDATA2" value="2"/>
-<evalue name="V is less than TDATA2" value="3"/>
-<evalue name="U(x,0)=V(x,0) and TDATA2(XLEN-1,x+1),x=(15 or 31);U(x,0) == TDATA2(x,0)" value="4"/>
-<evalue name="U(x,0)=V(XLEN-1,x+1) and TDATA2(XLEN-1, x+1),x=(15 or 31);U(x,0) == TDATA2(x,0)" value="5"/>
-</enum>
-<flags id="mcontrol_flags" size="4">
-<field name="load" start="0" end="0"/>
-<field name="store" start="1" end="1"/>
-<field name="execute" start="2" end="2"/>
-<field name="u" start="3" end="3"/>
-<field name="s" start="4" end="4"/>
-<field name="h" start="5" end="5"/>
-<field name="m" start="6" end="6"/>
-<field name="chain" start="11" end="11"/>
-<field name="timing" start="18" end="18"/>
-<field name="select" start="19" end="19"/>
-</flags>
 <struct id="reg_mcontrol" size="4">
-<field name="" start="0" end="31" type="mcontrol_flags"/>
-<field name="match" start="7" end="10" type="mcontrol_match"/>
-<field name="action" start="12" end="17" type="mcontrol_action"/>
-<field name="maskmax" start="21" end="26" type="uint32"/>
-<field name="hmode" start="27" end="27" type="tdata1_hmode"/>
+<field name="" start="0" end="31" type="uint32"/>
+<field name="data" start="0" end="26" type="uint32"/>
+<field name="dmode" start="27" end="27" type="tdata1_hmode"/>
 <field name="type" start="28" end="31" type="tdata1_type"/>
+</struct>
+
+<struct id="reg_tinfo" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="info" start="0" end="15" type="uint32"/>
 </struct>
 
 <enum id="dcsr_xdebugver" size="4">
@@ -860,7 +838,7 @@
 <reg name="csr3858" bitsize="32" type="reg_marchid"/>
 <reg name="csr3859" bitsize="32" type="reg_mimpid"/>
 <reg name="csr1953" bitsize="32" type="reg_tdata1"/>
-<reg name="csr1953" bitsize="32" type="reg_mcontrol"/>
+<reg name="csr1956" bitsize="32" type="reg_tinfo"/>
 <reg name="csr1968" bitsize="32" type="reg_dcsr"/>
 <reg name="csr1" bitsize="32" type="reg_fflags"/>
 <reg name="csr2" bitsize="32" type="reg_frm"/>
