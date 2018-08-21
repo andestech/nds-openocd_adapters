@@ -1088,8 +1088,10 @@ static void update_ftdi_v3_board_cfg(void)
 	if (count_to_check_dbger)
 		fprintf(board_cfg, "nds runtest_num_clocks %d\n", count_to_check_dbger);
 	else
-		fprintf(board_cfg, "nds runtest_num_clocks 20\n");
+		fprintf(board_cfg, "nds runtest_num_clocks 5\n");
 
+	fprintf(board_cfg, "nds ftdi_jtag_opt 2\n");
+	fprintf(board_cfg, "nds ftdi_log_detail 0\n");
 	/* custom srst/trst/restart scripts */
 	if (custom_srst_script) {
 		fprintf(board_cfg, "nds custom_srst_script %s\n", custom_srst_script);
