@@ -175,6 +175,12 @@
 <field name="" start="0" end="31" type="cr6_flags"/>
 <field name="CPV" start="16" end="17" type="uint32"/>
 </struct>
+<enum id="DSPPF_type" size="4">
+<evalue name="No DSP ISA Extension" value="0"/>
+<evalue name="Basic profile of DSP ISA Extension" value="1"/>
+<evalue name="64-bit profile of DSP ISA Extension" value="2"/>
+<evalue name="Support DSP V2 instructions" value="3"/>
+</enum>
 <enum id="TLB_ECC_type" size="4">
 <evalue name="No parity/ECC support" value="0"/>
 <evalue name="Has parity support" value="1"/>
@@ -183,11 +189,14 @@
 </enum>
 <flags id="cr7_flags" size="4">
 <field name="ECC" start="2" end="2"/>
-<field name="EINSN" start="3" end="3"/>
+<field name="ZOL" start="5" end="5"/>
+<field name="INT64" start="6" end="6"/>
+<field name="EINSN" start="7" end="7"/>
 </flags>
 <struct id="cr7_type" size="4">
 <field name="" start="0" end="31" type="cr7_flags"/>
 <field name="TLB_ECC" start="0" end="1" type="TLB_ECC_type"/>
+<field name="DSPPF" start="3" end="4" type="DSPPF_type"/>
 </struct>
 
 <flags id="ir0_flags" size="4">
