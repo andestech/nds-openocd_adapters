@@ -37,6 +37,7 @@ openocd_interfacecfgdir = $(bindir)/interface
 dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 		interface/axm0432.cfg \
 		interface/aice_sdp.cfg \
+		interface/aice_mini_plus_ftdi.cfg \
 		interface/calao-usb-a9260-c01.cfg \
 		interface/calao-usb-a9260-c02.cfg \
 		interface/cortino.cfg \
