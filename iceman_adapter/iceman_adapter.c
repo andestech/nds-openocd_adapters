@@ -49,6 +49,7 @@
 #define LONGOPT_AICE_INIT	12
 #define LONGOPT_L2C		13
 #define LONGOPT_DMI_DELAY	14
+#define LONGOPT_USER_TARGET_CFG	15
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -61,6 +62,7 @@ struct option long_option[] = {
 	{"custom-aice-init", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
 	{"l2c", required_argument, &long_opt_flag, LONGOPT_L2C},
 	{"dmi_busy_delay_count", required_argument, &long_opt_flag, LONGOPT_DMI_DELAY},
+	{"target-cfg", required_argument, &long_opt_flag, LONGOPT_USER_TARGET_CFG},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -222,6 +224,7 @@ extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 static const char *log_output = NULL;
 static const char *custom_interface = NULL;
+static const char *custom_target_cfg = NULL;
 static unsigned int efreq_range = 0;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
@@ -387,6 +390,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					sscanf(optarg, "0x%x", &l2c_base);
 				} else if (long_opt == LONGOPT_DMI_DELAY) {
 					sscanf(optarg, "%d", &dmi_busy_delay_count);
+				} else if (long_opt == LONGOPT_USER_TARGET_CFG) {
+					custom_target_cfg = optarg;
 				}
 
 				break;
@@ -1170,7 +1175,11 @@ static void update_board_cfg(void)
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
 			if (nds_v3_ftdi == 1) {
-				strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
+				if (custom_target_cfg) {
+					sprintf(line_buffer, "source [find target/%s]\n", custom_target_cfg);
+				} else {
+					strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
+				}
 			} else {
 				for (coreid = 0; coreid < 1; coreid++){
 					if(target_str)
