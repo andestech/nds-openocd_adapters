@@ -32,6 +32,7 @@ flash bank my_first_flash ndsspi 0x80000000 0 0 0 $_TARGETNAME
 #program ./demo_gpio
 #resume 0x20400000
 
+nds configure bak_debug_buf 0x200000 16
 nds configure tdesc_bit ndsv5_tdesc_bitfield.xml
 #nds configure ena_hit_exception 1
 #nds configure word_access

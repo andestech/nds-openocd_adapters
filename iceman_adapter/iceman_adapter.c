@@ -187,7 +187,7 @@ static const char *edm_port_op_file = NULL;
 static int aice_retry_time = 2;//50;
 static int aice_no_crst_detect = 0;
 static int clock_setting = 16;
-static int debug_level = 3;
+static int debug_level = 2;
 static int boot_code_debug;
 static int gdb_port[AICE_MAX_NUM_PORTS];
 static char *gdb_port_str = NULL;
