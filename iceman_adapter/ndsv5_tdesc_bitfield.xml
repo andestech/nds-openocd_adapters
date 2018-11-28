@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE target SYSTEM "gdb-target.dtd">
 <target version="1.0">
-<feature name="org.gnu.gdb.riscv.cpu">
+<feature name="org.gnu.gdb.riscv.csr">
 
 <enum id="levels_type" size="4">
 <evalue name="low" value="0"/>
@@ -864,10 +864,6 @@
 <field name="ptyp2" start="14" end="15" type="uint32"/>
 </struct>
 
-<struct id="reg_priv" size="1">
-<field name="" start="0" end="7" type="uint32"/>
-<field name="prv" start="0" end="1" type="dcsr_prv"/>
-</struct>
 
 <reg name="csr768" bitsize="32" type="reg_mstatus"/>
 <reg name="csr772" bitsize="32" type="reg_mie"/>
@@ -929,8 +925,16 @@
 <reg name="csr2516" bitsize="32" type="reg_mcounterwen"/>
 <reg name="csr2006" bitsize="32" type="reg_msavestatus"/>
 <reg name="csr2513" bitsize="32" type="reg_mcounterwen"/>
-<reg name="priv" bitsize="8" type="reg_priv"/>
-
 </feature>
+
+<feature name="org.gnu.gdb.riscv.virtual">
+<struct id="reg_priv" size="1">
+<field name="" start="0" end="7" type="uint32"/>
+<field name="prv" start="0" end="1" type="dcsr_prv"/>
+</struct>
+
+<reg name="priv" bitsize="8" type="reg_priv"/>
+</feature>
+
 </target>
 
