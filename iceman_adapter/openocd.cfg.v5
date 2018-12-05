@@ -45,6 +45,7 @@ nds configure jtag_max_scans 64
 nds configure dis_condition_break
 nds configure wip_bytes_per_dot 0x2000
 nds configure dmi_quick_access 0
+nds configure dmi_access_mem 0
 nds configure dis_cache_busmode 1
 #nds configure use_script
 
