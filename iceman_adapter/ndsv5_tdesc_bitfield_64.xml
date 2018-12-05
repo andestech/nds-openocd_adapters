@@ -162,7 +162,7 @@
 <evalue name="Load page fault" value="13"/>
 <evalue name="Store/AMO page fault" value="15"/>
 <evalue name="Slave port ECC error interrupt (M-mode)" value="16"/>
-<evalue name="Buw write transaction error interrupt (M-mode)" value="17"/>
+<evalue name="Bus read/write transaction error interrupt (M-mode)" value="17"/>
 <evalue name="Performance monitor overflow interrupt(M-mode)" value="18"/>
 <evalue name="Stack overflow exception" value="32"/>
 <evalue name="Stack underflow exception" value="33"/>
@@ -175,7 +175,7 @@
 <evalue name="Andes Custom Extension exception." value="46"/>
 <evalue name="Andes Custom Extension exception." value="47"/>
 <evalue name="Slave port ECC error interrupt (S-mode)" value="272"/>
-<evalue name="Buw write transaction error interrupt (S-mode)" value="273"/>
+<evalue name="Bus read/write transaction error interrupt (S-mode)" value="273"/>
 <evalue name="Performance monitor overflow interrupt(S-mode)" value="274"/>
 </enum>
 <flags id="mcause_flags" size="8">
@@ -463,6 +463,7 @@
 <field name="cctlcsr" start="16" end="16"/>
 <field name="efhw" start="17" end="17"/>
 <field name="nopmc" start="22" end="22"/>
+<field name="spe_aft" start="23" end="23"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -551,6 +552,7 @@
 <evalue name="Background process" value="0"/>
 <evalue name="Interrupt" value="1"/>
 <evalue name="Exception" value="2"/>
+<evalue name="NMI" value="3"/>
 </enum>
 <flags id="mxstatus_flags" size="8">
 <field name="pft_en" start="0" end="0"/>
