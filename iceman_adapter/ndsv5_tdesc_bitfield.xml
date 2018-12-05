@@ -155,7 +155,7 @@
 <evalue name="Load page fault" value="13"/>
 <evalue name="Store/AMO page fault" value="15"/>
 <evalue name="Slave port ECC error interrupt (M-mode)" value="16"/>
-<evalue name="Buw write transaction error interrupt (M-mode)" value="17"/>
+<evalue name="Bus read/write transaction error interrupt (M-mode)" value="17"/>
 <evalue name="Performance monitor overflow interrupt(M-mode)" value="18"/>
 <evalue name="Stack overflow exception" value="32"/>
 <evalue name="Stack underflow exception" value="33"/>
@@ -168,7 +168,7 @@
 <evalue name="Andes Custom Extension exception." value="46"/>
 <evalue name="Andes Custom Extension exception." value="47"/>
 <evalue name="Slave port ECC error interrupt (S-mode)" value="272"/>
-<evalue name="Buw write transaction error interrupt (S-mode)" value="273"/>
+<evalue name="Bus read/write transaction error interrupt (S-mode)" value="273"/>
 <evalue name="Performance monitor overflow interrupt(S-mode)" value="274"/>
 </enum>
 <flags id="mcause_flags" size="4">
@@ -461,6 +461,7 @@
 <field name="cctlcsr" start="16" end="16"/>
 <field name="efhw" start="17" end="17"/>
 <field name="nopmc" start="22" end="22"/>
+<field name="spe_aft" start="23" end="23"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg_flags"/>
@@ -549,6 +550,7 @@
 <evalue name="Background process" value="0"/>
 <evalue name="Interrupt" value="1"/>
 <evalue name="Exception" value="2"/>
+<evalue name="NMI" value="3"/>
 </enum>
 <flags id="mxstatus_flags" size="4">
 <field name="pft_en" start="0" end="0"/>
@@ -866,65 +868,190 @@
 
 
 <reg name="csr768" bitsize="32" type="reg_mstatus"/>
+<reg name="mstatus" bitsize="32" type="reg_mstatus"/>
+
 <reg name="csr772" bitsize="32" type="reg_mie"/>
+<reg name="mie" bitsize="32" type="reg_mie"/>
+
 <reg name="csr836" bitsize="32" type="reg_mip"/>
+<reg name="mip" bitsize="32" type="reg_mip"/>
+
 <reg name="csr771" bitsize="32" type="reg_mideleg"/>
+<reg name="mideleg" bitsize="32" type="reg_mideleg"/>
+
 <reg name="csr770" bitsize="32" type="reg_medeleg"/>
+<reg name="medeleg" bitsize="32" type="reg_medeleg"/>
+
 <reg name="csr773" bitsize="32" type="reg_mtvec"/>
+<reg name="mtvec" bitsize="32" type="reg_mtvec"/>
+
 <reg name="csr834" bitsize="32" type="reg_mcause"/>
+<reg name="mcause" bitsize="32" type="reg_mcause"/>
+
 <reg name="csr769" bitsize="32" type="reg_misa"/>
+<reg name="misa" bitsize="32" type="reg_misa"/>
+
 <reg name="csr3858" bitsize="32" type="reg_marchid"/>
+<reg name="marchid" bitsize="32" type="reg_marchid"/>
+
 <reg name="csr3859" bitsize="32" type="reg_mimpid"/>
+<reg name="mimpid" bitsize="32" type="reg_mimpid"/>
+
 <reg name="csr1953" bitsize="32" type="reg_tdata1"/>
+<reg name="mcontrol" bitsize="32" type="reg_tdata1"/>
+
 <reg name="csr1956" bitsize="32" type="reg_tinfo"/>
+<reg name="tinfo" bitsize="32" type="reg_tinfo"/>
+
 <reg name="csr1968" bitsize="32" type="reg_dcsr"/>
+<reg name="dcsr" bitsize="32" type="reg_dcsr"/>
+
 <reg name="csr1" bitsize="32" type="reg_fflags"/>
+<reg name="fflags" bitsize="32" type="reg_fflags"/>
+
 <reg name="csr2" bitsize="32" type="reg_frm"/>
+<reg name="frm" bitsize="32" type="reg_frm"/>
+
 <reg name="csr3" bitsize="32" type="reg_fcsr"/>
+<reg name="fcsr" bitsize="32" type="reg_fcsr"/>
+
 <reg name="csr4032" bitsize="32" type="reg_micm_cfg"/>
+<reg name="micm_cfg" bitsize="32" type="reg_micm_cfg"/>
+
 <reg name="csr4033" bitsize="32" type="reg_mdcm_cfg"/>
+<reg name="mdcm_cfg" bitsize="32" type="reg_mdcm_cfg"/>
+
 <reg name="csr4034" bitsize="32" type="reg_mmsc_cfg"/>
+<reg name="mmsc_cfg" bitsize="32" type="reg_mmsc_cfg"/>
+
 <reg name="csr1984" bitsize="32" type="reg_milmb"/>
+<reg name="milmb" bitsize="32" type="reg_milmb"/>
+
 <reg name="csr1985" bitsize="32" type="reg_mdlmb"/>
+<reg name="mdlmb" bitsize="32" type="reg_mdlmb"/>
+
 <reg name="csr1986" bitsize="32" type="reg_mecc_code"/>
+<reg name="mecc_code" bitsize="32" type="reg_mecc_code"/>
+
 <reg name="csr1989" bitsize="32" type="reg_mpft_ctl"/>
+<reg name="mpft_ctl" bitsize="32" type="reg_mpft_ctl"/>
+
 <reg name="csr1994" bitsize="32" type="reg_mcache_ctl"/>
+<reg name="mcache_ctl" bitsize="32" type="reg_mcache_ctl"/>
+
 <reg name="csr2000" bitsize="32" type="reg_mmisc_ctl"/>
+<reg name="mmisc_ctl" bitsize="32" type="reg_mmisc_ctl"/>
+
 <reg name="csr1988" bitsize="32" type="reg_mxstatus"/>
+<reg name="mxstatus" bitsize="32" type="reg_mxstatus"/>
+
 <reg name="csr2005" bitsize="32" type="reg_mslideleg"/>
+<reg name="mslideleg" bitsize="32" type="reg_mslideleg"/>
+
 <reg name="csr1990" bitsize="32" type="reg_mhsp_ctl"/>
+<reg name="mhsp_ctl" bitsize="32" type="reg_mhsp_ctl"/>
+
 <reg name="csr2016" bitsize="32" type="reg_dexc2dbg"/>
+<reg name="dexc2dbg" bitsize="32" type="reg_dexc2dbg"/>
+
 <reg name="csr2017" bitsize="32" type="reg_ddcause"/>
+<reg name="ddcause" bitsize="32" type="reg_ddcause"/>
+
 <reg name="csr256" bitsize="32" type="reg_sstatus"/>
+<reg name="sstatus" bitsize="32" type="reg_sstatus"/>
+
 <reg name="csr260" bitsize="32" type="reg_sie"/>
+<reg name="sie" bitsize="32" type="reg_sie"/>
+
 <reg name="csr324" bitsize="32" type="reg_sip"/>
+<reg name="sip" bitsize="32" type="reg_sip"/>
+
 <reg name="csr261" bitsize="32" type="reg_stvec"/>
+<reg name="stvec" bitsize="32" type="reg_stvec"/>
+
 <reg name="csr322" bitsize="32" type="reg_scause"/>
+<reg name="scause" bitsize="32" type="reg_scause"/>
+
 <reg name="csr384" bitsize="32" type="reg_satp"/>
+<reg name="satp" bitsize="32" type="reg_satp"/>
+
 <reg name="csr2500" bitsize="32" type="reg_slie"/>
+<reg name="slie" bitsize="32" type="reg_slie"/>
+
 <reg name="csr2501" bitsize="32" type="reg_slip"/>
+<reg name="slip" bitsize="32" type="reg_slip"/>
+
 <reg name="csr2512" bitsize="32" type="reg_smisc_ctl"/>
+<reg name="smisc_ctl" bitsize="32" type="reg_smisc_ctl"/>
+
 <reg name="csr2048" bitsize="32" type="reg_uitb"/>
+<reg name="uitb" bitsize="32" type="reg_uitb"/>
+
 <reg name="csr3857" bitsize="32" type="reg_mvendorid"/>
+<reg name="mvendorid" bitsize="32" type="reg_mvendorid"/>
+
 <reg name="csr928" bitsize="32" type="reg_pmpcfg0"/>
+<reg name="pmpcfg0" bitsize="32" type="reg_pmpcfg0"/>
+
 <reg name="csr929" bitsize="32" type="reg_pmpcfg1"/>
+<reg name="pmpcfg1" bitsize="32" type="reg_pmpcfg1"/>
+
 <reg name="csr930" bitsize="32" type="reg_pmpcfg2"/>
+<reg name="pmpcfg2" bitsize="32" type="reg_pmpcfg2"/>
+
 <reg name="csr931" bitsize="32" type="reg_pmpcfg3"/>
+<reg name="pmpcfg3" bitsize="32" type="reg_pmpcfg3"/>
+
 <reg name="csr774" bitsize="32" type="reg_mcounteren"/>
+<reg name="mcounteren" bitsize="32" type="reg_mcounteren"/>
+
 <reg name="csr1987" bitsize="32" type="reg_mnvec"/>
+<reg name="mnvec" bitsize="32" type="reg_mnvec"/>
+
 <reg name="csr1998" bitsize="32" type="reg_mcounterwen"/>
+<reg name="mcounterwen" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr1999" bitsize="32" type="reg_mcounterwen"/>
+<reg name="mcounterinten" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2001" bitsize="32" type="reg_mcounterwen"/>
+<reg name="mcountermask_m" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2002" bitsize="32" type="reg_mcounterwen"/>
+<reg name="mcountermask_s" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2003" bitsize="32" type="reg_mcounterwen"/>
+<reg name="mcountermask_u" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2004" bitsize="32" type="reg_mcounterwen"/>
+<reg name="mcounterovf" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr262" bitsize="32" type="reg_mcounterwen"/>
+<reg name="scounteren" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2511" bitsize="32" type="reg_mcounterwen"/>
+<reg name="scounterinten" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2514" bitsize="32" type="reg_mcounterwen"/>
+<reg name="scountermask_s" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2515" bitsize="32" type="reg_mcounterwen"/>
+<reg name="scountermask_u" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2516" bitsize="32" type="reg_mcounterwen"/>
+<reg name="scounterovf" bitsize="32" type="reg_mcounterwen"/>
+
 <reg name="csr2006" bitsize="32" type="reg_msavestatus"/>
+<reg name="msavestatus" bitsize="32" type="reg_msavestatus"/>
+
 <reg name="csr2513" bitsize="32" type="reg_mcounterwen"/>
+<reg name="scountermask_m" bitsize="32" type="reg_mcounterwen"/>
+
+<reg name="csr800" bitsize="32" type="reg_mcounterwen"/>
+<reg name="mcountinhibit" bitsize="32" type="reg_mcounterwen"/>
+
+<reg name="csr2528" bitsize="32" type="reg_mcounterwen"/>
+<reg name="scountinhibit" bitsize="32" type="reg_mcounterwen"/>
 </feature>
 
 <feature name="org.gnu.gdb.riscv.virtual">
