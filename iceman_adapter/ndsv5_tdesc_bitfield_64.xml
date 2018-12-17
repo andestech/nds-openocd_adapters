@@ -311,31 +311,31 @@
 <field name="xdebugver" start="30" end="31" type="dcsr_xdebugver"/>
 </struct>
 
-<flags id="fflags_flags" size="8">
+<flags id="fflags_flags" size="4">
 <field name="NX" start="0" end="0"/>
 <field name="UF" start="1" end="1"/>
 <field name="OF" start="2" end="2"/>
 <field name="DZ" start="3" end="3"/>
 <field name="NV" start="4" end="4"/>
 </flags>
-<struct id="reg_fflags" size="8">
-<field name="" start="0" end="63" type="fflags_flags"/>
+<struct id="reg_fflags" size="4">
+<field name="" start="0" end="31" type="fflags_flags"/>
 </struct>
 
-<enum id="frm_frm" size="8">
+<enum id="frm_frm" size="4">
 <evalue name="RNE" value="0"/>
 <evalue name="RTZ" value="1"/>
 <evalue name="RDM" value="2"/>
 <evalue name="RUP" value="3"/>
 <evalue name="RMM" value="4"/>
 </enum>
-<struct id="reg_frm" size="8">
-<field name="" start="0" end="63" type="uint64"/>
+<struct id="reg_frm" size="4">
+<field name="" start="0" end="31" type="uint32"/>
 <field name="frm" start="0" end="2" type="frm_frm"/>
 </struct>
 
-<struct id="reg_fcsr" size="8">
-<field name="" start="0" end="63" type="fflags_flags"/>
+<struct id="reg_fcsr" size="4">
+<field name="" start="0" end="31" type="fflags_flags"/>
 <field name="frm" start="5" end="7" type="frm_frm"/>
 </struct>
 
@@ -904,14 +904,14 @@
 <reg name="csr1968" bitsize="32" type="reg_dcsr"/>
 <reg name="dcsr" bitsize="32" type="reg_dcsr"/>
 
-<reg name="csr1" bitsize="64" type="reg_fflags"/>
-<reg name="fflags" bitsize="64" type="reg_fflags"/>
+<reg name="csr1" bitsize="32" type="reg_fflags"/>
+<reg name="fflags" bitsize="32" type="reg_fflags"/>
 
-<reg name="csr2" bitsize="64" type="reg_frm"/>
-<reg name="frm" bitsize="64" type="reg_frm"/>
+<reg name="csr2" bitsize="32" type="reg_frm"/>
+<reg name="frm" bitsize="32" type="reg_frm"/>
 
-<reg name="csr3" bitsize="64" type="reg_fcsr"/>
-<reg name="fcsr" bitsize="64" type="reg_fcsr"/>
+<reg name="csr3" bitsize="32" type="reg_fcsr"/>
+<reg name="fcsr" bitsize="32" type="reg_fcsr"/>
 
 <reg name="csr4032" bitsize="64" type="reg_micm_cfg"/>
 <reg name="micm_cfg" bitsize="64" type="reg_micm_cfg"/>
