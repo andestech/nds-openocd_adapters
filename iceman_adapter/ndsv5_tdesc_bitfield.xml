@@ -362,6 +362,11 @@
 <evalue name="4 MiB" value="13"/>
 <evalue name="8 MiB" value="14"/>
 <evalue name="16 MiB" value="15"/>
+<evalue name="32 MiB" value="16"/>
+<evalue name="64 MiB" value="17"/>
+<evalue name="128 MiB" value="18"/>
+<evalue name="256 MiB" value="19"/>
+<evalue name="512 MiB" value="20"/>
 </enum>
 <enum id="micm_cfg_ilmb" size="4">
 <evalue name="No ILMB exists." value="0"/>
@@ -415,6 +420,7 @@
 <field name="ulm_2bank" start="20" end="20" type="micm_cfg_ulm_2bank"/>
 <field name="ilm_ecc" start="21" end="22" type="micm_cfg_ic_ecc"/>
 <field name="ilm_xonly" start="23" end="23" type="micm_cfg_ilm_xonly"/>
+<field name="seth" start="24" end="24" type="uint32"/>
 </struct>
 
 <enum id="mdcm_cfg_dlmb" size="4">
@@ -441,6 +447,7 @@
 <field name="dlmsz" start="15" end="19" type="micm_cfg_ilmsz"/>
 <field name="ulm_2bank" start="20" end="20" type="micm_cfg_ulm_2bank"/>
 <field name="dlm_ecc" start="21" end="22" type="micm_cfg_ic_ecc"/>
+<field name="seth" start="24" end="24" type="uint32"/>
 </struct>
 
 <enum id="mmsc_cfg_excslvl" size="4">
@@ -462,6 +469,9 @@
 <field name="efhw" start="17" end="17"/>
 <field name="nopmc" start="22" end="22"/>
 <field name="spe_aft" start="23" end="23"/>
+<field name="esleep" start="24" end="24"/>
+<field name="ppi" start="25" end="25"/>
+<field name="fio" start="26" end="26"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg_flags"/>
@@ -866,6 +876,95 @@
 <field name="ptyp2" start="14" end="15" type="uint32"/>
 </struct>
 
+<flags id="wfe_flags" size="4">
+<field name="wfe" start="0" end="0"/>
+</flags>
+<struct id="reg_wfe" size="4">
+<field name="" start="0" end="31" type="wfe_flags"/>
+</struct>
+
+<flags id="sleepvalue_flags" size="4">
+<field name="sv" start="0" end="0"/>
+</flags>
+<struct id="reg_sleepvalue" size="4">
+<field name="" start="0" end="31" type="sleepvalue_flags"/>
+</struct>
+
+<flags id="txevt_flags" size="4">
+<field name="evt0" start="0" end="0"/>
+</flags>
+<struct id="reg_txevt" size="4">
+<field name="" start="0" end="31" type="txevt_flags"/>
+</struct>
+
+<enum id="mppib_size" size="4">
+<evalue name="1 KiB" value="1"/>
+<evalue name="2 KiB" value="2"/>
+<evalue name="4 KiB" value="3"/>
+<evalue name="8 KiB" value="4"/>
+<evalue name="16 KiB" value="5"/>
+<evalue name="32 KiB" value="6"/>
+<evalue name="64 KiB" value="7"/>
+<evalue name="128 KiB" value="8"/>
+<evalue name="256 KiB" value="9"/>
+<evalue name="512 KiB" value="10"/>
+<evalue name="1 MiB" value="11"/>
+<evalue name="2 MiB" value="12"/>
+<evalue name="4 MiB" value="13"/>
+<evalue name="8 MiB" value="14"/>
+<evalue name="16 MiB" value="15"/>
+<evalue name="32 MiB" value="16"/>
+<evalue name="64 MiB" value="17"/>
+<evalue name="128 MiB" value="18"/>
+<evalue name="256 MiB" value="19"/>
+<evalue name="512 MiB" value="20"/>
+<evalue name="1 GiB" value="21"/>
+<evalue name="2 GiB" value="22"/>
+</enum>
+<flags id="mppib_flags" size="4">
+<field name="en" start="0" end="0"/>
+</flags>
+<struct id="reg_mppib" size="4">
+<field name="" start="0" end="31" type="mppib_flags"/>
+<field name="size" start="1" end="5" type="mppib_size"/>
+<field name="BPA" start="10" end="31" type="uint32"/>
+</struct>
+
+<flags id="ustatus_flags" size="4">
+<field name="uie" start="0" end="0"/>
+<field name="upie" start="4" end="4"/>
+</flags>
+<struct id="reg_ustatus" size="4">
+<field name="" start="0" end="31" type="ustatus_flags"/>
+</struct>
+
+<flags id="uie_flags" size="4">
+<field name="usie" start="0" end="0"/>
+<field name="utie" start="4" end="4"/>
+<field name="ueie" start="8" end="8"/>
+</flags>
+<struct id="reg_uie" size="4">
+<field name="" start="0" end="31" type="uie_flags"/>
+</struct>
+
+<flags id="uip_flags" size="4">
+<field name="usip" start="0" end="0"/>
+<field name="utip" start="4" end="4"/>
+<field name="ueip" start="8" end="8"/>
+</flags>
+<struct id="reg_uip" size="4">
+<field name="" start="0" end="31" type="uip_flags"/>
+</struct>
+
+<struct id="reg_utvec" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="base" start="2" end="31" type="uint32"/>
+</struct>
+
+<struct id="reg_ucause" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="interrupt" start="31" end="31" type="uint32"/>
+</struct>
 
 <reg name="csr768" bitsize="32" type="reg_mstatus"/>
 <reg name="mstatus" bitsize="32" type="reg_mstatus"/>
@@ -1052,6 +1151,36 @@
 
 <reg name="csr2528" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scountinhibit" bitsize="32" type="reg_mcounterwen"/>
+
+<reg name="csr2064" bitsize="32" type="reg_wfe"/>
+<reg name="wfe" bitsize="32" type="reg_wfe"/>
+
+<reg name="csr2065" bitsize="32" type="reg_sleepvalue"/>
+<reg name="sleepvalue" bitsize="32" type="reg_sleepvalue"/>
+
+<reg name="csr2066" bitsize="32" type="reg_txevt"/>
+<reg name="txevt" bitsize="32" type="reg_txevt"/>
+
+<reg name="csr2032" bitsize="32" type="reg_mppib"/>
+<reg name="mppib" bitsize="32" type="reg_mppib"/>
+
+<reg name="csr2033" bitsize="32" type="reg_mppib"/>
+<reg name="mfiob" bitsize="32" type="reg_mppib"/>
+
+<reg name="csr0" bitsize="32" type="reg_ustatus"/>
+<reg name="ustatus" bitsize="32" type="reg_ustatus"/>
+
+<reg name="csr4" bitsize="32" type="reg_uie"/>
+<reg name="uie" bitsize="32" type="reg_uie"/>
+
+<reg name="csr68" bitsize="32" type="reg_uip"/>
+<reg name="uip" bitsize="32" type="reg_uip"/>
+
+<reg name="csr5" bitsize="32" type="reg_utvec"/>
+<reg name="utvec" bitsize="32" type="reg_utvec"/>
+
+<reg name="csr66" bitsize="32" type="reg_ucause"/>
+<reg name="ucause" bitsize="32" type="reg_ucause"/>
 </feature>
 
 <feature name="org.gnu.gdb.riscv.virtual">
