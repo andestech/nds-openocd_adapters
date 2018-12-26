@@ -474,6 +474,7 @@
 <field name="esleep" start="24" end="24"/>
 <field name="ppi" start="25" end="25"/>
 <field name="fio" start="26" end="26"/>
+<field name="clic" start="27" end="27"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -964,6 +965,18 @@
 <field name="interrupt" start="63" end="63" type="uint64"/>
 </struct>
 
+<struct id="reg_mtvt" size="8">
+<field name="" start="0" end="63" type="uint64"/>
+<field name="base address" start="6" end="63" type="uint64"/>
+</struct>
+
+<struct id="reg_mintstatus" size="8">
+<field name="" start="0" end="63" type="uint64"/>
+<field name="uil" start="0" end="7" type="uint64"/>
+<field name="sil" start="8" end="15" type="uint64"/>
+<field name="mil" start="24" end="31" type="uint64"/>
+</struct>
+
 <reg name="csr768" bitsize="64" type="reg_mstatus"/>
 <reg name="mstatus" bitsize="64" type="reg_mstatus"/>
 
@@ -1173,6 +1186,12 @@
 
 <reg name="csr66" bitsize="64" type="reg_ucause"/>
 <reg name="ucause" bitsize="64" type="reg_ucause"/>
+
+<reg name="csr775" bitsize="64" type="reg_mtvt"/>
+<reg name="mtvt" bitsize="64" type="reg_mtvt"/>
+
+<reg name="csr838" bitsize="64" type="reg_mintstatus"/>
+<reg name="mintstatus" bitsize="64" type="reg_mintstatus"/>
 </feature>
 
 <feature name="org.gnu.gdb.riscv.virtual">
