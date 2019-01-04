@@ -475,6 +475,8 @@
 <field name="ppi" start="25" end="25"/>
 <field name="fio" start="26" end="26"/>
 <field name="clic" start="27" end="27"/>
+<field name="eclic" start="28" end="28"/>
+<field name="edsp" start="29" end="29"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -553,6 +555,7 @@
 <field name="una" start="6" end="6"/>
 <field name="dcpf_en" start="7" end="7"/>
 <field name="nbld_en" start="8" end="8"/>
+<field name="newnmi" start="9" end="9"/>
 </flags>
 <struct id="reg_mmisc_ctl" size="8">
 <field name="" start="0" end="63" type="mmisc_ctl_flags"/>
@@ -977,6 +980,21 @@
 <field name="mil" start="24" end="31" type="uint64"/>
 </struct>
 
+<flags id="ucode_flags" size="8">
+<field name="ov" start="0" end="0"/>
+</flags>
+<struct id="reg_ucode" size="8">
+<field name="" start="0" end="63" type="ucode_flags"/>
+</struct>
+
+<flags id="mirq_entry_flags" size="8">
+<field name="en" start="0" end="0"/>
+</flags>
+<struct id="reg_mirq_entry" size="8">
+<field name="" start="0" end="63" type="mirq_entry_flags"/>
+<field name="icea" start="1" end="63" type="uint64"/>
+</struct>
+
 <reg name="csr768" bitsize="64" type="reg_mstatus"/>
 <reg name="mstatus" bitsize="64" type="reg_mstatus"/>
 
@@ -1192,6 +1210,12 @@
 
 <reg name="csr838" bitsize="64" type="reg_mintstatus"/>
 <reg name="mintstatus" bitsize="64" type="reg_mintstatus"/>
+
+<reg name="csr2049" bitsize="64" type="reg_ucode"/>
+<reg name="ucode" bitsize="64" type="reg_ucode"/>
+
+<reg name="csr2044" bitsize="64" type="reg_mirq_entry"/>
+<reg name="mirq_entry" bitsize="64" type="reg_mirq_entry"/>
 </feature>
 
 <feature name="org.gnu.gdb.riscv.virtual">
