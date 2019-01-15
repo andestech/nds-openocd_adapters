@@ -203,7 +203,15 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 		set platform_name [get_platform_name $rdata]
 		puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
 
-		test_memory_rw $NDS_TAP $NDS_MEM_ADDR
+		set abstractcs [read_dmi_abstractcs $NDS_TAP]
+		set debug_buffer_size [expr ($abstractcs>>24)&0x1f]
+		puts [format "core%d: debug_buffer_size=0x%x" $hartsel $debug_buffer_size]
+		if [ expr $debug_buffer_size > 7 ] {
+			test_memory_rw $NDS_TAP $NDS_MEM_ADDR
+		} else {
+			puts [format "debug_buffer_size is too small:0x%x !!" $debug_buffer_size]
+			set test_memory_access_pass "SKIP"
+		}
 	}
 
 	test_reset_and_halt_all_harts $NDS_TAP
