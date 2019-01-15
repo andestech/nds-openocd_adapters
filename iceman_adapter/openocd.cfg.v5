@@ -12,7 +12,11 @@ jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x1000563D
 
 set NDS_TAP $_CHIPNAME.cpu
 set _TARGETNAME $_CHIPNAME.cpu0
-target create $_TARGETNAME nds_v5 -chain-position $NDS_TAP -coreid 0
+if {$_use_smp == 0} {
+	target create $_TARGETNAME nds_v5 -chain-position $NDS_TAP -coreid 0
+} else {
+	target create $_TARGETNAME nds_v5 -chain-position $NDS_TAP -rtos riscv
+}
 #$_TARGETNAME configure -event examine-end {
 #	global _TARGETNAME
 #	targets $_TARGETNAME

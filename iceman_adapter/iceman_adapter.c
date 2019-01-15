@@ -50,6 +50,7 @@
 #define LONGOPT_L2C		13
 #define LONGOPT_DMI_DELAY	14
 #define LONGOPT_USER_TARGET_CFG	15
+#define LONGOPT_SMP		16
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -63,6 +64,7 @@ struct option long_option[] = {
 	{"l2c", required_argument, &long_opt_flag, LONGOPT_L2C},
 	{"dmi_busy_delay_count", required_argument, &long_opt_flag, LONGOPT_DMI_DELAY},
 	{"target-cfg", required_argument, &long_opt_flag, LONGOPT_USER_TARGET_CFG},
+	{"smp", no_argument, &long_opt_flag, LONGOPT_SMP},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -230,6 +232,7 @@ static unsigned int efreq_range = 0;
 #define DIMBR_DEFAULT (0xFFFF0000u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
 static unsigned int use_sdm = 0;
+static unsigned int use_smp = 0;
 
 #define L2C_BASE (0x90F00000u)
 static unsigned int l2c_base = L2C_BASE;
@@ -392,6 +395,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					sscanf(optarg, "%d", &dmi_busy_delay_count);
 				} else if (long_opt == LONGOPT_USER_TARGET_CFG) {
 					custom_target_cfg = optarg;
+				} else if (long_opt == LONGOPT_SMP) {
+					use_smp = 1;
 				}
 
 				break;
@@ -879,6 +884,11 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 	fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
+	if( use_smp == 1 ) {
+		fprintf(openocd_cfg, "set _use_smp 1\n");
+	} else {
+		fprintf(openocd_cfg, "set _use_smp 0\n");
+	}
 
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
 		if( strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0 ) {	/// interface

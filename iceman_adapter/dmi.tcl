@@ -179,6 +179,11 @@ proc nds_auto_create_multi_targets {tap} {
 		return
 	}
 
+	global _use_smp
+	if {$_use_smp == 1} {
+		return
+	}
+
 	#puts [format "create targets..."]
 	for {set i 1} {$i < $_number_of_core} {incr i} {
 		target create $tap$i nds_v5 -chain-position $tap -coreid $i
