@@ -41,16 +41,17 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-#define LONGOPT_CP0		7
-#define LONGOPT_CP1		8
-#define LONGOPT_CP2		9
-#define LONGOPT_CP3		10
-#define LONGOPT_USE_SDM		11
-#define LONGOPT_AICE_INIT	12
-#define LONGOPT_L2C		13
-#define LONGOPT_DMI_DELAY	14
-#define LONGOPT_USER_TARGET_CFG	15
-#define LONGOPT_SMP		16
+#define LONGOPT_CP0                     7
+#define LONGOPT_CP1                     8
+#define LONGOPT_CP2                     9
+#define LONGOPT_CP3                     10
+#define LONGOPT_USE_SDM                 11
+#define LONGOPT_AICE_INIT               12
+#define LONGOPT_L2C                     13
+#define LONGOPT_DMI_DELAY               14
+#define LONGOPT_USER_TARGET_CFG         15
+#define LONGOPT_SMP                     16
+#define LONGOPT_DIS_HALT_ON_RESET       17
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -65,6 +66,7 @@ struct option long_option[] = {
 	{"dmi_busy_delay_count", required_argument, &long_opt_flag, LONGOPT_DMI_DELAY},
 	{"target-cfg", required_argument, &long_opt_flag, LONGOPT_USER_TARGET_CFG},
 	{"smp", no_argument, &long_opt_flag, LONGOPT_SMP},
+	{"disable-halt-on-reset", no_argument, &long_opt_flag, LONGOPT_DIS_HALT_ON_RESET},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -233,6 +235,7 @@ static unsigned int efreq_range = 0;
 static unsigned int edm_dimb = DIMBR_DEFAULT;
 static unsigned int use_sdm = 0;
 static unsigned int use_smp = 0;
+static unsigned int usd_halt_on_reset = 1;
 
 #define L2C_BASE (0x90F00000u)
 static unsigned int l2c_base = L2C_BASE;
@@ -352,6 +355,8 @@ static void show_usage(void) {
 	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
 	printf("--l2c:<Address>:\t\tIndicate the base address of L2C\n");
+	printf("--smp:\t\tEnable SMP mode for multi-cores\n");
+	printf("--disable-halt-on-reset:\t\tDisable halt-on-reset functionality\n");
 	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
@@ -397,6 +402,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					custom_target_cfg = optarg;
 				} else if (long_opt == LONGOPT_SMP) {
 					use_smp = 1;
+				} else if (long_opt == LONGOPT_DIS_HALT_ON_RESET) {
+					usd_halt_on_reset = 0;
 				}
 
 				break;
@@ -904,6 +911,7 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
 	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
+	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
 	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
 	//if (diagnosis)
