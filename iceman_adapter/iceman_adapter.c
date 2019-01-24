@@ -51,7 +51,7 @@
 #define LONGOPT_DMI_DELAY               14
 #define LONGOPT_USER_TARGET_CFG         15
 #define LONGOPT_SMP                     16
-#define LONGOPT_DIS_HALT_ON_RESET       17
+#define LONGOPT_HALT_ON_RESET           17
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -66,7 +66,7 @@ struct option long_option[] = {
 	{"dmi_busy_delay_count", required_argument, &long_opt_flag, LONGOPT_DMI_DELAY},
 	{"target-cfg", required_argument, &long_opt_flag, LONGOPT_USER_TARGET_CFG},
 	{"smp", no_argument, &long_opt_flag, LONGOPT_SMP},
-	{"disable-halt-on-reset", no_argument, &long_opt_flag, LONGOPT_DIS_HALT_ON_RESET},
+	{"halt-on-reset", required_argument, &long_opt_flag, LONGOPT_HALT_ON_RESET},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -235,7 +235,7 @@ static unsigned int efreq_range = 0;
 static unsigned int edm_dimb = DIMBR_DEFAULT;
 static unsigned int use_sdm = 0;
 static unsigned int use_smp = 0;
-static unsigned int usd_halt_on_reset = 1;
+static unsigned int usd_halt_on_reset = 0;
 
 #define L2C_BASE (0x90F00000u)
 static unsigned int l2c_base = L2C_BASE;
@@ -356,7 +356,7 @@ static void show_usage(void) {
 	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
 	printf("--l2c:<Address>:\t\tIndicate the base address of L2C\n");
 	printf("--smp:\t\tEnable SMP mode for multi-cores\n");
-	printf("--disable-halt-on-reset:\t\tDisable halt-on-reset functionality\n");
+	printf("--halt-on-reset (Only for V5):\t\tEnable/Disable halt-on-reset functionality\n");
 	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
@@ -402,8 +402,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					custom_target_cfg = optarg;
 				} else if (long_opt == LONGOPT_SMP) {
 					use_smp = 1;
-				} else if (long_opt == LONGOPT_DIS_HALT_ON_RESET) {
-					usd_halt_on_reset = 0;
+				} else if (long_opt == LONGOPT_HALT_ON_RESET) {
+					usd_halt_on_reset = optarg;
 				}
 
 				break;
