@@ -452,6 +452,14 @@
 <field name="seth" start="24" end="24" type="uint32"/>
 </struct>
 
+<enum id="mmsc_cfg_addpmc" size="8">
+<evalue name="4 additional counters" value="0"/>
+<evalue name="3 additional counters" value="1"/>
+<evalue name="2 additional counters" value="2"/>
+<evalue name="1 additional counters" value="3"/>
+<evalue name="0 additional counters" value="4"/>
+<evalue name="n additional counters" value="30>n>4"/>
+</enum>
 <enum id="mmsc_cfg_excslvl" size="8">
 <evalue name="No additional save level" value="0"/>
 <evalue name="Additional save level is 1" value="1"/>
@@ -481,6 +489,7 @@
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
 <field name="tlb_ecc" start="1" end="2" type="micm_cfg_ic_ecc"/>
+<field name="addpmc" start="7" end="11" type="mmsc_cfg_addpmc"/>
 <field name="excslvl" start="20" end="21" type="mmsc_cfg_excslvl"/>
 </struct>
 
