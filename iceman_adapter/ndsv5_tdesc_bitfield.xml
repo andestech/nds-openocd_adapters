@@ -456,7 +456,31 @@
 <evalue name="2 additional counters" value="2"/>
 <evalue name="1 additional counters" value="3"/>
 <evalue name="0 additional counters" value="4"/>
-<evalue name="n additional counters" value="30>n>4"/>
+<evalue name="5 additional counters" value="5"/>
+<evalue name="6 additional counters" value="6"/>
+<evalue name="7 additional counters" value="7"/>
+<evalue name="8 additional counters" value="8"/>
+<evalue name="9 additional counters" value="9"/>
+<evalue name="10 additional counters" value="10"/>
+<evalue name="11 additional counters" value="11"/>
+<evalue name="12 additional counters" value="12"/>
+<evalue name="13 additional counters" value="13"/>
+<evalue name="14 additional counters" value="14"/>
+<evalue name="15 additional counters" value="15"/>
+<evalue name="16 additional counters" value="16"/>
+<evalue name="17 additional counters" value="17"/>
+<evalue name="18 additional counters" value="18"/>
+<evalue name="19 additional counters" value="19"/>
+<evalue name="20 additional counters" value="20"/>
+<evalue name="21 additional counters" value="21"/>
+<evalue name="22 additional counters" value="22"/>
+<evalue name="23 additional counters" value="23"/>
+<evalue name="24 additional counters" value="24"/>
+<evalue name="25 additional counters" value="25"/>
+<evalue name="26 additional counters" value="26"/>
+<evalue name="27 additional counters" value="27"/>
+<evalue name="28 additional counters" value="28"/>
+<evalue name="29 additional counters" value="29"/>
 </enum>
 <enum id="mmsc_cfg_excslvl" size="4">
 <evalue name="No additional save level" value="0"/>
