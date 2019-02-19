@@ -111,7 +111,8 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 
 openocd_targetcfgdir = $(bindir)/target
 dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl \
-			      target/nds32_target_cfg.tpl
+			      target/nds32_target_cfg.tpl \
+			      target/user_target_cfg_table.txt
 
 if BUILD_CYGWIN_BINARY
 DRIVERLIBS = $(LIBUSB0_LIBS) $(LIBUSB1_LIBS)

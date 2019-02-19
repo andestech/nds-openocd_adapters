@@ -24,6 +24,9 @@
 #define LINE_BUFFER_SIZE   2048
 #define ICEMAN_VERSION     "v4.5.0"
 #define NDS32_USER_CFG     "nds32_user.cfg"
+//#define FILENAME_USER_TARGET_CFG  "./target/user_target_cfg_table.txt"
+#define FILENAME_TARGET_CFG_TPL     "./target/nds32_target_cfg.tpl"
+#define FILENAME_TARGET_CFG_OUT     "./target/nds32_target_cfg.out"
 
 #define MAX_LEN_ACECONF_NAME 2048
 #define TOSTR(x)	#x
@@ -241,6 +244,10 @@ static unsigned int usd_halt_on_reset = 0;
 static unsigned int l2c_base = L2C_BASE;
 static unsigned int dmi_busy_delay_count = 0;
 static unsigned int nds_v3_ftdi = 0;
+
+int nds_target_cfg_checkif_transfer(const char *p_user);
+int nds_target_cfg_transfer(const char *p_user);
+int nds_target_cfg_merge(const char *p_tpl, const char *p_out);
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
@@ -1192,12 +1199,16 @@ static void update_board_cfg(void)
 	char *target_str = NULL;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
-			if (nds_v3_ftdi == 1) {
-				if (custom_target_cfg) {
-					sprintf(line_buffer, "source [find target/%s]\n", custom_target_cfg);
+			if (custom_target_cfg) {
+				if ((nds_target_cfg_checkif_transfer(custom_target_cfg) == 0) &&
+					  (nds_target_cfg_transfer(custom_target_cfg) == 0)) {
+					nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
+					sprintf(line_buffer, "source [find %s]\n", FILENAME_TARGET_CFG_OUT);
 				} else {
-					strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
+					sprintf(line_buffer, "source [find %s]\n", custom_target_cfg);
 				}
+			} else if (nds_v3_ftdi == 1) {
+				strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
 			} else {
 				for (coreid = 0; coreid < 1; coreid++){
 					if(target_str)
@@ -1510,3 +1521,334 @@ int main(int argc, char **argv) {
 	//printf("return from openocd_main WOW!\n");
 	return 0;
 }
+
+#define LINEBUF_SIZE        1024
+#define CHECK_INFO_NUMS   3
+#define CHECK_TARGET      "_target_"
+#define CHECK_IRLEN       "_irlen"
+#define CHECK_EXP_ID      "_expect_id"
+
+#define MAX_NUMS_TAP      32
+#define MAX_NUMS_TARGET   32
+
+unsigned int number_of_tap = 0;
+unsigned int number_of_target = 0;
+
+// TAP_ARCH: 1->v3, 2->v5, 3->v3_sdm, 4->others
+#define TAP_ARCH_V3       1  //"v3"
+#define TAP_ARCH_V5       2  //"v5"
+#define TAP_ARCH_V3_SDM   3  //"v3_sdm"
+#define TAP_ARCH_UNKNOWN  4
+
+unsigned int tap_irlen[MAX_NUMS_TAP];
+unsigned int tap_expect_id[MAX_NUMS_TAP];
+unsigned int tap_arch_list[MAX_NUMS_TAP];
+unsigned int target_arch_list[MAX_NUMS_TAP][MAX_NUMS_TARGET];
+unsigned int target_core_nums[MAX_NUMS_TAP][MAX_NUMS_TARGET];
+
+unsigned int target_arch_id[MAX_NUMS_TARGET];
+unsigned int target_core_id[MAX_NUMS_TARGET];
+unsigned int target_tap_position[MAX_NUMS_TARGET];
+unsigned int target_smp_list[MAX_NUMS_TARGET];
+unsigned int target_smp_core_nums[MAX_NUMS_TARGET];
+
+char *gpCheckInfo[CHECK_INFO_NUMS] = {
+	CHECK_TARGET,
+	CHECK_IRLEN,
+	CHECK_EXP_ID,
+};
+
+int nds_target_cfg_checkif_transfer(const char *p_user) {
+	FILE *fp_user = NULL;
+	char line_buf[LINEBUF_SIZE];
+	char *pline_buf = (char *)&line_buf[0];
+	char *cur_str;
+	unsigned int i;
+
+	fp_user = fopen(p_user, "r");
+	if (fp_user == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_user);
+		return -1;
+	}
+	// parsing the first line of the file
+	for (i = 0; i < 5; i++) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL) {
+			break;
+		}
+		// parsing the keyword "_target_"
+		cur_str = strstr(pline_buf, CHECK_TARGET);
+		if (cur_str != NULL) {
+			fclose(fp_user);
+			return 0;
+		}
+	}
+	fclose(fp_user);
+	return -1;
+}
+
+int nds_target_cfg_transfer(const char *p_user) {
+	FILE *fp_user = NULL;
+	char line_buf[LINEBUF_SIZE], tmp_buf[256];
+	char *pline_buf = (char *)&line_buf[0];
+	char *cur_str, *tmp_str;
+	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id;
+
+	fp_user = fopen(p_user, "r");
+	if (fp_user == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_user);
+		return -1;
+	}
+
+	for (i = 0; i < MAX_NUMS_TAP; i++) {
+		tap_irlen[i] = 0;
+		tap_expect_id[i] = 0;
+		tap_arch_list[i] = 0;
+		for (j = 0; j < MAX_NUMS_TARGET; j++) {
+			target_arch_list[i][j] = 0;
+			target_core_nums[i][j] = 0;
+		}
+	}
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		target_arch_id[i] = 0;
+		target_core_id[i] = 0;
+		target_tap_position[i] = 0;
+		target_smp_list[i] = 0;
+		target_smp_core_nums[i] = 0;
+	}
+
+	while(1) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL) {
+			break;
+		}
+		//printf("%s \n", pline_buf);
+		for (i = 0; i < CHECK_INFO_NUMS; i++) {
+			cur_str = strstr(pline_buf, gpCheckInfo[i]);
+			if (cur_str != NULL) {
+				tmp_str = strstr(pline_buf, "#");
+				if (tmp_str != NULL)
+					break;
+				cur_str = strstr(pline_buf, "tap");
+				if (cur_str == NULL)
+					break;
+
+				if (i == 1) {
+					// tap0_irlen 4
+					sscanf(cur_str, "tap%d_irlen %d", &tap_id, &irlen);
+					//printf("tap_id:%d, irlen:%d\n", tap_id, irlen);
+					if (tap_id >= MAX_NUMS_TAP) {
+						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
+						fclose(fp_user);
+						return -1;
+					}
+					tap_irlen[tap_id] = irlen;
+					break;
+				} else if (i == 2) {
+					// tap0_expect_id 0x1000063D
+					sscanf(cur_str, "tap%d_expect_id 0x%x", &tap_id, &exp_id);
+					//printf("tap_id:%d, exp_id:0x%x\n", tap_id, exp_id);
+					if (tap_id >= MAX_NUMS_TAP) {
+						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
+						fclose(fp_user);
+						return -1;
+					}
+					tap_expect_id[tap_id] = exp_id;
+					break;
+				}
+				// tap2_target_0   v5  1
+				sscanf(cur_str, "tap%d_target_%d %s %d", &tap_id, &target_id, &tmp_buf[0], &core_nums);
+				arch_id = TAP_ARCH_UNKNOWN;
+				cur_str = strstr(&tmp_buf[0], "v5");
+				if (cur_str != NULL)
+					arch_id = TAP_ARCH_V5;
+				else {
+					cur_str = strstr(&tmp_buf[0], "v3_sdm");
+					if (cur_str != NULL)
+						arch_id = TAP_ARCH_V3_SDM;
+					else {
+						cur_str = strstr(&tmp_buf[0], "v3");
+						if (cur_str != NULL)
+							arch_id = TAP_ARCH_V3;
+					}
+				}
+				if (tap_id >= MAX_NUMS_TAP) {
+					printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+				if (target_id >= MAX_NUMS_TARGET) {
+					printf("ERROR!! target_id > MAX_NUMS_TARGET !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+				if (arch_id == TAP_ARCH_UNKNOWN) {
+					printf("ERROR!! unknown arch !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+				tap_arch_list[tap_id] = arch_id;
+				//printf("tap_id:%d, target_id:%d arch:%d core_nums:%d\n", tap_id, target_id, arch_id, core_nums);
+				target_arch_list[tap_id][target_id] = arch_id;
+				target_core_nums[tap_id][target_id] = core_nums;
+				break;
+			}
+		}
+	}
+
+	for (i = 0; i < MAX_NUMS_TAP; i++) {
+		arch_id = target_arch_list[i][0];
+		if (arch_id == 0)
+			break;
+		core_nums = 0;
+		for (j = 0; j < MAX_NUMS_TARGET; j++) {
+			if (target_arch_list[i][j] == 0)
+				break;
+			if (target_arch_list[i][j] != arch_id) {
+				printf("ERROR!! There are different arch in the same tap !!\n");
+				fclose(fp_user);
+				return -1;
+			}
+			//printf("target_arch_list: %d\n", target_arch_list[i][j]);
+			//printf("target_core_nums: %d\n", target_core_nums[i][j]);
+			if ( target_core_nums[i][j] > 1 ) {
+				if (j != 0) {
+					printf("ERROR!! smp must be target_0 !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+				target_smp_list[number_of_target] = 1;
+				target_smp_core_nums[number_of_target] = target_core_nums[i][j];
+			}
+			target_arch_id[number_of_target] = target_arch_list[i][j];
+			target_tap_position[number_of_target] = i;
+			target_core_id[number_of_target] = core_nums;
+			core_nums += target_core_nums[i][j];
+			number_of_target ++;
+		}
+		number_of_tap ++;
+	}
+/*
+	printf("number_of_tap: %d\n", number_of_tap);
+	printf("number_of_target: %d\n", number_of_target);
+
+	printf("\n target_arch_id:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_arch_id[i]);
+	}
+	printf("\n target_core_id:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_core_id[i]);
+	}
+	printf("\n target_tap_position:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_tap_position[i]);
+	}
+	printf("\n target_smp_list:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_smp_list[i]);
+	}
+	printf("\n target_smp_core_nums:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_smp_core_nums[i]);
+	}
+*/
+	fclose(fp_user);
+	return 0;
+}
+
+#define CHECK_TPL_INFO_NUMS   8
+#define CHECK_TPL_TAP_ARCH        "set tap_arch_list"
+#define CHECK_TPL_TAP_IRLEN       "set tap_irlen"
+#define CHECK_TPL_TAP_EXP_ID      "set tap_expected_id"
+
+#define CHECK_TPL_TARGET_ARCH     "set target_arch_list"
+#define CHECK_TPL_TARGET_CORE_ID  "set target_core_id"
+#define CHECK_TPL_TARGET_TAP_POS  "set target_tap_position"
+#define CHECK_TPL_TARGET_SMP      "set target_smp_list"
+#define CHECK_TPL_SMP_CORE_NUMS   "set target_smp_core_nums"
+
+
+char *gpCheckTplFileInfo[CHECK_TPL_INFO_NUMS] = {
+	CHECK_TPL_TAP_ARCH,
+	CHECK_TPL_TAP_IRLEN,
+	CHECK_TPL_TAP_EXP_ID,
+	CHECK_TPL_TARGET_ARCH,
+	CHECK_TPL_TARGET_CORE_ID,
+	CHECK_TPL_TARGET_TAP_POS,
+	CHECK_TPL_TARGET_SMP,
+	CHECK_TPL_SMP_CORE_NUMS,
+};
+
+unsigned int *gpUpdateNewTblInfo[CHECK_TPL_INFO_NUMS] = {
+	&tap_arch_list[0],
+	&tap_irlen[0],
+	&tap_expect_id[0],
+
+	&target_arch_id[0],
+	&target_core_id[0],
+	&target_tap_position[0],
+	&target_smp_list[0],
+	&target_smp_core_nums[0],
+};
+
+int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
+	FILE *fp_tpl = NULL;
+	FILE *fp_output = NULL;
+	char line_buf[LINEBUF_SIZE], tmp_buf[512];
+	char *pline_buf = (char *)&line_buf[0];
+	char *cur_str, *tmp_str;
+	unsigned int i, j, num_char;
+	unsigned int *pnew_value, update_nums;
+
+	fp_tpl = fopen(p_tpl, "r");
+	fp_output = fopen(p_out, "wb");
+	if (fp_tpl == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_tpl);
+		return -1;
+	}
+	if (fp_output == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_out);
+		return -1;
+	}
+	while(1) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_tpl) == NULL) {
+			break;
+		}
+		for (i = 0; i < CHECK_TPL_INFO_NUMS; i++) {
+			cur_str = strstr(pline_buf, gpCheckTplFileInfo[i]);
+			if (cur_str != NULL) {
+				tmp_str = strstr(pline_buf, "#");
+				if (tmp_str != NULL)
+					break;
+				pnew_value = gpUpdateNewTblInfo[i];
+				//sprintf(line_buffer, "source [find target/%s]\n", custom_target_cfg);
+				if (i < 3)
+					update_nums = MAX_NUMS_TAP;
+				else
+					update_nums = MAX_NUMS_TARGET;
+				tmp_str = (char*)&tmp_buf[0];
+				for (j = 0; j < update_nums; j ++) {
+					if (i == 2)
+						num_char = sprintf(tmp_str, "0x%x ", *pnew_value++);
+					else
+						num_char = sprintf(tmp_str, "%d ", *pnew_value++);
+					tmp_str += num_char;
+				}
+				sprintf(pline_buf, "%s {%s}\n", gpCheckTplFileInfo[i], &tmp_buf[0]);
+			}
+		}
+		fputs(pline_buf, fp_output);
+	}
+	fclose(fp_tpl);
+	fclose(fp_output);
+	return 0;
+}
+/*
+int nds_target_cfg_transfer_main(void) {
+	if (nds_target_cfg_checkif_transfer(FILENAME_USER_TARGET_CFG) != 0)
+		return -1;
+	if (nds_target_cfg_transfer(FILENAME_USER_TARGET_CFG) != 0)
+		return -1;
+	nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
+	return 0;
+}
+*/
