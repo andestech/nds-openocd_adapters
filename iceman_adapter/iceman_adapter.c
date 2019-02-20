@@ -410,7 +410,7 @@ static int parse_param(int a_argc, char **a_argv) {
 				} else if (long_opt == LONGOPT_SMP) {
 					use_smp = 1;
 				} else if (long_opt == LONGOPT_HALT_ON_RESET) {
-					usd_halt_on_reset = optarg;
+					usd_halt_on_reset = strtol(optarg, NULL, 0);
 				}
 
 				break;
