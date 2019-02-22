@@ -359,7 +359,7 @@ static void show_usage(void) {
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
 	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
-	printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
+	//printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
 	printf("--l2c:<Address>:\t\tIndicate the base address of L2C\n");
 	printf("--smp:\t\tEnable SMP mode for multi-cores\n");
