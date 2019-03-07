@@ -904,6 +904,7 @@ static void update_openocd_cfg_v5(void)
 		fprintf(openocd_cfg, "set _use_smp 0\n");
 	}
 
+	int replace_target_create = 0;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
 		if( strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0 ) {	/// interface
 			if( custom_interface != NULL )
@@ -912,7 +913,21 @@ static void update_openocd_cfg_v5(void)
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 			continue;
 		}
-		fputs(line_buffer, openocd_cfg);
+		if (custom_target_cfg) {
+			if( strncmp(line_buffer, "##--target-create-start", 23) == 0 ) {	/// replace target-create start
+					fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
+					replace_target_create = 1;
+					fputs(line_buffer, openocd_cfg);
+			} else if( strncmp(line_buffer, "##--target-create-finish", 24) == 0 ) {	/// replace target-create finish
+					custom_target_cfg = NULL;
+					replace_target_create = 0;
+			}
+			if (replace_target_create == 0) {
+				fputs(line_buffer, openocd_cfg);
+			}
+		} else {
+			fputs(line_buffer, openocd_cfg);
+		}
 	}
 
 	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
@@ -1200,13 +1215,7 @@ static void update_board_cfg(void)
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
 			if (custom_target_cfg) {
-				if ((nds_target_cfg_checkif_transfer(custom_target_cfg) == 0) &&
-					  (nds_target_cfg_transfer(custom_target_cfg) == 0)) {
-					nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
-					sprintf(line_buffer, "source [find %s]\n", FILENAME_TARGET_CFG_OUT);
-				} else {
-					sprintf(line_buffer, "source [find %s]\n", custom_target_cfg);
-				}
+				sprintf(line_buffer, "source [find %s]\n", custom_target_cfg);
 			} else if (nds_v3_ftdi == 1) {
 				strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
 			} else {
@@ -1477,6 +1486,14 @@ int main(int argc, char **argv) {
 	printf("Telnet port: %d\n", telnet_port);
 	printf("TCL port: %d\n", tcl_port);
 
+	if (custom_target_cfg) {
+		if ( (nds_target_cfg_checkif_transfer(custom_target_cfg) == 0) &&
+			   (nds_target_cfg_transfer(custom_target_cfg) == 0) ) {
+			nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
+			custom_target_cfg = FILENAME_TARGET_CFG_OUT;
+		}
+	}
+
 	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
 	if (target_type[0] == TARGET_V5) {
 		update_openocd_cfg_v5();
@@ -1726,6 +1743,13 @@ int nds_target_cfg_transfer(const char *p_user) {
 		}
 		number_of_tap ++;
 	}
+	if (number_of_target) {
+		if (target_arch_id[0] == TAP_ARCH_V5)
+			target_type[0] = TARGET_V5;
+		else
+			target_type[0] = TARGET_V3;
+	}
+
 /*
 	printf("number_of_tap: %d\n", number_of_tap);
 	printf("number_of_target: %d\n", number_of_target);

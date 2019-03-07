@@ -59,6 +59,7 @@ proc test_reset_and_halt_all_harts {tap} {
 	global CSR_MNVEC
 	global test_reset_and_debug_pass
 	global scan_hart_nums
+	global NDS_TARGETNAME
 	for {set hartsel 0} {$hartsel < $scan_hart_nums} {incr $hartsel} {
 		select_single_hart $tap $hartsel
 		set dmstatus [read_dmi_dmstatus $tap]
@@ -69,7 +70,7 @@ proc test_reset_and_halt_all_harts {tap} {
 		}
 
 		#set hartxlen 32
-		targets $tap$hartsel
+		targets $NDS_TARGETNAME$hartsel
 		scan [nds target_xlen] "%x" hartxlen
 
 		set pc [read_dpc $tap $hartxlen]
@@ -177,7 +178,7 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 		puts [format "Halting Hart %d" $hartsel]
 		halt_hart $NDS_TAP $hartsel
 
-		targets $NDS_TAP$hartsel
+		targets $NDS_TARGETNAME$hartsel
 		scan [nds target_xlen] "%x" hartxlen
 		puts [format "core%d: target_xlen = 0x%x" $hartsel $hartxlen]
 

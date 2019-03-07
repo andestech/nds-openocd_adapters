@@ -4,30 +4,37 @@ adapter_nsrst_delay 500
 reset_config srst_only
 source [find dmi.tcl]
 source [find custom_lib.tcl]
+
 set _create_multi_targets   1
 set _number_of_core   1
-set _CHIPNAME nds_v5
-#jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x10e31913
-jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x1000563D
 
-set NDS_TAP $_CHIPNAME.cpu
-set _TARGETNAME $_CHIPNAME.cpu0
+set NDS_TARGETNAME "nds_v5.cpu"
+set cur_target_id   0
+set CUR_TARGET $NDS_TARGETNAME$cur_target_id
+set TAP_BASE "nds"
+set TAP_TYPE "tap"
+set NDS_TAP $TAP_BASE.$TAP_TYPE
+
+##--target-create-start
+jtag newtap $TAP_BASE $TAP_TYPE -irlen 5 -expected-id 0x1000563D
+
 if {$_use_smp == 0} {
-	target create $_TARGETNAME nds_v5 -chain-position $NDS_TAP -coreid 0
+	target create $CUR_TARGET nds_v5 -chain-position $NDS_TAP -coreid 0
 } else {
-	target create $_TARGETNAME nds_v5 -chain-position $NDS_TAP -rtos riscv
+	target create $CUR_TARGET nds_v5 -chain-position $NDS_TAP -rtos riscv
 }
-#$_TARGETNAME configure -event examine-end {
-#	global _TARGETNAME
-#	targets $_TARGETNAME
+#$CUR_TARGET configure -event examine-end {
+#	global CUR_TARGET
+#	targets $CUR_TARGET
 #	halt
 #  mww 0xf0100044 0x3
 #}
 
-nds_auto_create_multi_targets $NDS_TAP
+nds_auto_create_multi_targets $NDS_TARGETNAME $NDS_TAP
+##--target-create-finish
 
-$_TARGETNAME configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
-flash bank my_first_flash ndsspi 0x80000000 0 0 0 $_TARGETNAME
+$CUR_TARGET configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
+flash bank my_first_flash ndsspi 0x80000000 0 0 0 $CUR_TARGET
 
 #init
 #reset
