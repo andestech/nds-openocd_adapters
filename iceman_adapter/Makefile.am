@@ -37,6 +37,7 @@ openocd_interfacecfgdir = $(bindir)/interface
 dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 		interface/axm0432.cfg \
 		interface/aice_sdp.cfg \
+		interface/aice-mini-plus.cfg \
 		interface/aice_mini_plus_ftdi.cfg \
 		interface/calao-usb-a9260-c01.cfg \
 		interface/calao-usb-a9260-c02.cfg \
@@ -83,6 +84,7 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 		interface/olimex-arm-usb-ocd.cfg \
 		interface/olimex-arm-usb-ocd-h.cfg \
 		interface/olimex-arm-usb-tiny-h.cfg \
+		interface/olimex.cfg \
 		interface/olimex-jtag-tiny.cfg \
 		interface/oocdlink.cfg \
 		interface/opendous_ftdi.cfg \
