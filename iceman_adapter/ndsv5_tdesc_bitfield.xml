@@ -898,11 +898,9 @@
 <flags id="msavestatus_flags" size="4">
 <field name="mpie1" start="0" end="0"/>
 <field name="ppft_en1" start="3" end="3"/>
-<field name="pime1" start="4" end="4"/>
 <field name="pdme1" start="5" end="5"/>
 <field name="mpie2" start="8" end="8"/>
 <field name="ppft_en2" start="11" end="11"/>
-<field name="pime2" start="12" end="12"/>
 <field name="pdme2" start="13" end="13"/>
 </flags>
 <struct id="reg_msavestatus" size="4">
