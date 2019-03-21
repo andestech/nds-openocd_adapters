@@ -360,9 +360,10 @@ static void show_usage(void) {
 	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
 	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	//printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
-	printf("--use-sdm (Only for V3):\t\tUse System Debug Module\n");
-	printf("--l2c:<Address>:\t\tIndicate the base address of L2C\n");
-	printf("--smp:\t\tEnable SMP mode for multi-cores\n");
+	printf("--use-sdm (Only for V3):Use System Debug Module\n");
+	printf("--l2c:<Address>:\tIndicate the base address of L2C\n");
+	printf("--target-cfg:\t\tSpecify the CPU configuration file for a complex multicore system\n");
+	printf("--smp:\t\t\tEnable SMP mode for multi-cores\n");
 	printf("--halt-on-reset (Only for V5):\t\tEnable/Disable halt-on-reset functionality\n");
 	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
