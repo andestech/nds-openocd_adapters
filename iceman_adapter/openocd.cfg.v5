@@ -154,3 +154,5 @@ proc dma_mwb_w {args} {
 
 	nds mem_access cpu
 }
+
+source [find board/nds_v5.cfg]

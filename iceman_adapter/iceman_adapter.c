@@ -744,22 +744,38 @@ static void parse_mem_operation(const char *mem_operation) {
 	char *next_data;
 
 	if (strncmp(mem_operation, "stop-seq ", 9) == 0) {
-		stop_sequences[stop_sequences_num].address = strtoll(mem_operation+9, &next_data, 0);
-		stop_sequences[stop_sequences_num].data = strtoll(next_data+1, &next_data, 0);
-		if (*next_data == ':')
-			stop_sequences[stop_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
-		stop_sequences_num++;
-	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
-		resume_sequences[resume_sequences_num].address = strtoll(mem_operation+11, &next_data, 0);
-		if (*(next_data+1) == 'r')
-			resume_sequences[resume_sequences_num].restore = 1;
-		else {
-			resume_sequences[resume_sequences_num].restore = 0;
-			resume_sequences[resume_sequences_num].data = strtoll(next_data+1, &next_data, 0);
+		next_data = (char *)mem_operation + 9;
+		while(*next_data != 0x0) {
+			stop_sequences[stop_sequences_num].address = strtoll(next_data, &next_data, 0);
+			stop_sequences[stop_sequences_num].data = strtoll(next_data+1, &next_data, 0);
 			if (*next_data == ':')
-				resume_sequences[resume_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
+				stop_sequences[stop_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
+			stop_sequences_num++;
+			if (*next_data == ',')
+				next_data ++;
+			else
+				break;
 		}
-		resume_sequences_num++;
+	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
+		next_data = (char *)mem_operation + 11;
+		while(*next_data != 0x0) {
+			resume_sequences[resume_sequences_num].address = strtoll(next_data, &next_data, 0);
+			next_data ++;      // ":"
+			if (*next_data == 'r') {
+				next_data += 3;  // "rst"
+				resume_sequences[resume_sequences_num].restore = 1;
+			} else {
+				resume_sequences[resume_sequences_num].restore = 0;
+				resume_sequences[resume_sequences_num].data = strtoll(next_data, &next_data, 0);
+				if (*next_data == ':')
+					resume_sequences[resume_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
+			}
+			resume_sequences_num++;
+			if (*next_data == ',')
+				next_data ++;
+			else
+				break;
+		}
 	}
 }
 
@@ -1321,6 +1337,7 @@ static void update_board_cfg(void)
 	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
 			fprintf(board_cfg, "nds32.cpu%d configure -event halted {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
 			for (i = 0 ; i < stop_sequences_num ; i++) {
 				int stop_addr, stop_mask, stop_data;
@@ -1337,6 +1354,7 @@ static void update_board_cfg(void)
 		}
 		if (resume_sequences_num > 0) {
 			fprintf(board_cfg, "nds32.cpu%d configure -event resumed {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
 			for (i = 0 ; i < resume_sequences_num ; i++) {
 				int resume_addr, resume_mask, resume_data;
@@ -1400,6 +1418,7 @@ static void update_board_cfg_v5(void)
 	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
 			fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
 			for (i = 0 ; i < stop_sequences_num ; i++) {
 				int stop_addr, stop_mask, stop_data;
@@ -1415,7 +1434,8 @@ static void update_board_cfg_v5(void)
 			fputs("}\n", board_cfg);
 		}
 		if (resume_sequences_num > 0) {
-			fprintf(board_cfg, "nds_v5.cpu%d configure -event resumed {\n", coreid);
+			fprintf(board_cfg, "nds_v5.cpu%d configure -event resume-start {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
 			for (i = 0 ; i < resume_sequences_num ; i++) {
 				int resume_addr, resume_mask, resume_data;
