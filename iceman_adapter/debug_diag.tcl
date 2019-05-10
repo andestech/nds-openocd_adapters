@@ -52,17 +52,22 @@ proc test_memory_rw {tap start_addr} {
 }
 
 proc test_reset_and_halt_all_harts {tap hartstart hartcount} {
-	puts "Testing reset_and_halt_all_harts"
-	for {set hartsel $hartstart} {$hartsel < $hartcount} {incr $hartsel} {
-		reset_and_halt_one_hart $tap $hartsel
+
+	if {$hartcount == 1} {
+		puts "Testing reset_and_halt_one_hart"
+		reset_and_halt_one_hart $tap $hartstart
+	} else {
+		puts "Testing reset_and_halt_all_harts"
+		reset_and_halt_all_harts $tap $hartstart $hartcount
 	}
+	set hartmax [expr $hartstart + $hartcount]
 	# wait 1 sconds
 	after 1000
 	global CSR_MNVEC
 	global test_reset_and_debug_pass
 	global scan_hart_nums
 	global NDS_TARGETNAME
-	for {set hartsel $hartstart} {$hartsel < $hartcount} {incr $hartsel} {
+	for {set hartsel $hartstart} {$hartsel < $hartmax} {incr $hartsel} {
 		select_single_hart $tap $hartsel
 		set dmstatus [read_dmi_dmstatus $tap]
 		set dmstatus_anyunavail [expr ($dmstatus>>12)&0x1]
@@ -159,39 +164,35 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 	set test_reset_and_debug_pass "NG"
 	set test_frequency_pass "NG"
 
-	#jtag newtap target dtm -irlen 5 -expected-id 0x1000563D
-	scan [nds jtag_tap_name] "%s" NDS_TAP
-	puts [format "get jtag name = %s" $NDS_TAP]
-	#set target.dtm $NDS_TAP
-
 	init
-
-	puts "Initializing Debug Module Interface"
-	init_dmi $NDS_TAP
-
-	puts "Initializing Debug Module"
-	reset_dm $NDS_TAP
-	reset_ndm $NDS_TAP
-	set test_dm_operate_pass "PASS"
-
-	puts "Scanning number of harts"
-	set scan_hart_nums [scan_harts $NDS_TAP]
-	puts [format "scan_hart_nums=0x%x" $scan_hart_nums]
-	if [ expr $scan_hart_nums > 0 ] {
-		set test_dtm_connect_pass "PASS"
-	} else {
-		exit
-	}
-	set test_frequency_pass [test_frequency $NDS_TAP]
-
 	set targetcount $NDS_TARGETS_COUNT
 	for {set i 0} {$i < $targetcount} {incr $i} {
 		targets $NDS_TARGETS_NAME($i)
 		scan [nds jtag_tap_name] "%s" NDS_TAP
 		puts [format "target-%d = %s 0x%x 0x%x" $i $NDS_TARGETS_NAME($i) $NDS_TARGETS_COREID($i) $NDS_TARGETS_CORENUMS($i)]
 
+		puts "Initializing Debug Module Interface"
+		init_dmi $NDS_TAP
+
+		puts "Initializing Debug Module"
+		reset_dm $NDS_TAP
+		reset_ndm $NDS_TAP
+		set test_dm_operate_pass "PASS"
+
+		puts "Scanning number of harts"
+		set scan_hart_nums [scan_harts $NDS_TAP]
+		puts [format "scan_hart_nums=0x%x" $scan_hart_nums]
+		if [ expr $scan_hart_nums > 0 ] {
+			set test_dtm_connect_pass "PASS"
+		} else {
+			exit
+		}
+
+		set test_frequency_pass [test_frequency $NDS_TAP]
+
 		set hartcount $NDS_TARGETS_CORENUMS($i)
-		for {set hartsel $NDS_TARGETS_COREID($i)} {$hartsel < $hartcount} {incr $hartsel} {
+		set hartmax [expr $NDS_TARGETS_COREID($i) + $hartcount]
+		for {set hartsel $NDS_TARGETS_COREID($i)} {$hartsel < $hartmax} {incr $hartsel} {
 			select_single_hart $NDS_TAP $hartsel
 			set dmstatus [read_dmi_dmstatus $NDS_TAP]
 			set dmstatus_anyunavail [expr ($dmstatus>>12)&0x1]

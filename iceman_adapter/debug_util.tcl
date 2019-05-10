@@ -299,7 +299,6 @@ proc scan_harts {tap} {
 }
 
 proc reset_and_halt_one_hart {tap hartsel} {
-	set MAX_NHARTS 16
 	set HARTSEL_MASK 0x3F0000
 
 	# Assert ndmreset and haltreq
@@ -317,15 +316,49 @@ proc reset_and_halt_one_hart {tap hartsel} {
 
 	set dmstatus [read_dmi_dmstatus $tap]
 	set dmstatus_anynonexistent [expr ($dmstatus>>14)&0x1]
-
 	if {$dmstatus_anynonexistent} {
 		break;
 	}
+
 	# De-assert ndmreset
 	set bf_haltreq [expr 1<<31]
 	set bf_dmactive 0x1
 	set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive]
 	write_dmi_dmcontrol $tap $dmcontrol
+	assert {[wait_selected_hart_halted $tap 3000]} [format "halt hart%d timeout" $hartsel]
+}
+
+proc reset_and_halt_all_harts {tap hartstart hartcount} {
+	set HARTSEL_MASK 0x3F0000
+	for {set hartsel $hartstart} {$hartsel < $hartcount} {incr $hartsel} {
+		# Assert ndmreset and haltreq
+		set bf_haltonreset [expr 1<<3]
+		set bf_haltreq [expr 1<<31]
+		set bf_hartsel [expr $hartsel<<16]
+		set bf_ndmreset [expr 1<<1]
+		set bf_dmactive 0x1
+		set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_ndmreset | $bf_dmactive | $bf_haltonreset]
+		write_dmi_dmcontrol $tap $dmcontrol
+
+		set dmcontrol [read_dmi_dmcontrol $tap]
+		if {[expr ($dmcontrol & $HARTSEL_MASK) != ($hartsel << 16)]} {
+			break;
+		}
+
+		set dmstatus [read_dmi_dmstatus $tap]
+		set dmstatus_anynonexistent [expr ($dmstatus>>14)&0x1]
+		if {$dmstatus_anynonexistent} {
+			break;
+		}
+
+		# De-assert ndmreset
+		set bf_clr_haltonreset [expr 1<<4]
+		set bf_haltreq [expr 1<<31]
+		set bf_dmactive 0x1
+		set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive | $bf_clr_haltonreset]
+		write_dmi_dmcontrol $tap $dmcontrol
+		assert {[wait_selected_hart_halted $tap 3000]} [format "halt hart%d timeout" $hartsel]
+	}
 }
 
 
