@@ -244,6 +244,7 @@ static unsigned int usd_halt_on_reset = 0;
 static unsigned int l2c_base = L2C_BASE;
 static unsigned int dmi_busy_delay_count = 0;
 static unsigned int nds_v3_ftdi = 0;
+extern unsigned int nds_mixed_mode_checking;
 
 int nds_target_cfg_checkif_transfer(const char *p_user);
 int nds_target_cfg_transfer(const char *p_user);
@@ -1042,7 +1043,11 @@ static void update_openocd_cfg(void)
 			if( strncmp(line_buffer, "source [find interface", 22) == 0 ) {
 				fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
 				fprintf(openocd_cfg, "adapter_nsrst_delay 500\n");
-				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
+				if( custom_interface != NULL )
+					fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
+				else
+					fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
+
 				fprintf(openocd_cfg, "reset_config trst_only\n");
 			} else {
 				fputs(line_buffer, openocd_cfg);
@@ -1519,7 +1524,7 @@ int main(int argc, char **argv) {
 	if (target_type[0] == TARGET_V5) {
 		update_openocd_cfg_v5();
 		update_board_cfg_v5();
-	} else if (custom_interface != NULL) {
+	} else if ((custom_interface != NULL) || (nds_mixed_mode_checking == 0x03)) {
 		// && (target_type[0] != TARGET_V5)
 		nds_v3_ftdi = 1;
 		open_config_files();
@@ -1769,6 +1774,16 @@ int nds_target_cfg_transfer(const char *p_user) {
 			target_type[0] = TARGET_V5;
 		else
 			target_type[0] = TARGET_V3;
+
+		// V3 & V5 mixed-mode checking
+		for (i = 0; i < number_of_target; i++) {
+			if (target_arch_id[i] == TAP_ARCH_V5)
+				nds_mixed_mode_checking |= 0x02;
+			else if (target_arch_id[i] == TAP_ARCH_V3)
+				nds_mixed_mode_checking |= 0x01;
+			else if (target_arch_id[i] == TAP_ARCH_V3_SDM)
+				nds_mixed_mode_checking |= 0x01;
+		}
 	}
 
 /*
