@@ -120,7 +120,7 @@ proc get_march_name {marchid} {
 	#set march_name [lindex $arch_name_list $name_idx]
 	#set march_name_out [format "%s%d%d" $march_name [expr ($marchid>>4)&0xf] [expr ($marchid>>0)&0xf] ]
 	##puts [format "march_name_1 %s" $march_name_out]
-	set arch_name_list {"N" "" "" "" "" "" "" "" "" "" "A" "" "" "D"}
+	set arch_name_list {"N" "" "" "" "FS" "" "" "" "" "" "A" "" "" "D"}
 	set name_idx [expr ($marchid>>8)&0xF]
 	set march_name [lindex $arch_name_list $name_idx]
 	if { [expr ($marchid>>15)&0x1] == 1} {
