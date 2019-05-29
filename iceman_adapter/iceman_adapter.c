@@ -915,7 +915,13 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
-	fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
+
+	if( (int)(efreq_range/1000) != 0 )
+		fprintf(openocd_cfg, "adapter_khz %d\n", (int)(efreq_range/1000));
+	else if(efreq_range != 0 )
+		fprintf(openocd_cfg, "adapter_khz 1\n");
+	else
+		fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
 	if( use_smp == 1 ) {
 		fprintf(openocd_cfg, "set _use_smp 1\n");
 	} else {
