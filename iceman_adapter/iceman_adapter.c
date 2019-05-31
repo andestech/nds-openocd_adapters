@@ -290,6 +290,9 @@ static void show_usage(void) {
 
 		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
 	}
+	printf("\t\t\tFTDI-based Adapter(AICE-MICRO) support extended TCK frequency range (1KHz ~ 10MHz\n");
+	printf("\t\t\t\tUsage: -c <clock range>KHz/MHz\n");
+
 
 	printf("-C, --check-times (For V3):\tCount/Second to check DBGER\n");
 	printf("\t\t\t(default: 500 times)\n");
