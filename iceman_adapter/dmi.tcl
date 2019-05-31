@@ -151,11 +151,11 @@ proc nds_select_current_hart {tap hartid} {
 	set test_dmcontrol [expr $test_dmcontrol & ~$DMI_DMCONTROL_HARTSEL]
 	set hartid [expr $hartid << $DMI_DMCONTROL_HARTSEL_SHIFT]
 	set test_dmcontrol [expr $test_dmcontrol | $hartid]
-	#puts [format "test_dmcontrol: 0x%x" $test_dmcontrol]
+	echo [format "set_dmcontrol: 0x%x" $test_dmcontrol]
 	dmi_write $tap $DMI_DMCONTROL $test_dmcontrol
 
 	set test_dmcontrol2 [dmi_read $tap $DMI_DMCONTROL]
-	#puts [format "test_dmcontrol2: 0x%x" $test_dmcontrol2]
+	echo [format "read_dmcontrol2: 0x%x" $test_dmcontrol2]
 	if [ expr $test_dmcontrol2 == $test_dmcontrol ] {
 		#puts [format "success"]
 		return 0
@@ -166,12 +166,15 @@ proc nds_select_current_hart {tap hartid} {
 
 proc nds_auto_create_multi_targets {target_name tap} {
 	global _number_of_core
+
 	nds_auto_detect_targets $tap
 	if [ expr $_number_of_core == 0x01 ] {
 		puts [format "There is %d core in tap" $_number_of_core]
+		echo [format "There is %d core in tap" $_number_of_core]
 		return
 	} else {
 		puts [format "There are %d cores in tap" $_number_of_core]
+		echo [format "There are %d cores in tap" $_number_of_core]
 	}
 
 	global _create_multi_targets
@@ -197,19 +200,21 @@ proc nds_auto_detect_targets {tap} {
 	set RISCV_MAX_HARTS   32
 	set DMI_DMSTATUS       0x11
 	set DMI_DMSTATUS_ANYNONEXISTENT          0x04000
+
 	transport init
 	for {set i 0} {$i < $RISCV_MAX_HARTS} {incr i} {
 		set retvalue [nds_select_current_hart $tap $i]
 		if ![ expr $retvalue == 0 ] {
-			#puts [format "select_current_hart NG"]
+			echo [format "select_current_hart NG"]
 			continue
 		}
 		set nds_dmstatus [dmi_read $tap $DMI_DMSTATUS]
-		#puts [format "dmstatus:  0x%08x" $nds_dmstatus]
+		echo [format "dmstatus:  0x%08x" $nds_dmstatus]
 		if ![ expr $nds_dmstatus & $DMI_DMSTATUS_ANYNONEXISTENT ] {
 			set count_cores [expr $count_cores + 1]
 			#puts [format "count_cores:  0x%08x" $count_cores]
 		}
 	}
+	echo [format "count_cores:  0x%08x" $count_cores]
 	set _number_of_core $count_cores
 }

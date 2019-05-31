@@ -5,6 +5,6 @@ scan [jtag names] "%s" NDS_TAP
 
 scan [nds reg_number] "%x" NDS_REG_NUMBER
 scan [nds reg_data] "%x" NDS_REG_DATA
-#puts [format "reg_number = 0x%x" $NDS_REG_NUMBER]
+echo [format "reg_number = 0x%x" $NDS_REG_NUMBER]
 
 reg_write_abstract $NDS_TAP $NDS_REG_NUMBER $NDS_REG_DATA
