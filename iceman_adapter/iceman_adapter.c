@@ -1581,7 +1581,7 @@ int main(int argc, char **argv) {
 #define CHECK_EXP_ID      "_expect_id"
 
 #define MAX_NUMS_TAP      32
-#define MAX_NUMS_TARGET   32
+#define MAX_NUMS_TARGET   1024
 
 unsigned int number_of_tap = 0;
 unsigned int number_of_target = 0;
@@ -1737,6 +1737,7 @@ int nds_target_cfg_transfer(const char *p_user) {
 					fclose(fp_user);
 					return -1;
 				}
+
 				tap_arch_list[tap_id] = arch_id;
 				//printf("tap_id:%d, target_id:%d arch:%d core_nums:%d\n", tap_id, target_id, arch_id, core_nums);
 				target_arch_list[tap_id][target_id] = arch_id;
@@ -1824,7 +1825,7 @@ int nds_target_cfg_transfer(const char *p_user) {
 	return 0;
 }
 
-#define CHECK_TPL_INFO_NUMS   8
+#define CHECK_TPL_INFO_NUMS   10
 #define CHECK_TPL_TAP_ARCH        "set tap_arch_list"
 #define CHECK_TPL_TAP_IRLEN       "set tap_irlen"
 #define CHECK_TPL_TAP_EXP_ID      "set tap_expected_id"
@@ -1834,6 +1835,9 @@ int nds_target_cfg_transfer(const char *p_user) {
 #define CHECK_TPL_TARGET_TAP_POS  "set target_tap_position"
 #define CHECK_TPL_TARGET_SMP      "set target_smp_list"
 #define CHECK_TPL_SMP_CORE_NUMS   "set target_smp_core_nums"
+
+#define CHECK_TPL_MAX_TAP         "set max_of_tap"
+#define CHECK_TPL_MAX_TARGET      "set max_of_target"
 
 
 char *gpCheckTplFileInfo[CHECK_TPL_INFO_NUMS] = {
@@ -1845,6 +1849,9 @@ char *gpCheckTplFileInfo[CHECK_TPL_INFO_NUMS] = {
 	CHECK_TPL_TARGET_TAP_POS,
 	CHECK_TPL_TARGET_SMP,
 	CHECK_TPL_SMP_CORE_NUMS,
+
+	CHECK_TPL_MAX_TAP,
+	CHECK_TPL_MAX_TARGET,
 };
 
 unsigned int *gpUpdateNewTblInfo[CHECK_TPL_INFO_NUMS] = {
@@ -1857,6 +1864,9 @@ unsigned int *gpUpdateNewTblInfo[CHECK_TPL_INFO_NUMS] = {
 	&target_tap_position[0],
 	&target_smp_list[0],
 	&target_smp_core_nums[0],
+
+	&number_of_tap,
+	&number_of_target,
 };
 
 int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
@@ -1885,15 +1895,21 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
 		for (i = 0; i < CHECK_TPL_INFO_NUMS; i++) {
 			cur_str = strstr(pline_buf, gpCheckTplFileInfo[i]);
 			if (cur_str != NULL) {
+				//For max_of_tap & max_of_target
+				if( i == 8 || i == 9 ) {
+					sprintf(pline_buf, "%s %d\n", gpCheckTplFileInfo[i], *gpUpdateNewTblInfo[i]);
+					continue;
+				}
+
 				tmp_str = strstr(pline_buf, "#");
 				if (tmp_str != NULL)
 					break;
 				pnew_value = gpUpdateNewTblInfo[i];
 				//sprintf(line_buffer, "source [find target/%s]\n", custom_target_cfg);
 				if (i < 3)
-					update_nums = MAX_NUMS_TAP;
+					update_nums = number_of_tap;
 				else
-					update_nums = MAX_NUMS_TARGET;
+					update_nums = number_of_target;
 				tmp_str = (char*)&tmp_buf[0];
 				for (j = 0; j < update_nums; j ++) {
 					if (i == 2)
