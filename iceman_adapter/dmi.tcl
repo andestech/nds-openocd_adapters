@@ -197,7 +197,7 @@ proc nds_auto_create_multi_targets {target_name tap} {
 proc nds_auto_detect_targets {tap} {
 	global _number_of_core
 	set count_cores 0
-	set RISCV_MAX_HARTS   32
+	set RISCV_MAX_HARTS   129
 	set DMI_DMSTATUS       0x11
 	set DMI_DMSTATUS_ANYNONEXISTENT          0x04000
 
