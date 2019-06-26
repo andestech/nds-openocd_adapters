@@ -34,6 +34,9 @@ set target_tap_position {0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 
 set target_smp_list {0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
 set target_smp_core_nums {0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
 
+# user can specify target_name here,
+set user_def_target_name 1
+
 set max_of_tap 32
 set max_of_target 32
 set number_of_tap 0
@@ -93,6 +96,11 @@ for {set i 0} {$i < $max_of_target} {incr i} {
 	set position [lindex $target_tap_position $i]
 	if [ expr $position == 0xff ] {
 		set position $tap_position
+	}
+	if [ expr $user_def_target_name == 0x1 ] {
+		set target_name_1st "tap$position"
+		set target_name_2nd "_target_$CORE_ID($i)"
+		set TARGET_NAME($i) "$target_name_1st$target_name_2nd"
 	}
 	set CHAIN_POSITION($i) $TAP_BASE.$TAP_TYPE$position
 	set tap_position [expr $tap_position + 1]
