@@ -985,6 +985,9 @@ static void update_openocd_cfg_v5(void)
 	if (custom_restart_script) {
 		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
 	}
+	if (custom_initial_script) {
+		fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
+	}
 
 	if( aice_no_crst_detect != 0 )
 		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
@@ -1181,6 +1184,22 @@ static void update_ftdi_v3_board_cfg(void)
 	if (custom_initial_script) {
 		fprintf(board_cfg, "nds custom_initial_script %s\n", custom_initial_script);
 	}
+
+	if (nds_mixed_mode_checking == 0x03) {
+		if (custom_srst_script) {
+			fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
+		}
+		if (custom_trst_script) {
+			fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
+		}
+		if (custom_restart_script) {
+			fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
+		}
+		if (custom_initial_script) {
+			fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
+		}
+	}
+
 	if (startup_reset_halt) {
 		if (soft_reset_halt)
 			fprintf(board_cfg, "nds reset_halt_as_init %d\n", soft_reset_halt);
@@ -1205,6 +1224,11 @@ static void update_ftdi_v3_board_cfg(void)
 	}
 	if (use_sdm == 1) {
 		fprintf(board_cfg, "nds sdm use_sdm\n");
+	}
+
+	if (nds_mixed_mode_checking == 0x03) {
+		fprintf(board_cfg, "source [find dmi.tcl]\n");
+		fprintf(board_cfg, "source [find custom_lib.tcl]\n");
 	}
 	fputs("\n", board_cfg);
 }
