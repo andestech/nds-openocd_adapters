@@ -1169,7 +1169,7 @@ static void update_ftdi_v3_board_cfg(void)
 	else
 		fprintf(board_cfg, "nds runtest_num_clocks 5\n");
 
-	fprintf(board_cfg, "nds ftdi_jtag_opt 2\n");
+	fprintf(board_cfg, "nds ftdi_jtag_opt 0\n");
 	fprintf(board_cfg, "nds ftdi_log_detail 0\n");
 	/* custom srst/trst/restart scripts */
 	if (custom_srst_script) {
