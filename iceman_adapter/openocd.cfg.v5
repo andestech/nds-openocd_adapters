@@ -3,7 +3,6 @@ adapter_nsrst_delay 500
 ##INTERFACE_REPLACE##
 reset_config srst_only
 source [find dmi.tcl]
-source [find custom_lib.tcl]
 
 set _create_multi_targets   1
 set _number_of_core   1
@@ -32,6 +31,7 @@ if {$_use_smp == 0} {
 
 nds_auto_create_multi_targets $NDS_TARGETNAME $NDS_TAP
 ##--target-create-finish
+source [find custom_lib.tcl]
 
 $CUR_TARGET configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
 flash bank my_first_flash ndsspi 0x80000000 0 0 0 $CUR_TARGET

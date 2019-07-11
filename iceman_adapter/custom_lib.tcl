@@ -3,7 +3,7 @@ source [find debug_util.tcl]
 
 set NDS_TAP "123"
 scan [nds jtag_tap_name] "%s" NDS_TAP
-set CUR_TARGET "123"
+#set CUR_TARGET "123"
 
 set DMI_DMCONTROL      0x10
 set DMI_DMCONTROL_HALTREQ   0x80000000
