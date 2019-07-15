@@ -1198,6 +1198,7 @@ static void update_ftdi_v3_board_cfg(void)
 		if (custom_initial_script) {
 			fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
 		}
+		fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 	}
 
 	if (startup_reset_halt) {
