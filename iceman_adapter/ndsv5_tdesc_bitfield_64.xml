@@ -1028,223 +1028,150 @@
 
 <reg name="csr768" bitsize="64" type="reg_mstatus"/>
 <reg name="mstatus" bitsize="64" type="reg_mstatus"/>
-
 <reg name="csr772" bitsize="64" type="reg_mie"/>
 <reg name="mie" bitsize="64" type="reg_mie"/>
-
 <reg name="csr836" bitsize="64" type="reg_mip"/>
 <reg name="mip" bitsize="64" type="reg_mip"/>
-
 <reg name="csr771" bitsize="64" type="reg_mideleg"/>
 <reg name="mideleg" bitsize="64" type="reg_mideleg"/>
-
 <reg name="csr770" bitsize="64" type="reg_medeleg"/>
 <reg name="medeleg" bitsize="64" type="reg_medeleg"/>
-
 <reg name="csr773" bitsize="64" type="reg_mtvec"/>
 <reg name="mtvec" bitsize="64" type="reg_mtvec"/>
-
 <reg name="csr834" bitsize="64" type="reg_mcause"/>
 <reg name="mcause" bitsize="64" type="reg_mcause"/>
-
 <reg name="csr769" bitsize="64" type="reg_misa"/>
 <reg name="misa" bitsize="64" type="reg_misa"/>
-
 <reg name="csr3858" bitsize="64" type="reg_marchid"/>
 <reg name="marchid" bitsize="64" type="reg_marchid"/>
-
 <reg name="csr3859" bitsize="64" type="reg_mimpid"/>
 <reg name="mimpid" bitsize="64" type="reg_mimpid"/>
-
 <reg name="csr1953" bitsize="64" type="reg_tdata1"/>
 <reg name="mcontrol" bitsize="64" type="reg_tdata1"/>
-
 <reg name="csr1956" bitsize="64" type="reg_tinfo"/>
 <reg name="tinfo" bitsize="64" type="reg_tinfo"/>
-
 <reg name="csr1968" bitsize="32" type="reg_dcsr"/>
 <reg name="dcsr" bitsize="32" type="reg_dcsr"/>
-
 <reg name="csr1" bitsize="32" type="reg_fflags"/>
 <reg name="fflags" bitsize="32" type="reg_fflags"/>
-
 <reg name="csr2" bitsize="32" type="reg_frm"/>
 <reg name="frm" bitsize="32" type="reg_frm"/>
-
 <reg name="csr3" bitsize="32" type="reg_fcsr"/>
 <reg name="fcsr" bitsize="32" type="reg_fcsr"/>
-
 <reg name="csr4032" bitsize="64" type="reg_micm_cfg"/>
 <reg name="micm_cfg" bitsize="64" type="reg_micm_cfg"/>
-
 <reg name="csr4033" bitsize="64" type="reg_mdcm_cfg"/>
 <reg name="mdcm_cfg" bitsize="64" type="reg_mdcm_cfg"/>
-
 <reg name="csr4034" bitsize="64" type="reg_mmsc_cfg"/>
 <reg name="mmsc_cfg" bitsize="64" type="reg_mmsc_cfg"/>
-
 <reg name="csr1984" bitsize="64" type="reg_milmb"/>
 <reg name="milmb" bitsize="64" type="reg_milmb"/>
-
 <reg name="csr1985" bitsize="64" type="reg_mdlmb"/>
 <reg name="mdlmb" bitsize="64" type="reg_mdlmb"/>
-
 <reg name="csr1986" bitsize="64" type="reg_mecc_code"/>
 <reg name="mecc_code" bitsize="64" type="reg_mecc_code"/>
-
 <reg name="csr1989" bitsize="64" type="reg_mpft_ctl"/>
 <reg name="mpft_ctl" bitsize="64" type="reg_mpft_ctl"/>
-
 <reg name="csr1994" bitsize="64" type="reg_mcache_ctl"/>
 <reg name="mcache_ctl" bitsize="64" type="reg_mcache_ctl"/>
-
 <reg name="csr2000" bitsize="64" type="reg_mmisc_ctl"/>
 <reg name="mmisc_ctl" bitsize="64" type="reg_mmisc_ctl"/>
-
 <reg name="csr1988" bitsize="64" type="reg_mxstatus"/>
 <reg name="mxstatus" bitsize="64" type="reg_mxstatus"/>
-
 <reg name="csr2005" bitsize="64" type="reg_mslideleg"/>
 <reg name="mslideleg" bitsize="64" type="reg_mslideleg"/>
-
 <reg name="csr1990" bitsize="64" type="reg_mhsp_ctl"/>
 <reg name="mhsp_ctl" bitsize="64" type="reg_mhsp_ctl"/>
-
 <reg name="csr2016" bitsize="64" type="reg_dexc2dbg"/>
 <reg name="dexc2dbg" bitsize="64" type="reg_dexc2dbg"/>
-
 <reg name="csr2017" bitsize="64" type="reg_ddcause"/>
 <reg name="ddcause" bitsize="64" type="reg_ddcause"/>
-
 <reg name="csr256" bitsize="64" type="reg_sstatus"/>
 <reg name="sstatus" bitsize="64" type="reg_sstatus"/>
-
 <reg name="csr260" bitsize="64" type="reg_sie"/>
 <reg name="sie" bitsize="64" type="reg_sie"/>
-
 <reg name="csr324" bitsize="64" type="reg_sip"/>
 <reg name="sip" bitsize="64" type="reg_sip"/>
-
 <reg name="csr261" bitsize="64" type="reg_stvec"/>
 <reg name="stvec" bitsize="64" type="reg_stvec"/>
-
 <reg name="csr322" bitsize="64" type="reg_scause"/>
 <reg name="scause" bitsize="64" type="reg_scause"/>
-
 <reg name="csr384" bitsize="64" type="reg_satp"/>
 <reg name="satp" bitsize="64" type="reg_satp"/>
-
 <reg name="csr2500" bitsize="64" type="reg_slie"/>
 <reg name="slie" bitsize="64" type="reg_slie"/>
-
 <reg name="csr2501" bitsize="64" type="reg_slip"/>
 <reg name="slip" bitsize="64" type="reg_slip"/>
-
 <reg name="csr2512" bitsize="64" type="reg_smisc_ctl"/>
 <reg name="smisc_ctl" bitsize="64" type="reg_smisc_ctl"/>
-
 <reg name="csr2048" bitsize="64" type="reg_uitb"/>
 <reg name="uitb" bitsize="64" type="reg_uitb"/>
-
 <reg name="csr3857" bitsize="64" type="reg_mvendorid"/>
 <reg name="mvendorid" bitsize="64" type="reg_mvendorid"/>
-
 <reg name="csr928" bitsize="64" type="reg_pmpcfg0"/>
 <reg name="pmpcfg0" bitsize="64" type="reg_pmpcfg0"/>
-
 <reg name="csr930" bitsize="64" type="reg_pmpcfg2"/>
 <reg name="pmpcfg2" bitsize="64" type="reg_pmpcfg2"/>
-
 <reg name="csr774" bitsize="32" type="reg_mcounteren"/>
 <reg name="mcounteren" bitsize="32" type="reg_mcounteren"/>
-
 <reg name="csr1987" bitsize="64" type="reg_mnvec"/>
 <reg name="mnvec" bitsize="64" type="reg_mnvec"/>
-
 <reg name="csr1998" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcounterwen" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr1999" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcounterinten" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2001" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcountermask_m" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2002" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcountermask_s" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2003" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcountermask_u" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2004" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcounterovf" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr262" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scounteren" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2511" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scounterinten" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2514" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scountermask_s" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2515" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scountermask_u" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2516" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scounterovf" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2006" bitsize="64" type="reg_msavestatus"/>
 <reg name="msavestatus" bitsize="64" type="reg_msavestatus"/>
-
 <reg name="csr2513" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scountermask_m" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr800" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcountinhibit" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2528" bitsize="32" type="reg_mcounterwen"/>
 <reg name="scountinhibit" bitsize="32" type="reg_mcounterwen"/>
-
 <reg name="csr2064" bitsize="64" type="reg_wfe"/>
 <reg name="wfe" bitsize="64" type="reg_wfe"/>
-
 <reg name="csr2065" bitsize="64" type="reg_sleepvalue"/>
 <reg name="sleepvalue" bitsize="64" type="reg_sleepvalue"/>
-
 <reg name="csr2066" bitsize="64" type="reg_txevt"/>
 <reg name="txevt" bitsize="64" type="reg_txevt"/>
-
 <reg name="csr2032" bitsize="64" type="reg_mppib"/>
 <reg name="mppib" bitsize="64" type="reg_mppib"/>
-
 <reg name="csr2033" bitsize="64" type="reg_mppib"/>
 <reg name="mfiob" bitsize="64" type="reg_mppib"/>
-
 <reg name="csr0" bitsize="64" type="reg_ustatus"/>
 <reg name="ustatus" bitsize="64" type="reg_ustatus"/>
-
 <reg name="csr4" bitsize="64" type="reg_uie"/>
 <reg name="uie" bitsize="64" type="reg_uie"/>
-
 <reg name="csr68" bitsize="64" type="reg_uip"/>
 <reg name="uip" bitsize="64" type="reg_uip"/>
-
 <reg name="csr5" bitsize="64" type="reg_utvec"/>
 <reg name="utvec" bitsize="64" type="reg_utvec"/>
-
 <reg name="csr66" bitsize="64" type="reg_ucause"/>
 <reg name="ucause" bitsize="64" type="reg_ucause"/>
-
 <reg name="csr775" bitsize="64" type="reg_mtvt"/>
 <reg name="mtvt" bitsize="64" type="reg_mtvt"/>
-
 <reg name="csr838" bitsize="64" type="reg_mintstatus"/>
 <reg name="mintstatus" bitsize="64" type="reg_mintstatus"/>
-
 <reg name="csr2049" bitsize="64" type="reg_ucode"/>
 <reg name="ucode" bitsize="64" type="reg_ucode"/>
-
 <reg name="csr2044" bitsize="64" type="reg_mirq_entry"/>
 <reg name="mirq_entry" bitsize="64" type="reg_mirq_entry"/>
 </feature>
@@ -1256,6 +1183,51 @@
 </struct>
 
 <reg name="priv" bitsize="8" type="reg_priv"/>
+</feature>
+
+<feature name="org.gnu.gdb.riscv.vector">
+<vector id="v4f" type="ieee_single" count="4"/>
+<vector id="v2d" type="ieee_double" count="2"/>
+<vector id="v16i8" type="int8" count="16"/>
+<vector id="v8i16" type="int16" count="8"/>
+<vector id="v4i32" type="int32" count="4"/>
+<vector id="v2i64" type="int64" count="2"/>
+<union id="vec128">
+<field name="v4_float" type="v4f"/>
+<field name="v2_double" type="v2d"/>
+<field name="v16_int8" type="v16i8"/>
+<field name="v8_int16" type="v8i16"/>
+<field name="v4_int32" type="v4i32"/>
+<field name="v2_int64" type="v2i64"/>
+</union>
+<vector id="v8f" type="ieee_single" count="8"/>
+<vector id="v4d" type="ieee_double" count="4"/>
+<vector id="v32i8" type="int8" count="32"/>
+<vector id="v16i16" type="int16" count="16"/>
+<vector id="v8i32" type="int32" count="8"/>
+<vector id="v4i64" type="int64" count="4"/>
+<union id="vec256">
+<field name="v8_float" type="v8f"/>
+<field name="v4_double" type="v4d"/>
+<field name="v32_int8" type="v32i8"/>
+<field name="v16_int16" type="v16i16"/>
+<field name="v8_int32" type="v8i32"/>
+<field name="v4_int64" type="v4i64"/>
+</union>
+<vector id="v16f" type="ieee_single" count="16"/>
+<vector id="v8d" type="ieee_double" count="8"/>
+<vector id="v64i8" type="int8" count="64"/>
+<vector id="v32i16" type="int16" count="32"/>
+<vector id="v16i32" type="int32" count="16"/>
+<vector id="v8i64" type="int64" count="8"/>
+<union id="vec512">
+<field name="v16_float" type="v16f"/>
+<field name="v8_double" type="v8d"/>
+<field name="v64_int8" type="v64i8"/>
+<field name="v32_int16" type="v32i16"/>
+<field name="v16_int32" type="v16i32"/>
+<field name="v8_int64" type="v8i64"/>
+</union>
 </feature>
 
 </target>
