@@ -43,7 +43,10 @@ else
 if BUILD_CYGWIN_BINARY
 aice_adapter_LDADD = -lusb-1.0 -ldl -lpthread
 else
+if BUILD_MAC_BINARY
+aice_adapter_LDADD = -lusb-1.0 -ldl -lpthread
+else
 aice_adapter_LDADD = -lusb-1.0 -ldl -lpthread -lrt
 endif
-endif 
+endif
 

@@ -5,8 +5,15 @@ if [ -n "$1" ]; then
     LIBTOOL_DIR=$1
 fi
 
+os_type=`uname`
+
 autoreconf -ivf
-aclocal -I $LIBTOOL_DIR -I /usr/share/aclocal
+
+if [ "$os_type" = "Darwin" ]; then
+	aclocal -I $LIBTOOL_DIR -I /usr/local/share/aclocal
+else
+	aclocal -I $LIBTOOL_DIR -I /usr/share/aclocal
+fi
 autoconf
 automake --gnu --add-missing --copy
 
