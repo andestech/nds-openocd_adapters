@@ -7,7 +7,7 @@ source [find dmi.tcl]
 set _create_multi_targets   1
 set _number_of_core   1
 
-set NDS_TARGETNAME "nds_v5.cpu"
+set NDS_TARGETNAME "tap0_target_"
 set cur_target_id   0
 set CUR_TARGET $NDS_TARGETNAME$cur_target_id
 set TAP_BASE "nds"
