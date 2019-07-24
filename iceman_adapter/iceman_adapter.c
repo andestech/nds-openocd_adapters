@@ -392,7 +392,7 @@ static int parse_param(int a_argc, char **a_argv) {
 		switch (c) {
 			case 0:
 				long_opt = *long_option[option_index].flag;
-				printf("option %s,", long_option[option_index].name);
+				//printf("option %s,", long_option[option_index].name);
 				if ((long_opt >= LONGOPT_CP0) &&
 					(long_opt <= LONGOPT_CP3)) {
 						cop_nums = strtol(optarg, NULL, 0);
