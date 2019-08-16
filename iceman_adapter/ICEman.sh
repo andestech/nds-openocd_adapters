@@ -1,19 +1,8 @@
 #!/bin/bash
 chmod +x ICEman openocd
 if [ "$?" != "0" ]; then
+	echo -e "[FAILED] Unable to change execute permission to ICEman/openocd"
 	exit 1
-fi
-chown root ICEman openocd
-if [ "$?" != "0" ]; then
-	exit 2
-fi
-chgrp root ICEman openocd
-if [ "$?" != "0" ]; then
-	exit 3
-fi
-chmod +s ICEman openocd
-if [ "$?" != "0" ]; then
-	exit 4
 fi
 
 function func_yes {
@@ -44,5 +33,21 @@ select yn in "Yes" "No"; do
 	esac
 done
 
+OS=`lsb_release -i`
+OS=${OS#Dis*ID:}
+RULES=70-ndsusb-v1.rules
+
+if [ ! -f "/etc/udev/rules.d/$RULES" ]
+then
+	echo "copy $RULES to /etc/udev/rules.d/"
+	cp -f ./$RULES /etc/udev/rules.d
+
+	if [ "$?" != "0" ]; then
+		echo -e "[FAILED] Can't not copy udev rules, please check the permission"
+		exit 1
+	fi
+fi
+
+echo -e "[SUCCEED] Please disconnect and reconnect the USB cable to reset AICE adapter!!!"
 echo "Done!"
 
