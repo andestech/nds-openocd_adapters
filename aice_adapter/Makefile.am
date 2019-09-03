@@ -49,4 +49,5 @@ else
 aice_adapter_LDADD = -lusb-1.0 -ldl -lpthread -lrt
 endif
 endif
+endif
 
