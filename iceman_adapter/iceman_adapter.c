@@ -290,7 +290,8 @@ static void show_usage(void) {
 
 		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
 	}
-	printf("\t\t\tFTDI-based Adapter(AICE-MICRO) support extended TCK frequency range (1KHz ~ 10MHz\n");
+	printf("\t\t\tFTDI-based Adapter(AICE-MICRO) & AICE-MINI+ support extended TCK frequency range (1KHz ~ 10MHz\n");
+	printf("\t\t\tWARNING: The maximum frequency of AICE-MINI+ is 5.6MHz.");
 	printf("\t\t\t\tUsage: -c <clock range>KHz/MHz\n");
 
 
