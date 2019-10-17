@@ -1600,11 +1600,12 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
-#define LINEBUF_SIZE        1024
-#define CHECK_INFO_NUMS   3
+#define LINEBUF_SIZE      1024
+#define CHECK_INFO_NUMS   4
 #define CHECK_TARGET      "_target_"
 #define CHECK_IRLEN       "_irlen"
 #define CHECK_EXP_ID      "_expect_id"
+#define CHECK_GROUP       "group_"
 
 #define MAX_NUMS_TAP      32
 #define MAX_NUMS_TARGET   1024
@@ -1623,17 +1624,20 @@ unsigned int tap_expect_id[MAX_NUMS_TAP];
 unsigned int tap_arch_list[MAX_NUMS_TAP];
 unsigned int target_arch_list[MAX_NUMS_TAP][MAX_NUMS_TARGET];
 unsigned int target_core_nums[MAX_NUMS_TAP][MAX_NUMS_TARGET];
+unsigned int target_core_group[MAX_NUMS_TAP][MAX_NUMS_TARGET];
 
 unsigned int target_arch_id[MAX_NUMS_TARGET];
 unsigned int target_core_id[MAX_NUMS_TARGET];
 unsigned int target_tap_position[MAX_NUMS_TARGET];
 unsigned int target_smp_list[MAX_NUMS_TARGET];
 unsigned int target_smp_core_nums[MAX_NUMS_TARGET];
+unsigned int target_group[MAX_NUMS_TARGET];
 
 char *gpCheckInfo[CHECK_INFO_NUMS] = {
 	CHECK_TARGET,
 	CHECK_IRLEN,
 	CHECK_EXP_ID,
+	CHECK_GROUP,
 };
 
 int nds_target_cfg_checkif_transfer(const char *p_user) {
@@ -1669,7 +1673,7 @@ int nds_target_cfg_transfer(const char *p_user) {
 	char line_buf[LINEBUF_SIZE], tmp_buf[256];
 	char *pline_buf = (char *)&line_buf[0];
 	char *cur_str, *tmp_str;
-	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id;
+	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id, group_id=0;
 
 	fp_user = fopen(p_user, "r");
 	if (fp_user == NULL) {
@@ -1684,6 +1688,7 @@ int nds_target_cfg_transfer(const char *p_user) {
 		for (j = 0; j < MAX_NUMS_TARGET; j++) {
 			target_arch_list[i][j] = 0;
 			target_core_nums[i][j] = 0;
+			target_core_group[i][j] = 0;
 		}
 	}
 	for (i = 0; i < MAX_NUMS_TARGET; i++) {
@@ -1706,7 +1711,7 @@ int nds_target_cfg_transfer(const char *p_user) {
 				if (tmp_str != NULL)
 					break;
 				cur_str = strstr(pline_buf, "tap");
-				if (cur_str == NULL)
+				if (cur_str == NULL && i != 3)
 					break;
 
 				if (i == 1) {
@@ -1731,9 +1736,22 @@ int nds_target_cfg_transfer(const char *p_user) {
 					}
 					tap_expect_id[tap_id] = exp_id;
 					break;
+				} else if (i == 3) {
+					// group_1
+					sscanf(pline_buf, "group_%d", &group_id);
+					break;
 				}
+
 				// tap2_target_0   v5  1
 				sscanf(cur_str, "tap%d_target_%d %s %d", &tap_id, &target_id, &tmp_buf[0], &core_nums);
+
+				if( group_id != 0 ) {
+					//printf("DEBUG!!! tap %d, target %d, group %d\n", tap_id, target_id, group_id);
+					target_core_group[tap_id][target_id] = group_id;
+					break;
+				}
+
+
 				arch_id = TAP_ARCH_UNKNOWN;
 				cur_str = strstr(&tmp_buf[0], "v5");
 				if (cur_str != NULL)
@@ -1801,7 +1819,10 @@ int nds_target_cfg_transfer(const char *p_user) {
 			target_tap_position[number_of_target] = i;
 			target_core_id[number_of_target] = core_nums;
 			core_nums += target_core_nums[i][j];
-			number_of_target ++;
+
+			target_group[number_of_target] = target_core_group[i][j]; 
+
+			number_of_target++;
 		}
 		number_of_tap ++;
 	}
@@ -1846,12 +1867,17 @@ int nds_target_cfg_transfer(const char *p_user) {
 	for (i = 0; i < MAX_NUMS_TARGET; i++) {
 		printf(" %d", target_smp_core_nums[i]);
 	}
+	printf("\n target_group:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_group[i]);
+	}
 */
+
 	fclose(fp_user);
 	return 0;
 }
 
-#define CHECK_TPL_INFO_NUMS   10
+#define CHECK_TPL_INFO_NUMS   11
 #define CHECK_TPL_TAP_ARCH        "set tap_arch_list"
 #define CHECK_TPL_TAP_IRLEN       "set tap_irlen"
 #define CHECK_TPL_TAP_EXP_ID      "set tap_expected_id"
@@ -1864,6 +1890,8 @@ int nds_target_cfg_transfer(const char *p_user) {
 
 #define CHECK_TPL_MAX_TAP         "set max_of_tap"
 #define CHECK_TPL_MAX_TARGET      "set max_of_target"
+
+#define CHECK_TPL_TARGET_GROUP    "set target_group"
 
 
 char *gpCheckTplFileInfo[CHECK_TPL_INFO_NUMS] = {
@@ -1878,6 +1906,8 @@ char *gpCheckTplFileInfo[CHECK_TPL_INFO_NUMS] = {
 
 	CHECK_TPL_MAX_TAP,
 	CHECK_TPL_MAX_TARGET,
+
+	CHECK_TPL_TARGET_GROUP,
 };
 
 unsigned int *gpUpdateNewTblInfo[CHECK_TPL_INFO_NUMS] = {
@@ -1893,6 +1923,8 @@ unsigned int *gpUpdateNewTblInfo[CHECK_TPL_INFO_NUMS] = {
 
 	&number_of_tap,
 	&number_of_target,
+
+	&target_group[0],
 };
 
 int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {

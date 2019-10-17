@@ -8,6 +8,7 @@
 set target_arch_name {"unknown" "nds32_v3" "nds_v5" "nds32_v3_sdm" "others"}
 set tap_arch_list {1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
 set target_arch_list {1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
+set target_group {1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
 
 # for multi-core(N8_N25)
 #set tap_arch_list {1 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
@@ -112,7 +113,8 @@ for {set i 0} {$i < $number_of_tap} {incr i} {
 }
 
 for {set i 0} {$i < $number_of_target} {incr i} {
-	target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i)
+	#target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [expr {$CORE_ID($i)+1}]
+	target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
 	if [ expr $IF_SMP($i) == 0x1 ] {
 		set CORE_NUMS($i) [lindex $target_smp_core_nums $i]
 		$TARGET_NAME($i) configure -rtos riscv -corenums $CORE_NUMS($i)
