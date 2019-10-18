@@ -33,8 +33,6 @@ fi
 #	esac
 #done
 
-OS=`lsb_release -i`
-OS=${OS#Dis*ID:}
 RULES=70-ndsusb-v1.rules
 SCRIPT=ftdi_script-v1.sh
 
