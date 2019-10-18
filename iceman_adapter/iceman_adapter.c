@@ -277,7 +277,7 @@ static void show_usage(void) {
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
 	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
 	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
-	printf("\t\t\tAICE-2 support extended TCK frequency range\n");
+	printf("\t\t\tAICE-2 supports extended TCK frequency range\n");
 	printf("\t\t\t\tUsage: -c <clock range>Hz/KHz/MHz\n");
 
 	// V5
@@ -290,8 +290,9 @@ static void show_usage(void) {
 
 		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
 	}
-	printf("\t\t\tFTDI-based Adapter(AICE-MICRO) & AICE-MINI+ support extended TCK frequency range (1KHz ~ 10MHz\n");
-	printf("\t\t\tWARNING: The maximum frequency of AICE-MINI+ is 5.6MHz.");
+	printf("\n");
+	printf("\t\t\tFTDI-based Adapter (AICE-MICRO) and AICE-MINI+ support extended TCK frequency range.\n");
+	printf("\t\t\tThe TCK frequency of AICE-MICRO ranges from 1KHz to 10MHz and that of AICE-MINI+ ranges from 1KHz to 5.6MHz.\n");
 	printf("\t\t\t\tUsage: -c <clock range>KHz/MHz\n");
 
 
