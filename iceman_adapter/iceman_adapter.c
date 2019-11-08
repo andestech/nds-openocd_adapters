@@ -7,6 +7,7 @@
 #include <getopt.h>
 #include <signal.h>
 #include <ctype.h>
+#include "libusb10_common.h"
 
 #ifndef ERROR_OK
 #define ERROR_OK           (0)
@@ -55,6 +56,8 @@
 #define LONGOPT_USER_TARGET_CFG         15
 #define LONGOPT_SMP                     16
 #define LONGOPT_HALT_ON_RESET           17
+#define LONGOPT_LIST_DEVICE             18
+#define LONGOPT_DEVICE                  19
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -70,6 +73,8 @@ struct option long_option[] = {
 	{"target-cfg", required_argument, &long_opt_flag, LONGOPT_USER_TARGET_CFG},
 	{"smp", no_argument, &long_opt_flag, LONGOPT_SMP},
 	{"halt-on-reset", required_argument, &long_opt_flag, LONGOPT_HALT_ON_RESET},
+	{"list-device", no_argument, &long_opt_flag, LONGOPT_LIST_DEVICE},
+	{"device", required_argument, &long_opt_flag, LONGOPT_DEVICE},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -250,6 +255,10 @@ int nds_target_cfg_checkif_transfer(const char *p_user);
 int nds_target_cfg_transfer(const char *p_user);
 int nds_target_cfg_merge(const char *p_tpl, const char *p_out);
 
+static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t *ret_pnum, uint8_t *ret_dnum);
+static int list_device = 0;
+static ssize_t devnum = -1;
+
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
 	printf("Copyright (C) 2007-2019 Andes Technology Corporation\n");
@@ -418,8 +427,11 @@ static int parse_param(int a_argc, char **a_argv) {
 					use_smp = 1;
 				} else if (long_opt == LONGOPT_HALT_ON_RESET) {
 					usd_halt_on_reset = strtol(optarg, NULL, 0);
+				} else if (long_opt == LONGOPT_LIST_DEVICE) {
+					list_device = 1;
+				} else if (long_opt == LONGOPT_DEVICE) {
+					sscanf(optarg, "%d", &devnum);
 				}
-
 				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
@@ -940,6 +952,13 @@ static void update_openocd_cfg_v5(void)
 				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
+
+			if( devnum != -1 ) {
+				uint8_t bnum = 0, pnum = 0, dnum = 0;
+				list_devices(-1, -1, &bnum, &pnum, &dnum);
+				//fprintf(openocd_cfg, "ftdi_location %u:%u\n", bnum, pnum);
+				fprintf(openocd_cfg, "ftdi_device_address %u\n", dnum);
+			}
 			continue;
 		}
 		if (custom_target_cfg) {
@@ -1061,6 +1080,13 @@ static void update_openocd_cfg(void)
 					fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 				else
 					fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
+
+				if( devnum != -1 ) {
+					uint8_t bnum = 0, pnum = 0, dnum = 0;
+					list_devices(-1, -1, &bnum, &pnum, &dnum);
+					//fprintf(openocd_cfg, "ftdi_location %u:%u\n", bnum, pnum);
+					fprintf(openocd_cfg, "ftdi_device_address %u\n", dnum);
+				}
 
 				fprintf(openocd_cfg, "reset_config trst_only\n");
 			} else {
@@ -1596,6 +1622,12 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	if( list_device ) {
+		devnum = -1;
+		list_devices(-1, -1, NULL, NULL, NULL);
+		return 0;
+	}
+
 	openocd_main(2, openocd_argv);
 	//printf("return from openocd_main WOW!\n");
 	return 0;
@@ -1996,3 +2028,61 @@ int nds_target_cfg_transfer_main(void) {
 	return 0;
 }
 */
+
+static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t *ret_pnum, uint8_t *ret_dnum)
+{
+	libusb_context *ctx;
+	int err;
+	libusb_device **list;
+	struct libusb_device_descriptor desc;
+	ssize_t num_devs, i, list_dev=0;
+
+	err = libusb_init(&ctx);
+	num_devs = libusb_get_device_list(ctx, &list);
+	for(i = 0; i < num_devs; i++) {
+		char NullName[] = {""};
+		char *pdescp_Manufacturer = (char *)&NullName[0];
+		char *pdescp_Product = (char *)&NullName[0];
+		unsigned int descp_bcdDevice = 0x0;
+
+		libusb_device *dev = list[i];
+		libusb_get_device_descriptor(dev, &desc);
+		uint8_t bnum = libusb_get_bus_number(dev);
+		uint8_t dnum = libusb_get_device_address(dev);
+		uint8_t pnum = libusb_get_port_number(dev);
+
+		struct jtag_libusb_device_handle *devh = NULL;
+		err = libusb_open(dev, &devh);
+		if (err) {
+			//printf("libusb_open() failed with %s\n",
+			//		libusb_error_name(err));
+			continue;
+		}
+		struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
+		jtag_libusb_get_descriptor_string(devh, udev,
+				&pdescp_Manufacturer,
+				&pdescp_Product,
+				&descp_bcdDevice);
+		if( devnum == -1 ) {
+			if( list_dev == 0 )
+				printf("\nList of Devices:\n");
+
+			printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s %s\n",
+					list_dev, bnum, pnum, dnum,
+					desc.idVendor, desc.idProduct,
+					pdescp_Manufacturer, pdescp_Product);
+		} else if ( devnum == list_dev ) {
+			*ret_bnum = bnum;
+			*ret_dnum = dnum;
+			*ret_pnum = pnum;
+			return 0;
+		}
+
+		list_dev++;
+		libusb_close(devh);
+	}
+
+	libusb_free_device_list(list, 0);
+	return 0;
+}
+
