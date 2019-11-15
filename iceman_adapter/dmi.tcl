@@ -151,6 +151,9 @@ proc nds_select_current_hart {tap hartid} {
 	set test_dmcontrol [expr $test_dmcontrol & ~$DMI_DMCONTROL_HARTSEL]
 	set hartid [expr $hartid << $DMI_DMCONTROL_HARTSEL_SHIFT]
 	set test_dmcontrol [expr $test_dmcontrol | $hartid]
+
+	# Force active DM
+	set test_dmcontrol [expr $test_dmcontrol | 0x1]
 	echo [format "set_dmcontrol: 0x%x" $test_dmcontrol]
 	dmi_write $tap $DMI_DMCONTROL $test_dmcontrol
 
