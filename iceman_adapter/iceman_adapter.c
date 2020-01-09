@@ -181,6 +181,20 @@ struct EDM_OPERATIONS {
 	int data;
 };
 
+struct device_info {
+	int vid;
+	int pid;
+};
+
+#define MAX_WHITELIST          5
+const struct device_info device_whitelist[] = {
+	{ .vid = 0x0403, .pid = 0x6010 },	// FTDI-based adapter, AICE-MICRO
+	{ .vid = 0x15ba, .pid = 0x002a },	// Olimex ARM-USB-TINY-H
+	{ .vid = 0x1cfc, .pid = 0x0000 },	// AICE
+	{ .vid = 0x1cfc, .pid = 0x0001 },	// AICE-MINI+
+	{ .vid = 0x28e9, .pid = 0x058f },	// GD-link
+};
+
 #define MAX_MEM_OPERATIONS_NUM 32
 
 struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
@@ -2052,6 +2066,7 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 		uint8_t bnum = libusb_get_bus_number(dev);
 		uint8_t dnum = libusb_get_device_address(dev);
 		uint8_t pnum = libusb_get_port_number(dev);
+		int is_supported = -1, j;
 
 		struct jtag_libusb_device_handle *devh = NULL;
 		err = libusb_open(dev, &devh);
@@ -2065,7 +2080,16 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 				&pdescp_Manufacturer,
 				&pdescp_Product,
 				&descp_bcdDevice);
-		if( devnum == -1 ) {
+
+		for( int j = 0; j < MAX_WHITELIST; j++ ) {
+			if(desc.idVendor  == device_whitelist[j].vid &&
+			   desc.idProduct == device_whitelist[j].pid ) {
+				is_supported = 1;
+				break;
+			}
+		}
+
+		if( devnum == -1 && is_supported == 1 ) {
 			if( list_dev == 0 )
 				printf("\nList of Devices:\n");
 
@@ -2080,7 +2104,9 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 			return 0;
 		}
 
-		list_dev++;
+		if( is_supported == 1 )
+			list_dev++;
+
 		libusb_close(devh);
 	}
 
