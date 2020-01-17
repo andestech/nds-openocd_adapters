@@ -8,6 +8,9 @@
 #include <signal.h>
 #include <ctype.h>
 #include "libusb10_common.h"
+#include <libgen.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifndef ERROR_OK
 #define ERROR_OK           (0)
@@ -250,6 +253,8 @@ static void parse_edm_operation(const char *edm_operation);
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 static const char *log_output = NULL;
+static const char *log_folder = NULL;
+static const char *bin_folder = NULL;
 static const char *custom_interface = NULL;
 static const char *custom_target_cfg = NULL;
 static unsigned int efreq_range = 0;
@@ -400,6 +405,22 @@ static void show_usage(void) {
 	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
+char output_path[LINE_BUFFER_SIZE];
+static char* as_filepath(const char* cfg_name)
+{
+	memset(output_path, 0, sizeof(char)*LINE_BUFFER_SIZE);
+
+	if(log_folder) {
+		strncpy(output_path, log_folder, strlen(log_folder));
+		strcat(output_path, "/");
+		strcat(output_path, cfg_name);
+	} else {
+		strncpy(output_path, cfg_name, strlen(cfg_name));
+	}
+
+	return &output_path;
+}
+
 static int parse_param(int a_argc, char **a_argv) {
 	while(1) {
 		int c = 0;
@@ -411,6 +432,7 @@ static int parse_param(int a_argc, char **a_argv) {
 		char tmpstr[10] = {0};
 		//uint32_t ms_check_dbger = 0;
 		unsigned int i;
+		int status;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
 
@@ -514,9 +536,24 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 'F':
 				edm_port_op_file = optarg;
 				break;
-            case 'f':
-                log_output = optarg;
-                break;
+			case 'f':
+				log_output = optarg;
+
+				// handle log folder path
+				log_folder = strdup(log_output);
+				dirname(log_folder);
+
+				// handle ICEman bin folder path
+				bin_folder = strdup(a_argv[0]);
+				dirname(bin_folder);
+
+				//printf("[DEBUG] log_folder:%s\n", log_folder);
+				//printf("[DEBUG] bin_folder:%s\n", bin_folder);
+
+				mkdir( as_filepath("board"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+				mkdir( as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+				mkdir( as_filepath("target"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+				break;
 			case 'g':
 				force_debug = 1;
 				break;
@@ -695,9 +732,10 @@ static FILE *target_cfg[AICE_MAX_NUM_CORE];
 static FILE *openocd_cfg_usrdef = NULL;
 char target_cfg_name[64];
 char *target_cfg_name_str = (char *)&target_cfg_name[0];
+
 static void open_config_files(void) {
 	openocd_cfg_tpl = fopen("openocd.cfg.tpl", "r");
-	openocd_cfg = fopen("openocd.cfg", "w");
+	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w");
 	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
 		fprintf(stderr, "ERROR: No config file, openocd.cfg\n");
 		exit(-1);
@@ -705,14 +743,14 @@ static void open_config_files(void) {
 
 	if (nds_v3_ftdi == 0) {
 		interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
-		interface_cfg = fopen("interface/nds32-aice.cfg", "w");
+		interface_cfg = fopen( as_filepath("interface/nds32-aice.cfg"), "w");
 		if ((interface_cfg_tpl == NULL) || (interface_cfg == NULL)) {
 			fprintf(stderr, "ERROR: No interface config file, nds32-aice.cfg\n");
 			exit(-1);
 		}
 	}
 	board_cfg_tpl = fopen("board/nds32_xc5.cfg.tpl", "r");
-	board_cfg = fopen("board/nds32_xc5.cfg", "w");
+	board_cfg = fopen( as_filepath("board/nds32_xc5.cfg"), "w");
 	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
 		fprintf(stderr, "ERROR: No board config file, nds32_xc5.cfg\n");
 		exit(-1);
@@ -736,43 +774,43 @@ static void open_config_files(void) {
 			}
 			sprintf(target_cfg_name_str, target_str, coreid);
 			sprintf(line_buffer, target_str, coreid);
-			target_cfg[coreid] = fopen(line_buffer, "w");
+			target_cfg[coreid] = fopen(as_filepath(line_buffer), "w");
 		}
 	}
-	openocd_cfg_usrdef = fopen(NDS32_USER_CFG, "a");
+	openocd_cfg_usrdef = fopen(as_filepath(NDS32_USER_CFG), "a");
 }
 
 static void close_config_files(void) {
 	int coreid;
 
-    if (openocd_cfg_tpl != NULL)
-    	fclose(openocd_cfg_tpl);
-	
-    if(openocd_cfg != NULL)
-        fclose(openocd_cfg);
+	if (openocd_cfg_tpl != NULL)
+		fclose(openocd_cfg_tpl);
 
-    if(interface_cfg_tpl != NULL)
-    	fclose(interface_cfg_tpl);
-	
-    if(interface_cfg != NULL)
-        fclose(interface_cfg);
-	
-    if(board_cfg_tpl != NULL)
-        fclose(board_cfg_tpl);
-	
-    if(board_cfg != NULL)
-        fclose(board_cfg);
-	
-    if(target_cfg_tpl != NULL)
-        fclose(target_cfg_tpl);
-	
-    for (coreid = 0; coreid < 1; coreid ++) {
-	    if(target_cfg[coreid] != NULL)
-            fclose(target_cfg[coreid]);
-    }
+	if(openocd_cfg != NULL)
+		fclose(openocd_cfg);
 
-    if(openocd_cfg_usrdef != NULL)
-    	fclose(openocd_cfg_usrdef);
+	if(interface_cfg_tpl != NULL)
+		fclose(interface_cfg_tpl);
+
+	if(interface_cfg != NULL)
+		fclose(interface_cfg);
+
+	if(board_cfg_tpl != NULL)
+		fclose(board_cfg_tpl);
+
+	if(board_cfg != NULL)
+		fclose(board_cfg);
+
+	if(target_cfg_tpl != NULL)
+		fclose(target_cfg_tpl);
+
+	for (coreid = 0; coreid < 1; coreid ++) {
+		if(target_cfg[coreid] != NULL)
+			fclose(target_cfg[coreid]);
+	}
+
+	if(openocd_cfg_usrdef != NULL)
+		fclose(openocd_cfg_usrdef);
 }
 
 static void parse_mem_operation(const char *mem_operation) {
@@ -912,12 +950,16 @@ static void update_debug_diag_v5(void)
 	FILE *debug_diag_tcl_new = NULL;
 
 	debug_diag_tcl = fopen("debug_diag.tcl", "r");
-	debug_diag_tcl_new = fopen("debug_diag_new.tcl", "w");
+	debug_diag_tcl_new = fopen( as_filepath("debug_diag_new.tcl"), "w" );
 	if (debug_diag_tcl == NULL) {
 		fprintf(stderr, "ERROR: No debug_diag file, debug_diag.tcl\n");
 		exit(-1);
 	}
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
+	if(log_folder) {
+		fprintf(debug_diag_tcl_new, "add_script_search_dir %s\n", log_folder);
+		fprintf(debug_diag_tcl_new, "add_script_search_dir %s\n", bin_folder);
+	}
 
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL) {
 		fputs(line_buffer, debug_diag_tcl_new);
@@ -929,9 +971,8 @@ static void update_debug_diag_v5(void)
 static void update_openocd_cfg_v5(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
-
 	openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
-	openocd_cfg = fopen("openocd.cfg", "w");
+	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w" );
 	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
 		fprintf(stderr, "ERROR: No config file, openocd.cfg.v5\n");
 		exit(-1);
@@ -940,6 +981,9 @@ static void update_openocd_cfg_v5(void)
 	if( log_output == NULL )
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", bin_folder);
+
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_output, strlen(log_output));
 		strncat(line_buffer, "iceman_debug0.log", 17);
@@ -1076,6 +1120,9 @@ static void update_openocd_cfg(void)
 	if( log_output == NULL )
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", bin_folder);
+
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_output, strlen(log_output));
 		strncat(line_buffer, "iceman_debug0.log", 17);
@@ -1151,7 +1198,7 @@ static void update_interface_cfg(void)
 		fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
-	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
+	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, as_filepath(target_cfg_name_str));
 
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %d %d\n", count_to_check_dbger, clock_setting);
@@ -1467,7 +1514,7 @@ static void update_board_cfg_v5(void)
 	int i;
 
 	board_cfg_tpl = fopen("board/nds_v5.cfg.tpl", "r");
-	board_cfg = fopen("board/nds_v5.cfg", "w");
+	board_cfg = fopen( as_filepath("board/nds_v5.cfg"), "w");
 	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
 		fprintf(stderr, "ERROR: No board config file, nds_v5.cfg\n");
 		exit(-1);
@@ -1624,6 +1671,14 @@ int main(int argc, char **argv) {
 
 	openocd_argv[0] = "openocd";
 	openocd_argv[1] = "-d-3";
+	if( log_folder ) {
+		char output_path[LINE_BUFFER_SIZE];
+		strncpy(output_path, log_folder, strlen(log_folder));
+		strcat(output_path, "/openocd.cfg");
+
+		openocd_argv[2] = "-f";
+		openocd_argv[3] = output_path;
+	}
 	//openocd_argv[2] = "-l";
 	//openocd_argv[3] = "iceman_debug.log";
 
@@ -1634,7 +1689,7 @@ int main(int argc, char **argv) {
 		update_debug_diag_v5();
 		nds_skip_dmi = 1;
 		openocd_argv[2] = "-f";
-		openocd_argv[3] = "debug_diag_new.tcl";
+		openocd_argv[3] = as_filepath("debug_diag_new.tcl");
 		openocd_main(4, openocd_argv);
 		return 0;
 	}
@@ -1645,7 +1700,10 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	openocd_main(2, openocd_argv);
+	if( log_folder )
+		openocd_main(4, openocd_argv);
+	else
+		openocd_main(2, openocd_argv);
 	//printf("return from openocd_main WOW!\n");
 	return 0;
 }
@@ -1987,7 +2045,7 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
 	unsigned int *pnew_value, update_nums;
 
 	fp_tpl = fopen(p_tpl, "r");
-	fp_output = fopen(p_out, "wb");
+	fp_output = fopen(as_filepath(p_out), "wb");
 	if (fp_tpl == NULL) {
 		printf("ERROR!! open %s fail !!\n", p_tpl);
 		return -1;
