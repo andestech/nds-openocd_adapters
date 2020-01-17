@@ -184,15 +184,16 @@ struct EDM_OPERATIONS {
 struct device_info {
 	int vid;
 	int pid;
+	char* description;
 };
 
 #define MAX_WHITELIST          5
 const struct device_info device_whitelist[] = {
-	{ .vid = 0x0403, .pid = 0x6010 },	// FTDI-based adapter, AICE-MICRO
-	{ .vid = 0x15ba, .pid = 0x002a },	// Olimex ARM-USB-TINY-H
-	{ .vid = 0x1cfc, .pid = 0x0000 },	// AICE
-	{ .vid = 0x1cfc, .pid = 0x0001 },	// AICE-MINI+
-	{ .vid = 0x28e9, .pid = 0x058f },	// GD-link
+	{ .vid = 0x0403, .pid = 0x6010, .description = "AndeShape AICE-MICRO / FTDI USB device" },
+	{ .vid = 0x15ba, .pid = 0x002a, .description = "Olimex ARM-USB-TINY-H" },
+	{ .vid = 0x1cfc, .pid = 0x0000, .description = "AndeShape AICE/AICE-MCU/AICE-MINI/AICE2" },
+	{ .vid = 0x1cfc, .pid = 0x0001, .description = "AndeShape AICE-MINI+" },
+	{ .vid = 0x28e9, .pid = 0x058f, .description = "GigaDevice GD32" },
 };
 
 #define MAX_MEM_OPERATIONS_NUM 32
@@ -2081,7 +2082,7 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 				&pdescp_Product,
 				&descp_bcdDevice);
 
-		for( int j = 0; j < MAX_WHITELIST; j++ ) {
+		for( j = 0; j < MAX_WHITELIST; j++ ) {
 			if(desc.idVendor  == device_whitelist[j].vid &&
 			   desc.idProduct == device_whitelist[j].pid ) {
 				is_supported = 1;
@@ -2093,10 +2094,14 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 			if( list_dev == 0 )
 				printf("\nList of Devices:\n");
 
-			printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s %s\n",
+			//printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s %s\n",
+			//		list_dev, bnum, pnum, dnum,
+			//		desc.idVendor, desc.idProduct,
+			//		pdescp_Manufacturer, pdescp_Product);
+			printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s\n",
 					list_dev, bnum, pnum, dnum,
 					desc.idVendor, desc.idProduct,
-					pdescp_Manufacturer, pdescp_Product);
+					device_whitelist[j].description);
 		} else if ( devnum == list_dev ) {
 			*ret_bnum = bnum;
 			*ret_dnum = dnum;
