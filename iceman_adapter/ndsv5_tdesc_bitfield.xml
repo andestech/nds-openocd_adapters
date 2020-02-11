@@ -18,12 +18,6 @@
 <evalue name="Clean" value="2"/>
 <evalue name="Dirty" value="3"/>
 </enum>
-<enum id="mstatus_XS" size="4">
-<evalue name="All off" value="0"/>
-<evalue name="None dirty or clean, some on" value="1"/>
-<evalue name="None dirty, some clean" value="2"/>
-<evalue name="Some dirty" value="3"/>
-</enum>
 <flags id="mstatus_flags" size="4">
 <field name="UIE" start="0" end="0"/>
 <field name="SIE" start="1" end="1"/>
@@ -47,7 +41,8 @@
 <field name="HPP" start="9" end="10" type="uint32"/>
 <field name="MPP" start="11" end="12" type="uint32"/>
 <field name="FS" start="13" end="14" type="mstatus_FS"/>
-<field name="XS" start="15" end="16" type="mstatus_XS"/>
+<field name="XS" start="15" end="16" type="mstatus_FS"/>
+<field name="VS" start="23" end="24" type="mstatus_FS"/>
 </struct>
 
 <flags id="mie_flags" size="4">
@@ -129,13 +124,8 @@
 <field name="" start="0" end="31" type="medeleg_flags"/>
 </struct>
 
-<enum id="mtvec_mode" size="4">
-<evalue name="Direct" value="0"/>
-<evalue name="Vectored" value="1"/>
-</enum>
 <struct id="reg_mtvec" size="4">
 <field name="" start="0" end="31" type="uint32"/>
-<field name="mode" start="0" end="1" type="mtvec_mode"/>
 <field name="base" start="2" end="31" type="uint32"/>
 </struct>
 
@@ -180,9 +170,9 @@
 </struct>
 
 <enum id="misa_base" size="4">
-<evalue name="RV32" value="1"/>
-<evalue name="RV64" value="2"/>
-<evalue name="RV128" value="3"/>
+<evalue name="32" value="1"/>
+<evalue name="64" value="2"/>
+<evalue name="128" value="3"/>
 </enum>
 <flags id="misa_flags" size="4">
 <field name="A" start="0" end="0"/>
@@ -215,7 +205,7 @@
 <struct id="reg_misa" size="4">
 <field name="" start="0" end="31" type="uint32"/>
 <field name="extensions" start="0" end="25" type="misa_flags"/>
-<field name="base" start="30" end="31" type="misa_base"/>
+<field name="mxl" start="30" end="31" type="misa_base"/>
 </struct>
 
 <enum id="marchid_coretype" size="4">
@@ -230,7 +220,7 @@
 </enum>
 <struct id="reg_marchid" size="4">
 <field name="" start="0" end="31" type="uint32"/>
-<field name="macroid" start="0" end="11" type="uint32"/>
+<field name="microid" start="0" end="11" type="uint32"/>
 <field name="coretype" start="12" end="15" type="marchid_coretype"/>
 <field name="commercial" start="31" end="31" type="uint32"/>
 </struct>
@@ -242,30 +232,23 @@
 <field name="major" start="8" end="15" type="uint32"/>
 </struct>
 
-<enum id="tdata1_hmode" size="4">
-<evalue name="Both Halt mode and Machine mode can write the TDATA registers" value="0"/>
-<evalue name="Only Halt mode can write the TDATA registers" value="1"/>
+<enum id="tdata1_dmode" size="4">
+<evalue name="Both Debug mode and Machine mode can write the TDATA registers" value="0"/>
+<evalue name="Only Debug mode can write the TDATA registers" value="1"/>
 </enum>
 <enum id="tdata1_type" size="4">
 <evalue name="No trigger" value="0"/>
 <evalue name="Legacy SiFive address match trigger" value="1"/>
 <evalue name="Address/data match trigger" value="2"/>
 <evalue name="Instruction count trigger" value="3"/>
-<evalue name="Interrupt trigger" value="4"/>
-<evalue name="Exception trigger" value="5"/>
+<evalue name="The trigger is an interrupt trigger" value="4"/>
+<evalue name="The trigger is an exception trigger" value="5"/>
 <evalue name="Trigger exists, but is not currently available." value="15"/>
 </enum>
 <struct id="reg_tdata1" size="4">
 <field name="" start="0" end="31" type="uint32"/>
 <field name="data" start="0" end="26" type="uint32"/>
-<field name="dmode" start="27" end="27" type="tdata1_hmode"/>
-<field name="type" start="28" end="31" type="tdata1_type"/>
-</struct>
-
-<struct id="reg_mcontrol" size="4">
-<field name="" start="0" end="31" type="uint32"/>
-<field name="data" start="0" end="26" type="uint32"/>
-<field name="dmode" start="27" end="27" type="tdata1_hmode"/>
+<field name="dmode" start="27" end="27" type="tdata1_dmode"/>
 <field name="type" start="28" end="31" type="tdata1_type"/>
 </struct>
 
@@ -306,7 +289,7 @@
 <field name="" start="0" end="31" type="dcsr_flags"/>
 <field name="prv" start="0" end="1" type="dcsr_prv"/>
 <field name="cause" start="6" end="8" type="dcsr_cause"/>
-<field name="xdebugver" start="30" end="31" type="dcsr_xdebugver"/>
+<field name="xdebugver" start="28" end="31" type="dcsr_xdebugver"/>
 </struct>
 
 <flags id="fflags_flags" size="4">
@@ -514,6 +497,7 @@
 <field name="" start="0" end="31" type="mmsc_cfg_flags"/>
 <field name="tlb_ecc" start="1" end="2" type="micm_cfg_ic_ecc"/>
 <field name="addpmc" start="7" end="11" type="mmsc_cfg_addpmc"/>
+<field name="vcctl" start="18" end="19" type="uint32"/>
 <field name="excslvl" start="20" end="21" type="mmsc_cfg_excslvl"/>
 </struct>
 
@@ -538,6 +522,7 @@
 <struct id="reg_milmb" size="4">
 <field name="" start="0" end="31" type="milmb_flags"/>
 <field name="eccen" start="1" end="2" type="milmb_eccen"/>
+<field name="base physical address" start="10" end="31" type="uint32"/>
 </struct>
 
 <flags id="mdlmb_flags" size="4">
@@ -547,6 +532,7 @@
 <struct id="reg_mdlmb" size="4">
 <field name="" start="0" end="31" type="mdlmb_flags"/>
 <field name="eccen" start="1" end="2" type="milmb_eccen"/>
+<field name="base physical address" start="10" end="31" type="uint32"/>
 </struct>
 
 <enum id="mecc_code_ramid" size="4">
@@ -576,17 +562,36 @@
 <field name="fast_int" start="8" end="8" type="uint32"/>
 </struct>
 
+<enum id="mcache_ctl_dc_warnd" size="4">
+<evalue name="Disable write-around HW mechanism. All cacheable write misses allocate a cache line according to PMA settings." value="0"/>
+<evalue name="Override PMA setting and do not allocate a line after consecutive store to 4 cache lines." value="1"/>
+<evalue name="Override PMA setting and do not allocate a line after consecutive store to 64 cache lines." value="2"/>
+<evalue name="Override PMA setting and do not allocate a line after consecutive store to 128 cache lines." value="3"/>
+</enum>
+<enum id="mcache_ctl_l2c_warnd" size="4">
+<evalue name="Disable write-around HW mechanism. All cacheable write misses allocate a cache line according to PMA settings." value="0"/>
+<evalue name="Override PMA setting and do not allocate a line after consecutive store to 16 cache lines." value="1"/>
+<evalue name="Override PMA setting and do not allocate a line after consecutive store to 128 cache lines." value="2"/>
+<evalue name="Override PMA setting and do not allocate a line after consecutive store to 512 cache lines." value="3"/>
+</enum>
 <flags id="mcache_ctl_flags" size="4">
 <field name="ic_en" start="0" end="0"/>
 <field name="dc_en" start="1" end="1"/>
 <field name="ic_rwecc" start="6" end="6"/>
 <field name="dc_rwecc" start="7" end="7"/>
 <field name="cctl_suen" start="8" end="8"/>
+<field name="ipref_en" start="9" end="9"/>
+<field name="dpref_en" start="10" end="10"/>
+<field name="ic_1st_wd" start="11" end="11"/>
+<field name="dc_1st_wd" start="12" end="12"/>
 </flags>
 <struct id="reg_mcache_ctl" size="4">
 <field name="" start="0" end="31" type="mcache_ctl_flags"/>
 <field name="ic_eccen" start="2" end="3" type="milmb_eccen"/>
 <field name="dc_eccen" start="4" end="5" type="milmb_eccen"/>
+<field name="dc_warnd" start="13" end="14" type="mcache_ctl_dc_warnd"/>
+<field name="l2c_warnd" start="15" end="16" type="mcache_ctl_l2c_warnd"/>
+<field name="tlb_eccen" start="17" end="18" type="milmb_eccen"/>
 </struct>
 
 <flags id="mmisc_ctl_flags" size="4">
@@ -595,9 +600,11 @@
 <field name="rvcompm" start="2" end="2"/>
 <field name="brpe" start="3" end="3"/>
 <field name="una" start="6" end="6"/>
-<field name="dcpf_en" start="7" end="7"/>
 <field name="nbld_en" start="8" end="8"/>
 <field name="newnmi" start="9" end="9"/>
+<field name="vcgl1_en" start="10" end="10"/>
+<field name="vcgl2_en" start="11" end="11"/>
+<field name="vcgl3_en" start="12" end="12"/>
 </flags>
 <struct id="reg_mmisc_ctl" size="4">
 <field name="" start="0" end="31" type="mmisc_ctl_flags"/>
@@ -613,15 +620,13 @@
 <flags id="mxstatus_flags" size="4">
 <field name="pft_en" start="0" end="0"/>
 <field name="ppft_en" start="1" end="1"/>
-<field name="ime" start="2" end="2"/>
-<field name="pime" start="3" end="3"/>
 <field name="dme" start="4" end="4"/>
 <field name="pdme" start="5" end="5"/>
 </flags>
 <struct id="reg_mxstatus" size="4">
 <field name="" start="0" end="31" type="mxstatus_flags"/>
 <field name="typ" start="6" end="7" type="mxstatus_typ"/>
-<field name="ptyp" start="8" end="9" type="uint64"/>
+<field name="ptyp" start="8" end="9" type="uint32"/>
 </struct>
 
 <flags id="mslideleg_flags" size="4">
@@ -718,7 +723,8 @@
 <struct id="reg_sstatus" size="4">
 <field name="" start="0" end="31" type="mstatus_flags"/>
 <field name="FS" start="13" end="14" type="mstatus_FS"/>
-<field name="XS" start="15" end="16" type="mstatus_XS"/>
+<field name="XS" start="15" end="16" type="mstatus_FS"/>
+<field name="VS" start="23" end="24" type="mstatus_FS"/>
 </struct>
 
 <struct id="reg_sie" size="4">
@@ -731,7 +737,6 @@
 
 <struct id="reg_stvec" size="4">
 <field name="" start="0" end="31" type="uint32"/>
-<field name="mode" start="0" end="1" type="mtvec_mode"/>
 <field name="base" start="2" end="31" type="uint32"/>
 </struct>
 
@@ -929,7 +934,6 @@
 </enum>
 <flags id="pma0cfg_flags" size="1">
 <field name="namo" start="6" end="6"/>
-<field name="wiri" start="7" end="7"/>
 </flags>
 <struct id="pma0cfg_S" size="1">
 <field name="" start="0" end="7" type="pma0cfg_flags"/>
@@ -1049,7 +1053,7 @@
 <flags id="uie_flags" size="4">
 <field name="usie" start="0" end="0"/>
 <field name="utie" start="4" end="4"/>
-<field name="ueie" start="8" end="8"/>
+<field name="ueip" start="8" end="8"/>
 </flags>
 <struct id="reg_uie" size="4">
 <field name="" start="0" end="31" type="uie_flags"/>
@@ -1069,8 +1073,38 @@
 <field name="base" start="2" end="31" type="uint32"/>
 </struct>
 
+<enum id="ucause_exceptioncode" size="4">
+<evalue name="Instruction address misaligned / User software interrupt" value="0"/>
+<evalue name="Instruction access fault" value="1"/>
+<evalue name="Illegal instruction" value="2"/>
+<evalue name="Breakpoint" value="3"/>
+<evalue name="Load address misaligned / User timer interrupt" value="4"/>
+<evalue name="Load access fault" value="5"/>
+<evalue name="Store/AMO address misaligned" value="6"/>
+<evalue name="Store/AMO access fault / Machine timer interrupt" value="7"/>
+<evalue name="Environment call from U-mode / User external interrupt" value="8"/>
+<evalue name="Environment call from S-mode" value="9"/>
+<evalue name="Environment call from M-mode" value="11"/>
+<evalue name="Instruction page fault" value="12"/>
+<evalue name="Load page fault" value="13"/>
+<evalue name="Store/AMO page fault" value="15"/>
+<evalue name="Slave port ECC error interrupt" value="16"/>
+<evalue name="Bus read/write transaction error interrupt" value="17"/>
+<evalue name="Performance monitor overflow interrupt" value="18"/>
+<evalue name="Stack overflow exception" value="32"/>
+<evalue name="Stack underflow exception" value="33"/>
+<evalue name="Andes Custom Extension exception." value="40"/>
+<evalue name="Andes Custom Extension exception." value="41"/>
+<evalue name="Andes Custom Extension exception." value="42"/>
+<evalue name="Andes Custom Extension exception." value="43"/>
+<evalue name="Andes Custom Extension exception." value="44"/>
+<evalue name="Andes Custom Extension exception." value="45"/>
+<evalue name="Andes Custom Extension exception." value="46"/>
+<evalue name="Andes Custom Extension exception." value="47"/>
+</enum>
 <struct id="reg_ucause" size="4">
 <field name="" start="0" end="31" type="uint32"/>
+<field name="exception code" start="0" end="30" type="ucause_exceptioncode"/>
 <field name="interrupt" start="31" end="31" type="uint32"/>
 </struct>
 
@@ -1122,7 +1156,7 @@
 <reg name="csr3859" bitsize="32" type="reg_mimpid"/>
 <reg name="mimpid" bitsize="32" type="reg_mimpid"/>
 <reg name="csr1953" bitsize="32" type="reg_tdata1"/>
-<reg name="mcontrol" bitsize="32" type="reg_tdata1"/>
+<reg name="tdata1" bitsize="32" type="reg_tdata1"/>
 <reg name="csr1956" bitsize="32" type="reg_tinfo"/>
 <reg name="tinfo" bitsize="32" type="reg_tinfo"/>
 <reg name="csr1968" bitsize="32" type="reg_dcsr"/>
