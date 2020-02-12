@@ -1,3 +1,6 @@
+ACLOCAL_AMFLAGS = -I m4
+AM_CPPFLAGS = $(LIBUSB1_CFLAGS)
+
 bin_PROGRAMS = ICEman
 ICEman_SOURCES = iceman_adapter.c \
                  iceman_socket.c \
@@ -149,4 +152,9 @@ ICEman_CFLAGS += -DBUILD_ID=\"$(BUILD_ID)\" \
 #ICEman_LDFLAGS = -all-static
 #ICEman_LDFLAGS += ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
 
-ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
+if USE_HIDAPI
+PKGLIBS=hidapi-libusb libusb-1.0
+else
+PKGLIBS=libusb-1.0
+endif
+ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a $(shell pkg-config --libs $(PKGLIBS))
