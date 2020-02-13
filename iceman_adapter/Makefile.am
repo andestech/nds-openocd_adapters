@@ -153,8 +153,8 @@ ICEman_CFLAGS += -DBUILD_ID=\"$(BUILD_ID)\" \
 #ICEman_LDFLAGS += ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
 
 if USE_HIDAPI
-PKGLIBS=hidapi-libusb libusb-1.0
+PKGLIBS = hidapi-libusb libusb-1.0
 else
-PKGLIBS=libusb-1.0
+PKGLIBS = libusb-1.0
 endif
-ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a $(shell pkg-config --libs $(PKGLIBS))
+ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a `pkg-config --libs $(PKGLIBS)`

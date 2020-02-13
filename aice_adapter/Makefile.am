@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+AM_CPPFLAGS = $(LIBUSB1_CFLAGS)
 AUTOMAKE_OPTIONS = subdir-objects
 #SUBDIRS = helper \
 #		  jtag/drivers 
@@ -36,6 +38,9 @@ endif
 
 
 aice_adapter_LDFLAGS += -static 
+
+PKGLIBS=libusb-1.0
+aice_adapter_LDFLAGS += `pkg-config --libs $(PKGLIBS)`
 
 if BUILD_MINGW_BINARY
 aice_adapter_LDADD = -lws2_32 -lusb

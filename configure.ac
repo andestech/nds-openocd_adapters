@@ -1,6 +1,6 @@
 AC_INIT([openocd_adapter], [1.0], [hkwang@andestech.com])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE([foreign -Wall -Werror])
+AM_INIT_AUTOMAKE([foreign -Wall])
 AC_LANG_C
 AC_PROG_CC
 AC_PROG_CC_C99
@@ -76,7 +76,7 @@ AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
 AM_CONDITIONAL([BUILD_MAC_BINARY], [test "$is_mac" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB0], [test "$use_libusb1" = "no" -a "$use_libusb0" = "yes"])
-AM_CONDITIONAL([USE_HIDAPI], [test "$use_hidapi" = "xyes"])
+AM_CONDITIONAL([USE_HIDAPI], [test "$use_hidapi" = "yes"])
 
 # Define variables
 AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
