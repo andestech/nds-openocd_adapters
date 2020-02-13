@@ -78,6 +78,9 @@ AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB0], [test "$use_libusb1" = "no" -a "$use_libusb0" = "yes"])
 AM_CONDITIONAL([USE_HIDAPI], [test "$use_hidapi" = "yes"])
 
+AC_MSG_NOTICE([PKG_CONFIG_LIBDIR = $PKG_CONFIG_LIBDIR])
+AC_MSG_NOTICE([PKG_CONFIG_PATH   = $PKG_CONFIG_PATH])
+
 # Define variables
 AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
 AC_SUBST([COMMIT_ID], [`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`])
