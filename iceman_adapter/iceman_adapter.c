@@ -418,6 +418,9 @@ static char* as_filepath(const char* cfg_name)
 		strncpy(output_path, cfg_name, strlen(cfg_name));
 	}
 
+#if _DEBUG_
+	printf("as_filepath: %s\n", output_path);
+#endif
 	return &output_path;
 }
 
@@ -547,8 +550,10 @@ static int parse_param(int a_argc, char **a_argv) {
 				bin_folder = strdup(a_argv[0]);
 				dirname(bin_folder);
 
-				//printf("[DEBUG] log_folder:%s\n", log_folder);
-				//printf("[DEBUG] bin_folder:%s\n", bin_folder);
+			#if _DEBUG_
+				printf("[DEBUG] log_folder:%s\n", log_folder);
+				printf("[DEBUG] bin_folder:%s\n", bin_folder);
+			#endif
 
 				mkdir( as_filepath("board"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
 				mkdir( as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
@@ -1673,6 +1678,7 @@ int main(int argc, char **argv) {
 	openocd_argv[1] = "-d-3";
 	if( log_folder ) {
 		char output_path[LINE_BUFFER_SIZE];
+		memset(output_path, 0, sizeof(char)*LINE_BUFFER_SIZE);
 		strncpy(output_path, log_folder, strlen(log_folder));
 		strcat(output_path, "/openocd.cfg");
 
