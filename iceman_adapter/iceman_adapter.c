@@ -424,6 +424,16 @@ static char* as_filepath(const char* cfg_name)
 	return &output_path;
 }
 
+void removeChar(char *str, char garbage)
+{
+	char *src, *dst;
+	for (src = dst = str; *src != '\0'; src++) {
+		*dst = *src;
+		if (*dst != garbage) dst++;
+	}
+	*dst = '\0';
+}
+
 static int parse_param(int a_argc, char **a_argv) {
 	while(1) {
 		int c = 0;
@@ -546,9 +556,15 @@ static int parse_param(int a_argc, char **a_argv) {
 				log_folder = strdup(log_output);
 				dirname(log_folder);
 
+				if( log_folder[0] == '\"' )
+					removeChar(log_folder, '\"');
+
 				// handle ICEman bin folder path
 				bin_folder = strdup(a_argv[0]);
 				dirname(bin_folder);
+
+				if( bin_folder[0] == '\"' )
+					removeChar(bin_folder, '\"');
 
 			#if _DEBUG_
 				printf("[DEBUG] log_folder:%s\n", log_folder);
