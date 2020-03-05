@@ -281,7 +281,7 @@ static ssize_t devnum = -1;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
-	printf("Copyright (C) 2007-2019 Andes Technology Corporation\n");
+	printf("Copyright (C) 2007-2020 Andes Technology Corporation\n");
 }
 
 static void show_srccode_ver(void) {
