@@ -2182,7 +2182,7 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 					list_dev, bnum, pnum, dnum,
 					desc.idVendor, desc.idProduct,
 					device_whitelist[j].description);
-		} else if ( devnum == list_dev ) {
+		} else if ( devnum == list_dev && is_supported == 1 ) {
 			*ret_bnum = bnum;
 			*ret_dnum = dnum;
 			*ret_pnum = pnum;
