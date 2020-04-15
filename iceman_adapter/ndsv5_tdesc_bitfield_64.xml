@@ -497,7 +497,7 @@
 <field name="clic" start="27" end="27"/>
 <field name="eclic" start="28" end="28"/>
 <field name="edsp" start="29" end="29"/>
-<field name="dpma" start="30" end="30"/>
+<field name="ppma" start="30" end="30"/>
 <field name="bf16cvt" start="32" end="32"/>
 <field name="zfh" start="33" end="33"/>
 </flags>
@@ -626,6 +626,17 @@
 <field name="" start="0" end="63" type="mxstatus_flags"/>
 <field name="typ" start="6" end="7" type="mxstatus_typ"/>
 <field name="ptyp" start="8" end="9" type="uint64"/>
+</struct>
+
+<enum id="mdcause_pm" size="8">
+<evalue name="The privilege mode is User mode" value="0"/>
+<evalue name="The privilege mode is Supervisor mode" value="1"/>
+<evalue name="The privilege mode is Machine mode" value="3"/>
+</enum>
+<struct id="reg_mdcause" size="8">
+<field name="" start="0" end="63" type="uint64"/>
+<field name="mdcause" start="0" end="4" type="uint64"/>
+<field name="pm" start="5" end="6" type="mdcause_pm"/>
 </struct>
 
 <flags id="mslideleg_flags" size="8">
@@ -765,6 +776,16 @@
 
 <struct id="reg_slip" size="8">
 <field name="" start="0" end="63" type="mslideleg_flags"/>
+</struct>
+
+<enum id="sdcause_pm" size="8">
+<evalue name="The privilege mode is User mode" value="0"/>
+<evalue name="The privilege mode is Supervisor mode" value="1"/>
+</enum>
+<struct id="reg_sdcause" size="8">
+<field name="" start="0" end="63" type="uint64"/>
+<field name="sdcause" start="0" end="4" type="uint64"/>
+<field name="pm" start="5" end="6" type="sdcause_pm"/>
 </struct>
 
 <struct id="reg_smisc_ctl" size="8">
