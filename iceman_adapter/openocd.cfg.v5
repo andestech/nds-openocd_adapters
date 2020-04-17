@@ -3,6 +3,7 @@ adapter_nsrst_delay 500
 ##INTERFACE_REPLACE##
 reset_config srst_only
 source [find dmi.tcl]
+source [find custom_lib.tcl]
 
 set _create_multi_targets   1
 set _number_of_core   1
@@ -16,6 +17,8 @@ set NDS_TAP $TAP_BASE.$TAP_TYPE
 
 ##--target-create-start
 jtag newtap $TAP_BASE $TAP_TYPE -irlen 5 -expected-id 0x1000563D
+
+##INITIAL_SCRIPT_REPLACE##
 
 if {$_use_smp == 0} {
 	target create $CUR_TARGET nds_v5 -chain-position $NDS_TAP -coreid 0
@@ -31,17 +34,9 @@ if {$_use_smp == 0} {
 
 nds_auto_create_multi_targets $NDS_TARGETNAME $NDS_TAP
 ##--target-create-finish
-source [find custom_lib.tcl]
 
 $CUR_TARGET configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
 flash bank my_first_flash ndsspi 0x80000000 0 0 0 $CUR_TARGET
-
-#init
-#reset
-#halt
-#flash protect 0 64 last off
-#program ./demo_gpio
-#resume 0x20400000
 
 nds configure bak_debug_buf 0x200000 16
 nds configure tdesc_bit ndsv5_tdesc_bitfield.xml
