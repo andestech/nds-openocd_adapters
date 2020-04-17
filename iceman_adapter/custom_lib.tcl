@@ -2,8 +2,6 @@ source [find dmi.tcl]
 source [find debug_util.tcl]
 
 set NDS_TAP "123"
-scan [nds jtag_tap_name] "%s" NDS_TAP
-#set CUR_TARGET "123"
 
 set DMI_DMCONTROL      0x10
 set DMI_DMCONTROL_HALTREQ   0x80000000
@@ -23,6 +21,7 @@ proc set_dbgi {delay_ms} {
 	global DMI_DMCONTROL
 	global DMI_DMCONTROL_HALTREQ
 
+	scan [nds jtag_tap_name] "%s" NDS_TAP
 	set test_dmcontrol [dmi_read $NDS_TAP $DMI_DMCONTROL]
 	set test_dmcontrol [expr $test_dmcontrol | $DMI_DMCONTROL_HALTREQ]
 	dmi_write $NDS_TAP $DMI_DMCONTROL $test_dmcontrol
@@ -34,6 +33,7 @@ proc clear_dbgi {delay_ms} {
 	global DMI_DMCONTROL
 	global DMI_DMCONTROL_HALTREQ
 
+	scan [nds jtag_tap_name] "%s" NDS_TAP
 	set test_dmcontrol [dmi_read $NDS_TAP $DMI_DMCONTROL]
 	set test_dmcontrol [expr $test_dmcontrol & ~$DMI_DMCONTROL_HALTREQ]
 	dmi_write $NDS_TAP $DMI_DMCONTROL $test_dmcontrol
@@ -66,7 +66,7 @@ proc get_current_target {} {
 	global NDS_TARGETS_NAME
 	global NDS_TARGETS_COREID
 	global NDS_TARGETS_CORENUMS
-	
+
 	for {set i 0} {$i < $number_of_target} {incr $i} {
 		scan [nds target_info $i] "%s %x %x" NDS_TARGETS_NAME($i) NDS_TARGETS_COREID($i) NDS_TARGETS_CORENUMS($i)
 		puts [format "target-%d = %s 0x%x 0x%x" $i $NDS_TARGETS_NAME($i) $NDS_TARGETS_COREID($i) $NDS_TARGETS_CORENUMS($i)]
@@ -75,5 +75,7 @@ proc get_current_target {} {
 
 proc reset_and_halt_current_hart {hartsel} {
 	global NDS_TAP
+
+	scan [nds jtag_tap_name] "%s" NDS_TAP
 	reset_and_halt_one_hart $NDS_TAP $hartsel
 }

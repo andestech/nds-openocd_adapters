@@ -1043,6 +1043,21 @@ static void update_openocd_cfg_v5(void)
 			}
 			continue;
 		}
+		
+		if ( custom_initial_script ) {
+			if ( strncmp(line_buffer, "##INITIAL_SCRIPT_REPLACE##", 26) == 0 ) {
+				fprintf(openocd_cfg, "set once 0\n");
+				fprintf(openocd_cfg, "jtag configure $NDS_TAP -event post-reset {\n");
+				fprintf(openocd_cfg, "\tglobal once\n");
+				fprintf(openocd_cfg, "\tincr once\n");
+				fprintf(openocd_cfg, "\tif { $once == 1 } {\n");
+				fprintf(openocd_cfg, "\t\tsource %s\n", custom_initial_script);
+				fprintf(openocd_cfg, "\t}\n");
+				fprintf(openocd_cfg, "}\n");
+				fprintf(openocd_cfg, "\n");
+				continue;
+			}
+		}
 		if (custom_target_cfg) {
 			if( strncmp(line_buffer, "##--target-create-start", 23) == 0 ) {	/// replace target-create start
 					fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
