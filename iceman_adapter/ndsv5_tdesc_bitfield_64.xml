@@ -500,6 +500,8 @@
 <field name="ppma" start="30" end="30"/>
 <field name="bf16cvt" start="32" end="32"/>
 <field name="zfh" start="33" end="33"/>
+<field name="vl4" start="34" end="34"/>
+<field name="crashsave" start="35" end="35"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -507,6 +509,17 @@
 <field name="addpmc" start="7" end="11" type="mmsc_cfg_addpmc"/>
 <field name="vcctl" start="18" end="19" type="uint64"/>
 <field name="excslvl" start="20" end="21" type="mmsc_cfg_excslvl"/>
+</struct>
+
+<flags id="mcrash_statesave_flags" size="8">
+<field name="mie" start="0" end="0"/>
+<field name="ppft_en" start="3" end="3"/>
+<field name="pdme" start="5" end="5"/>
+</flags>
+<struct id="reg_mcrash_statesave" size="8">
+<field name="" start="0" end="63" type="mcrash_statesave_flags"/>
+<field name="cp" start="1" end="2" type="mdcause_pm"/>
+<field name="ptype" start="6" end="7" type="mxstatus_typ"/>
 </struct>
 
 <enum id="milmb_eccen" size="8">
@@ -625,7 +638,7 @@
 <struct id="reg_mxstatus" size="8">
 <field name="" start="0" end="63" type="mxstatus_flags"/>
 <field name="typ" start="6" end="7" type="mxstatus_typ"/>
-<field name="ptyp" start="8" end="9" type="uint64"/>
+<field name="ptyp" start="8" end="9" type="mxstatus_typ"/>
 </struct>
 
 <enum id="mdcause_pm" size="8">
@@ -1181,6 +1194,10 @@
 <reg name="mdcm_cfg" bitsize="64" type="reg_mdcm_cfg"/>
 <reg name="csr4034" bitsize="64" type="reg_mmsc_cfg"/>
 <reg name="mmsc_cfg" bitsize="64" type="reg_mmsc_cfg"/>
+<reg name="csr4040" bitsize="64" type="reg_mcrash_statesave"/>
+<reg name="mcrash_statesave" bitsize="64" type="reg_mcrash_statesave"/>
+<reg name="csr4041" bitsize="64" type="reg_mstatus"/>
+<reg name="mstatus_crashsave" bitsize="64" type="reg_mstatus"/>
 <reg name="csr1984" bitsize="64" type="reg_milmb"/>
 <reg name="milmb" bitsize="64" type="reg_milmb"/>
 <reg name="csr1985" bitsize="64" type="reg_mdlmb"/>
@@ -1219,6 +1236,8 @@
 <reg name="slie" bitsize="64" type="reg_slie"/>
 <reg name="csr2501" bitsize="64" type="reg_slip"/>
 <reg name="slip" bitsize="64" type="reg_slip"/>
+<reg name="csr2505" bitsize="64" type="reg_sdcause"/>
+<reg name="sdcause" bitsize="64" type="reg_sdcause"/>
 <reg name="csr2512" bitsize="64" type="reg_smisc_ctl"/>
 <reg name="smisc_ctl" bitsize="64" type="reg_smisc_ctl"/>
 <reg name="csr2048" bitsize="64" type="reg_uitb"/>
@@ -1233,6 +1252,8 @@
 <reg name="mcounteren" bitsize="32" type="reg_mcounteren"/>
 <reg name="csr1987" bitsize="64" type="reg_mnvec"/>
 <reg name="mnvec" bitsize="64" type="reg_mnvec"/>
+<reg name="csr1993" bitsize="64" type="reg_mdcause"/>
+<reg name="mdcause" bitsize="64" type="reg_mdcause"/>
 <reg name="csr1998" bitsize="32" type="reg_mcounterwen"/>
 <reg name="mcounterwen" bitsize="32" type="reg_mcounterwen"/>
 <reg name="csr1999" bitsize="32" type="reg_mcounterwen"/>
