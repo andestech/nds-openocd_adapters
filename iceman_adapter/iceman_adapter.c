@@ -61,6 +61,8 @@
 #define LONGOPT_HALT_ON_RESET           17
 #define LONGOPT_LIST_DEVICE             18
 #define LONGOPT_DEVICE                  19
+#define LONGOPT_RV32                    20
+#define LONGOPT_RV64                    21
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -78,6 +80,8 @@ struct option long_option[] = {
 	{"halt-on-reset", required_argument, &long_opt_flag, LONGOPT_HALT_ON_RESET},
 	{"list-device", no_argument, &long_opt_flag, LONGOPT_LIST_DEVICE},
 	{"device", required_argument, &long_opt_flag, LONGOPT_DEVICE},
+	{"rv32-bus-only", no_argument, &long_opt_flag, LONGOPT_RV32},
+	{"rv64-bus-only", no_argument, &long_opt_flag, LONGOPT_RV64},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -485,6 +489,12 @@ static int parse_param(int a_argc, char **a_argv) {
 					list_device = 1;
 				} else if (long_opt == LONGOPT_DEVICE) {
 					sscanf(optarg, "%d", &devnum);
+				} else if (long_opt == LONGOPT_RV32) {
+					vtarget_xlen = 32;
+					target_type[0] = TARGET_VTARGET;
+				} else if (long_opt == LONGOPT_RV64) {
+					vtarget_xlen = 64;
+					target_type[0] = TARGET_VTARGET;
 				}
 				break;
 			case 'a': /* reset-aice */
@@ -686,12 +696,6 @@ static int parse_param(int a_argc, char **a_argv) {
 					target_type[0] = TARGET_V3m;
 				} else if (strncmp(optarg, "v5", optarg_len) == 0) {
 					target_type[0] = TARGET_V5;
-				} else if (strncmp(optarg, "vtarget32", optarg_len) == 0) {
-					vtarget_xlen = 32;
-					target_type[0] = TARGET_VTARGET;
-				} else if (strncmp(optarg, "vtarget64", optarg_len) == 0) {
-					vtarget_xlen = 64;
-					target_type[0] = TARGET_VTARGET;
 				} else {
 					target_type[0] = TARGET_INVALID;
 				}
