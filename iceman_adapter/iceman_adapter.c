@@ -61,8 +61,9 @@
 #define LONGOPT_HALT_ON_RESET           17
 #define LONGOPT_LIST_DEVICE             18
 #define LONGOPT_DEVICE                  19
-#define LONGOPT_RV32                    20
-#define LONGOPT_RV64                    21
+#define LONGOPT_DEVICE_USB_COMBO        20
+#define LONGOPT_RV32                    21
+#define LONGOPT_RV64                    22
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -80,6 +81,7 @@ struct option long_option[] = {
 	{"halt-on-reset", required_argument, &long_opt_flag, LONGOPT_HALT_ON_RESET},
 	{"list-device", no_argument, &long_opt_flag, LONGOPT_LIST_DEVICE},
 	{"device", required_argument, &long_opt_flag, LONGOPT_DEVICE},
+	{"device-usb-combo", required_argument, &long_opt_flag, LONGOPT_DEVICE_USB_COMBO},
 	{"rv32-bus-only", no_argument, &long_opt_flag, LONGOPT_RV32},
 	{"rv64-bus-only", no_argument, &long_opt_flag, LONGOPT_RV64},
 
@@ -408,6 +410,7 @@ static void show_usage(void) {
 	printf("--halt-on-reset (Only for V5):\t\tEnable/Disable halt-on-reset functionality\n");
 	printf("--list-device: \t\tList all connected device\n");
 	printf("--device <device-id>:\tConnect selected device directly\n");
+	printf("--device-usb-combo <bus num>:<port num>:<device num>:\tConnect specified device with its bus, port and device number directly\n");
 	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
@@ -489,6 +492,10 @@ static int parse_param(int a_argc, char **a_argv) {
 					list_device = 1;
 				} else if (long_opt == LONGOPT_DEVICE) {
 					sscanf(optarg, "%d", &devnum);
+				} else if (long_opt == LONGOPT_DEVICE_USB_COMBO) {
+					uint8_t bnum = 0, pnum = 0, dnum = 0;
+					sscanf(optarg, "%u:%u:%u", &bnum, &pnum, &dnum);
+					devnum = list_devices(-1, -1, &bnum, &pnum, &dnum);
 				} else if (long_opt == LONGOPT_RV32) {
 					vtarget_xlen = 32;
 					vtarget_enable = 1;
@@ -2429,7 +2436,11 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 			}
 		}
 
-		if( devnum == -1 && is_supported == 1 ) {
+		if ((ret_bnum != NULL && *ret_bnum == bnum) && \
+		    (ret_pnum != NULL && *ret_pnum == pnum) && \
+		    (ret_dnum != NULL && *ret_dnum == dnum)) {
+			return devnum;
+		} else if( devnum == -1 && is_supported == 1 ) {
 			if( list_dev == 0 )
 				printf("\nList of Devices:\n");
 
