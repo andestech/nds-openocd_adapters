@@ -1115,9 +1115,9 @@ static void update_openocd_cfg_v5(void)
 	if (custom_restart_script) {
 		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
 	}
-	if (custom_initial_script) {
-		fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
-	}
+	//if (custom_initial_script) {
+	//	fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
+	//}
 
 	if( aice_no_crst_detect != 0 )
 		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
