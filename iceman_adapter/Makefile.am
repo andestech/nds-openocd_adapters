@@ -8,8 +8,8 @@ ICEman_SOURCES = iceman_adapter.c \
 
 openocd_cfgdir = $(bindir)
 dist_openocd_cfg_DATA = openocd.cfg.v5 \
-			openocd.cfg.vtarget32 \
-			openocd.cfg.vtarget64 \
+			openocd.cfg.rv32 \
+			openocd.cfg.rv64 \
 			openocd.cfg.tpl \
 			sw-reset-seq.tpl \
 			reset-hold-script.tpl \

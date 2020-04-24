@@ -175,7 +175,6 @@ enum TARGET_TYPE {
 	TARGET_V3,
 	TARGET_V3m,
 	TARGET_V5,
-	TARGET_VTARGET,
 	TARGET_INVALID,
 };
 
@@ -286,6 +285,7 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 static int list_device = 0;
 static ssize_t devnum = -1;
 static int vtarget_xlen;
+static int vtarget_enable = 0;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
@@ -498,10 +498,10 @@ static int parse_param(int a_argc, char **a_argv) {
 					devnum = list_devices(-1, -1, &bnum, &pnum, &dnum);
 				} else if (long_opt == LONGOPT_RV32) {
 					vtarget_xlen = 32;
-					target_type[0] = TARGET_VTARGET;
+					vtarget_enable = 1;
 				} else if (long_opt == LONGOPT_RV64) {
 					vtarget_xlen = 64;
-					target_type[0] = TARGET_VTARGET;
+					vtarget_enable = 1;
 				}
 				break;
 			case 'a': /* reset-aice */
@@ -1171,13 +1171,13 @@ static void update_openocd_cfg_vtarget(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	if (vtarget_xlen==32) {
-		openocd_cfg_tpl = fopen("openocd.cfg.vtarget32", "r");
+		openocd_cfg_tpl = fopen("openocd.cfg.rv32", "r");
 	} else {
-		openocd_cfg_tpl = fopen("openocd.cfg.vtarget64", "r");
+		openocd_cfg_tpl = fopen("openocd.cfg.rv64", "r");
 	}
 	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w" );
 	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No config file, openocd.cfg.vtarget\n");
+		fprintf(stderr, "ERROR: No config file: openocd.cfg.rv32 or openocd.cfg.rv64\n");
 		exit(-1);
 	}
 	/* update openocd.cfg */
@@ -1931,12 +1931,12 @@ int main(int argc, char **argv) {
 	}
 
 	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
-	if (target_type[0] == TARGET_V5) {
-		update_openocd_cfg_v5();
-		update_board_cfg_v5();
-	} else if (target_type[0] == TARGET_VTARGET) {
+	if (vtarget_enable==1) {
 		update_openocd_cfg_vtarget();
 		update_board_cfg_vtarget();
+	} else if (target_type[0] == TARGET_V5) {
+		update_openocd_cfg_v5();
+		update_board_cfg_v5();
 	} else if ((custom_interface != NULL) || (nds_mixed_mode_checking == 0x03)) {
 		// && (target_type[0] != TARGET_V5)
 		nds_v3_ftdi = 1;
