@@ -410,7 +410,6 @@ static void show_usage(void) {
 	printf("--halt-on-reset (Only for V5):\t\tEnable/Disable halt-on-reset functionality\n");
 	printf("--list-device: \t\tList all connected device\n");
 	printf("--device <device-id>:\tConnect selected device directly\n");
-	printf("--device-usb-combo <bus num>:<port num>:<device num>:\tConnect specified device with its bus, port and device number directly\n");
 	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
 }
 
