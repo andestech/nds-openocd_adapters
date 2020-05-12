@@ -502,6 +502,7 @@
 <field name="zfh" start="33" end="33"/>
 <field name="vl4" start="34" end="34"/>
 <field name="crashsave" start="35" end="35"/>
+<field name="veccfg" start="36" end="36"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -509,6 +510,49 @@
 <field name="addpmc" start="7" end="11" type="mmsc_cfg_addpmc"/>
 <field name="vcctl" start="18" end="19" type="uint64"/>
 <field name="excslvl" start="20" end="21" type="mmsc_cfg_excslvl"/>
+</struct>
+
+<enum id="mvec_cfg_mfsew" size="8">
+<evalue name="vector floating-point instructions are not supported." value="0"/>
+<evalue name="32" value="1"/>
+<evalue name="64" value="2"/>
+</enum>
+<enum id="mvec_cfg_misew" size="8">
+<evalue name="32" value="1"/>
+<evalue name="64" value="2"/>
+</enum>
+<enum id="mvec_cfg_mw" size="8">
+<evalue name="vlen" value="0"/>
+<evalue name="vlen/2" value="1"/>
+<evalue name="vlen/4" value="2"/>
+<evalue name="vlen/8" value="3"/>
+<evalue name="2*vlen" value="4"/>
+<evalue name="4*vlen" value="5"/>
+</enum>
+<enum id="mvec_cfg_dw" size="8">
+<evalue name="vlen" value="0"/>
+<evalue name="vlen/2" value="1"/>
+<evalue name="vlen/4" value="2"/>
+<evalue name="vlen/8" value="3"/>
+</enum>
+<enum id="mvec_cfg_vlen" size="8">
+<evalue name="64" value="0"/>
+<evalue name="128" value="1"/>
+<evalue name="256" value="2"/>
+<evalue name="512" value="3"/>
+<evalue name="1024" value="4"/>
+</enum>
+<flags id="mvec_cfg_flags" size="8">
+<field name="finv" start="18" end="18"/>
+</flags>
+<struct id="reg_mvec_cfg" size="8">
+<field name="" start="0" end="63" type="mvec_cfg_flags"/>
+<field name="ver" start="0" end="4" type="uint64"/>
+<field name="vlen" start="5" end="7" type="mvec_cfg_vlen"/>
+<field name="dw" start="8" end="10" type="mvec_cfg_dw"/>
+<field name="mw" start="11" end="13" type="mvec_cfg_mw"/>
+<field name="misew" start="14" end="15" type="mvec_cfg_misew"/>
+<field name="mfsew" start="16" end="17" type="mvec_cfg_mfsew"/>
 </struct>
 
 <flags id="mcrash_statesave_flags" size="8">
@@ -1194,6 +1238,8 @@
 <reg name="mdcm_cfg" bitsize="64" type="reg_mdcm_cfg"/>
 <reg name="csr4034" bitsize="64" type="reg_mmsc_cfg"/>
 <reg name="mmsc_cfg" bitsize="64" type="reg_mmsc_cfg"/>
+<reg name="csr4039" bitsize="64" type="reg_mvec_cfg"/>
+<reg name="mvec_cfg" bitsize="64" type="reg_mvec_cfg"/>
 <reg name="csr4040" bitsize="64" type="reg_mcrash_statesave"/>
 <reg name="mcrash_statesave" bitsize="64" type="reg_mcrash_statesave"/>
 <reg name="csr4041" bitsize="64" type="reg_mstatus"/>
