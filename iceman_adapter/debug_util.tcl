@@ -506,14 +506,14 @@ proc write_dpc {tap xlen wdata} {
 }
 
 proc write_s0 {tap xlen wdata} {
-#	write_register $tap $xlen 0x1008 $wdata
-        # 0x09802403 lw      s0,152(zero) # 0x98 PROGBUF6
-	# 0x00100073 ebreak
-	write_dmi_progbuf $tap 0 0x09802403
-	write_dmi_progbuf $tap 1 0x00100073
-	write_dmi_progbuf $tap 6 $wdata
-	execute_progbuf $tap
-	
+	write_register $tap $xlen 0x1008 $wdata
+
+        ## 0x09802403 lw      s0,152(zero) # 0x98 PROGBUF6
+	## 0x00100073 ebreak
+	#write_dmi_progbuf $tap 0 0x09802403
+	#write_dmi_progbuf $tap 1 0x00100073
+	#write_dmi_progbuf $tap 6 $wdata
+	#execute_progbuf $tap
 }
 
 proc read_memory_word {tap addr} {
@@ -521,7 +521,11 @@ proc read_memory_word {tap addr} {
 	assert {![is_selected_hart_anyunavail $tap]} "selected hart is unavailable"
 	assert {[is_selected_hart_halted $tap]} "selected hart is not halted"
 
-	write_s0 $tap 32 $addr
+	scan [nds target_xlen] "%x" xlen
+	write_s0 $tap $xlen $addr
+
+	set s0 [read_register $tap $xlen 0x1008]
+	echo [format "(After) s0:0x%x" $s0]
 
 	# 0x00042483: lw      s1,0(s0)
 	# 0x08902e23: sw      s1,156(zero) # 0x9c PROGBUF7
