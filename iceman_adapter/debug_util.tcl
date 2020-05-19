@@ -516,6 +516,131 @@ proc write_s0 {tap xlen wdata} {
 	#execute_progbuf $tap
 }
 
+proc abstract_read_memory {tap xlen addr} {
+	assert {![is_selected_hart_anyunavail $tap]} "selected hart is unavailable"
+	assert {[is_selected_hart_halted $tap]} "selected hart is not halted"
+
+	if {$xlen == 32} {
+		write_dmi_abstractdata $tap 1 [expr $addr & 0xFFFFFFFF]
+		set aamsize [expr 1 << 21]
+	} elseif {$xlen == 64} {
+		write_dmi_abstractdata $tap 2 [expr $addr & 0xFFFFFFFF]
+		write_dmi_abstractdata $tap 3 [expr ($addr >> 32) & 0xFFFFFFFF]
+		set aamsize [expr (1 << 20) | (1 << 21)]
+	} else {
+		puts [format "unknow xlen %d" $xlen]
+		return 0
+	}
+
+	set cmdtype [expr 1 << 25]
+	set command [expr $cmdtype | $aamsize]
+	write_dmi_abstractcommand $tap $command
+	assert {[wait_abstractcs_busy_clear $tap 3000]} "executing abstract read memory timeout"
+
+	set data0 [read_dmi_abstractdata $tap 0]
+	if {$xlen == 64} {
+		set data1 [read_dmi_abstractdata $tap 1]
+		return [expr $data0 | $data1<<32]
+	} else {
+		return $data0
+	}
+}
+
+proc abstract_read_block_memory {tap xlen addr data_list} {
+	assert {![is_selected_hart_anyunavail $tap]} "selected hart is unavailable"
+	assert {[is_selected_hart_halted $tap]} "selected hart is not halted"
+
+	write_dmi_abstractauto $tap 0x0
+	if {$xlen == 32} {
+		write_dmi_abstractdata $tap 1 [expr $addr & 0xFFFFFFFF]
+		set aamsize [expr 1 << 21]
+	} elseif {$xlen == 64} {
+		write_dmi_abstractdata $tap 2 [expr $addr & 0xFFFFFFFF]
+		write_dmi_abstractdata $tap 3 [expr ($addr >> 32) & 0xFFFFFFFF]
+		set aamsize [expr (1 << 20) | (1 << 21)]
+	} else {
+		puts [format "unknow xlen %d" $xlen]
+		return 0
+	}
+
+	set cmdtype [expr 1 << 25]
+	set aampostincrement [expr 1 << 19]
+	set command [expr $cmdtype | $aamsize | $aampostincrement]
+	write_dmi_abstractcommand $tap $command
+	assert {[wait_abstractcs_busy_clear $tap 3000]} "executing abstract read memory timeout"
+
+	write_dmi_abstractauto $tap 0x1
+	for {set i 0} {$i < [llength $data_list]} {incr i} {
+		if {$xlen == 64} {
+			set data1 [read_dmi_abstractdata $tap 1]
+		}
+		set data0 [read_dmi_abstractdata $tap 0]
+		while 1 {
+			if {![is_abstractcs_busy $tap]} {
+				break
+			}
+		}
+		if {$xlen == 64} {
+			set read_data [expr $data0 | $data1<<32]
+			set expect_data [lindex $data_list $i]
+		} else {
+			set read_data $data0
+			set expect_data [expr [lindex $data_list $i] & 0xFFFFFFFF]
+		}
+		if {$read_data != $expect_data} {
+			write_dmi_abstractauto $tap 0x0
+			puts [format "read/write memory mismatch: addr=0x%x, wdata=0x%x, rdata=0x%x" $addr $expect_data $read_data]
+			return 0
+		}
+	}
+	write_dmi_abstractauto $tap 0x0
+	return 1
+}
+
+proc abstract_write_block_memory {tap xlen addr data_list} {
+	assert {![is_selected_hart_anyunavail $tap]} "selected hart is unavailable"
+	assert {[is_selected_hart_halted $tap]} "selected hart is not halted"
+
+	write_dmi_abstractauto $tap 0x0
+	if {$xlen == 32} {
+		write_dmi_abstractdata $tap 0 [expr [lindex $data_list 0] & 0xFFFFFFFF]
+		write_dmi_abstractdata $tap 1 [expr $addr & 0xFFFFFFFF]
+		set aamsize [expr 1 << 21]
+	} elseif {$xlen == 64} {
+		write_dmi_abstractdata $tap 0 [expr [lindex $data_list 0] & 0xFFFFFFFF]
+		write_dmi_abstractdata $tap 1 [expr ([lindex $data_list 0] >> 32) & 0xFFFFFFFF]
+		write_dmi_abstractdata $tap 2 [expr $addr & 0xFFFFFFFF]
+		write_dmi_abstractdata $tap 3 [expr ($addr >> 32) & 0xFFFFFFFF]
+		set aamsize [expr (1 << 20) | (1 << 21)]
+	} else {
+		puts [format "unknow xlen %d" $xlen]
+		return 0
+	}
+
+	set cmdtype [expr 1 << 25]
+	set aampostincrement [expr 1 << 19]
+	set write [expr 1 << 16]
+	set command [expr $cmdtype | $aamsize | $aampostincrement | $write]
+	write_dmi_abstractcommand $tap $command
+	assert {[wait_abstractcs_busy_clear $tap 3000]} "executing abstract write memory timeout"
+
+	write_dmi_abstractauto $tap 0x1
+	for {set i 1} {$i < [llength $data_list]} {incr i} {
+		if {$xlen == 64} {
+			write_dmi_abstractdata $tap 1 [expr ([lindex $data_list $i] >> 32) & 0xFFFFFFFF]
+		}
+		write_dmi_abstractdata $tap 0 [expr [lindex $data_list $i] & 0xFFFFFFFF]
+		while 1 {
+			if {![is_abstractcs_busy $tap]} {
+				break
+			}
+		}
+	}
+
+	write_dmi_abstractauto $tap 0x0
+	return 1
+}
+
 proc read_memory_word {tap addr} {
 
 	assert {![is_selected_hart_anyunavail $tap]} "selected hart is unavailable"
@@ -565,7 +690,8 @@ proc batch_read_memory_word {tap addr len} {
 	assert {[is_selected_hart_halted $tap]} "selected hart is not halted"
 
 	# s0
-	write_s0 $tap 32 $addr
+	scan [nds target_xlen] "%x" xlen
+	write_s0 $tap $xlen $addr
 
 	# 0x00042483: lw      s1,0(s0)
 	# 0x0c902023: sw      s1,192(zero) # 0xc0 (DATA0)

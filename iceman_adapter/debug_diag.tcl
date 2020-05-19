@@ -51,6 +51,20 @@ proc test_memory_rw {tap start_addr} {
 	set test_memory_access_pass "PASS"
 }
 
+proc test_abstract_memory_rw {tap start_addr xlen} {
+	set wdata_list {0xaaaaaaaaaaaaaaaa 0xbbbbbbbbbbbbbbbb 0xcccccccccccccccc 0xdddddddddddddddd}
+	puts [format "Testing abstract block memory write addr from 0x%x" $start_addr]
+	if {![abstract_write_block_memory $tap $xlen $start_addr $wdata_list]} {
+		return
+	}
+	puts [format "Testing abstract block memory read addr from 0x%x" $start_addr]
+	if {![abstract_read_block_memory $tap $xlen $start_addr $wdata_list]} {
+		return
+	}
+	global test_memory_access_pass
+	set test_memory_access_pass "PASS"
+}
+
 proc test_reset_and_halt_all_harts {tap hartstart hartcount} {
 
 	if {$hartcount == 1} {
@@ -223,19 +237,23 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			set pc [read_dpc $NDS_TAP $hartxlen]
 			puts [format "core%d: pc = 0x%x" $hartsel $pc]
 
-			set regaddr 0xF0100000
-			set rdata [read_memory_word $NDS_TAP $regaddr]
-			set platform_name [get_platform_name $rdata]
-			puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
-
 			set abstractcs [read_dmi_abstractcs $NDS_TAP]
 			set debug_buffer_size [expr ($abstractcs>>24)&0x1f]
 			puts [format "core%d: debug_buffer_size=0x%x" $hartsel $debug_buffer_size]
+
+			set regaddr 0xF0100000
+			if [ expr $debug_buffer_size > 7 ] {
+				set rdata [read_memory_word $NDS_TAP $regaddr]
+			} else {
+				set rdata [expr [abstract_read_memory $NDS_TAP $hartxlen $regaddr] & 0xFFFFFFFF]
+			}
+			set platform_name [get_platform_name $rdata]
+			puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
+
 			if [ expr $debug_buffer_size > 7 ] {
 				test_memory_rw $NDS_TAP $NDS_MEM_ADDR
 			} else {
-				puts [format "debug_buffer_size is too small:0x%x !!" $debug_buffer_size]
-				set test_memory_access_pass "SKIP"
+				test_abstract_memory_rw $NDS_TAP $NDS_MEM_ADDR $hartxlen
 			}
 		}
 		set hartsel $NDS_TARGETS_COREID($i)
