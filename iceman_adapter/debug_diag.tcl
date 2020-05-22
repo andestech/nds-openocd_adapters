@@ -7,6 +7,10 @@ set time_target_sec 1
 #adapter_khz 10000
 #source [find interface/olimex-arm-usb-tiny-h.cfg]
 
+# ABSTRCT_ERR:
+# 0 : no error
+# 1 : error
+set ABSTRCT_ERR 0
 
 # Define
 set CSR_MVENDORID  0xf11
@@ -27,12 +31,16 @@ set test_frequency_pass "NG"
 proc test_memory_rw {tap start_addr} {
 	set count 4
 	set wdata_list {0xaaaaaaaa 0xbbbbbbbb 0xcccccccc 0xdddddddd}
-
+	global ABSTRCT_ERR
 	puts [format "Testing memory write addr = 0x%x" $start_addr]
 	for {set i 0} {$i < $count} {incr i} {
 		set addr [expr $start_addr + $i*4]
 		set wdata [lindex $wdata_list $i]
 		write_memory_word $tap $addr $wdata
+		if {$ABSTRCT_ERR} {
+			puts "write memory error"
+			return
+		}
 	}
 
 	puts [format "Testing memory read addr = 0x%x" $start_addr]
@@ -41,6 +49,10 @@ proc test_memory_rw {tap start_addr} {
 		set wdata [lindex $wdata_list $i]
 
 		set rdata [read_memory_word $tap $addr]
+		if {$ABSTRCT_ERR} {
+			puts "read memory error"
+			return
+		}
 		#assert {$rdata == $wdata } [format "read/write memory mismatch: addr=0x%x, wdata=0x%x, rdata=0x%x" $addr $wdata $rdata]
 		if [ expr $rdata != $wdata ] {
 			puts [format "read/write memory mismatch: addr=0x%x, wdata=0x%x, rdata=0x%x" $addr $wdata $rdata]
@@ -248,11 +260,16 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			set regaddr 0xF0100000
 			if [ expr $debug_buffer_size > 7 ] {
 				set rdata [read_memory_word $NDS_TAP $regaddr]
+				if {$ABSTRCT_ERR} {
+					puts [format "read SMU failed, maybe testing board's SMU register addrress is not 0x%x" $regaddr]
+				}
 			} else {
 				set rdata [expr [abstract_read_memory $NDS_TAP $hartxlen $regaddr] & 0xFFFFFFFF]
 			}
-			set platform_name [get_platform_name $rdata]
-			puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
+			if {$ABSTRCT_ERR == 0} {
+				set platform_name [get_platform_name $rdata]
+				puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
+			}
 
 			if [ expr $debug_buffer_size > 7 ] {
 				test_memory_rw $NDS_TAP $NDS_MEM_ADDR

@@ -15,7 +15,7 @@ proc print_debug_msg {msg} {
 }
 
 proc assert {cond {msg "assertion failed"}} {
-    if {![uplevel 1 expr $cond]} {error $msg}
+	if {![uplevel 1 expr $cond]} {error $msg}
 }
 
 proc init_dmi {tap} {
@@ -375,12 +375,17 @@ proc is_abstractcs_busy {tap} {
 #	1: abstractcs.busy is clear
 #	0: timeout
 proc wait_abstractcs_busy_clear {tap timeout_ms} {
+	global ABSTRCT_ERR
+	set ABSTRCT_ERR 0
 	for {set i 0} {$i < $timeout_ms} {set i [expr $i+100]} {
 		set abstractcs [read_dmi_abstractcs $tap]
-		array set str_cmderr {0 none 1 busy 2 not-supported 3 exception 4 halt-resume 5 reserved 6 reserved 7 other}
+		array set str_cmderr {0 none 1 busy 2 not-supported 3 exception 4 halt/resume 5 bus 6 reserved 7 other}
 		set BUSY_MASK [expr 1 << 12]
 		set cmderr [expr ($abstractcs >> 8) & 0x7]
-		assert {$cmderr == 0} [format "abstract command error: %d (%s)" $cmderr $str_cmderr($cmderr)]
+		if {$cmderr != 0} {
+			set ABSTRCT_ERR 1
+			puts [format "abstract command error: %d (%s)" $cmderr $str_cmderr($cmderr)]
+		}
 		if {[expr $abstractcs & $BUSY_MASK]} {
 			after 100
 		} else {
@@ -425,7 +430,7 @@ proc write_register {tap xlen regno wdata} {
 	set abstractcommand [expr $abstractcommand_size | $abstractcommand_transfer | $abstractcommand_write | $regno]
 
 	write_dmi_abstractcommand $tap $abstractcommand
-	assert {[wait_abstractcs_busy_clear $tap 3000]} "executing program buffer timeout"
+	assert {[wait_abstractcs_busy_clear $tap 3000]} "executing abstract command timeout"
 }
 
 #
@@ -449,7 +454,7 @@ proc read_register {tap xlen regno} {
 	write_dmi_abstractcs $tap [expr 0x7 << 8]
 
 	write_dmi_abstractcommand $tap $abstractcommand
-	assert {[wait_abstractcs_busy_clear $tap 3000]} "executing program buffer timeout"
+	assert {[wait_abstractcs_busy_clear $tap 3000]} "executing abstract command timeout"
 
 	set data0 [read_dmi_abstractdata $tap 0]
 	if {$xlen == 64} {
