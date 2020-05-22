@@ -82,7 +82,9 @@ proc test_reset_and_halt_all_harts {tap hartstart hartcount} {
 	global scan_hart_nums
 	global NDS_TARGETNAME
 	for {set hartsel $hartstart} {$hartsel < $hartmax} {incr $hartsel} {
-		select_single_hart $tap $hartsel
+		if {[select_single_hart $tap $hartsel]} {
+			break
+		}
 		set dmstatus [read_dmi_dmstatus $tap]
 		set dmstatus_anyunavail [expr ($dmstatus>>12)&0x1]
 		if {$dmstatus_anyunavail} {
@@ -207,7 +209,9 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 		set hartcount $NDS_TARGETS_CORENUMS($i)
 		set hartmax [expr $NDS_TARGETS_COREID($i) + $hartcount]
 		for {set hartsel $NDS_TARGETS_COREID($i)} {$hartsel < $hartmax} {incr $hartsel} {
-			select_single_hart $NDS_TAP $hartsel
+			if {[select_single_hart $NDS_TAP $hartsel]} {
+				break
+			}
 			set dmstatus [read_dmi_dmstatus $NDS_TAP]
 			set dmstatus_anyunavail [expr ($dmstatus>>12)&0x1]
 			if {$dmstatus_anyunavail} {

@@ -200,8 +200,8 @@ proc select_single_hart {tap hartsel} {
 #	tap: tap
 #	timeout_ms: timeout in ms
 # Return
-#	0: the selected is halted
-#	1: timeout
+#	1: the selected is halted
+#	0: timeout
 proc wait_selected_hart_halted {tap timeout_ms} {
 	for {set i 0} {$i < $timeout_ms} {set i [expr $i+10]} {
 		if {[is_selected_hart_halted $tap]} {
@@ -231,8 +231,8 @@ proc halt_hart {tap hartsel} {
 #	tap: tap
 #	timeout_ms: timeout in ms
 # Return
-#	0: the selected is halted
-#	1: timeout
+#	1: the selected is running
+#	0: timeout
 proc wait_selected_hart_running {tap timeout_ms} {
 	for {set i 0} {$i < $timeout_ms} {set i [expr $i+10]} {
 		if {[is_selected_hart_running $tap]} {
@@ -264,7 +264,7 @@ proc scan_harts {tap} {
 	set MAX_NHARTS 16
 	for {set hartsel 0} {$hartsel < $MAX_NHARTS} {incr $hartsel} {
 		if {[select_single_hart $tap $hartsel]} {
-			break;
+			break
 		}
 		set dmstatus [read_dmi_dmstatus $tap]
 		set dmstatus_anyhalted [expr ($dmstatus>>8)&0x1]
@@ -290,7 +290,7 @@ proc scan_harts {tap} {
 		set hartinfo_nscratch [expr ($hartinfo >> 20) & 0xF]
 
 		if {$dmstatus_anynonexistent} {
-			break;
+			break
 		}
 		#print_info [format "Hart %d dmstatus=0x%x (halted=%d, running=%d, unavail=%d, havereset=%d, datasize=%d, nscratch=%d)" $hartsel $dmstatus $dmstatus_anyhalted $dmstatus_anyrunning $dmstatus_anyunavail $dmstatus_anyhavereset $hartinfo_datasize $hartinfo_nscratch]
 		set scan_hart_nums [expr $scan_hart_nums + 1]
@@ -372,8 +372,8 @@ proc is_abstractcs_busy {tap} {
 #	tap: tap
 #	timeout_ms: timeout in ms
 # Return
-#	0: abstractcs.busy is clear
-#	1: timeout
+#	1: abstractcs.busy is clear
+#	0: timeout
 proc wait_abstractcs_busy_clear {tap timeout_ms} {
 	for {set i 0} {$i < $timeout_ms} {set i [expr $i+100]} {
 		set abstractcs [read_dmi_abstractcs $tap]
