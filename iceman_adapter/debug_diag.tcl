@@ -32,7 +32,7 @@ proc test_memory_rw {tap start_addr} {
 	set count 4
 	set wdata_list {0xaaaaaaaa 0xbbbbbbbb 0xcccccccc 0xdddddddd}
 	global ABSTRCT_ERR
-	puts [format "Testing memory write addr = 0x%x" $start_addr]
+	puts [format "Testing memory write from addr = 0x%x, size:4 words" $start_addr]
 	for {set i 0} {$i < $count} {incr i} {
 		set addr [expr $start_addr + $i*4]
 		set wdata [lindex $wdata_list $i]
@@ -43,7 +43,7 @@ proc test_memory_rw {tap start_addr} {
 		}
 	}
 
-	puts [format "Testing memory read addr = 0x%x" $start_addr]
+	puts [format "Testing memory read addr = 0x%x, size:4 words" $start_addr]
 	for {set i 0} {$i < $count} {incr i} {
 		set addr [expr $start_addr + $i*4]
 		set wdata [lindex $wdata_list $i]
@@ -65,11 +65,11 @@ proc test_memory_rw {tap start_addr} {
 
 proc test_abstract_memory_rw {tap start_addr xlen} {
 	set wdata_list {0xaaaaaaaaaaaaaaaa 0xbbbbbbbbbbbbbbbb 0xcccccccccccccccc 0xdddddddddddddddd}
-	puts [format "Testing abstract block memory write addr from 0x%x" $start_addr]
+	puts [format "Testing abstract block memory write addr from 0x%x, size:4 words" $start_addr]
 	if {![abstract_write_block_memory $tap $xlen $start_addr $wdata_list]} {
 		return
 	}
-	puts [format "Testing abstract block memory read addr from 0x%x" $start_addr]
+	puts [format "Testing abstract block memory read addr from 0x%x, size:4 words" $start_addr]
 	if {![abstract_read_block_memory $tap $xlen $start_addr $wdata_list]} {
 		return
 	}
@@ -271,15 +271,35 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 				puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
 			}
 
-			if [ expr $debug_buffer_size > 7 ] {
-				test_memory_rw $NDS_TAP $NDS_MEM_ADDR
+			if {$NDS_MEM_TEST == 1} {
+				if [ expr $debug_buffer_size > 7 ] {
+					test_memory_rw $NDS_TAP $NDS_MEM_ADDR
+				} else {
+					test_abstract_memory_rw $NDS_TAP $NDS_MEM_ADDR $hartxlen
+				}
 			} else {
-				test_abstract_memory_rw $NDS_TAP $NDS_MEM_ADDR $hartxlen
+				set test_memory_access_pass "SKIP"
 			}
 		}
 		set hartsel $NDS_TARGETS_COREID($i)
 		set hartcount $NDS_TARGETS_CORENUMS($i)
 		test_reset_and_halt_all_harts $NDS_TAP $hartsel $hartcount
+	}
+
+	# dmi_busy_delay_count default value: 3
+	set default_delay 3
+	set max_delay $default_delay
+	if {$NDS_MEM_TEST == 1 && $test_memory_access_pass == "PASS"} {
+		puts [format "write 4 words from memory:0x%x to get dmi_busy_delay_count test" $NDS_MEM_ADDR]
+		nds configure scan_retry_times 3
+		nds configure jtag_scans_optimize 4
+		nds configure jtag_max_scans 64
+		mww $NDS_MEM_ADDR 1 4
+		scan [nds get_dmi_delay] "%x" delay_count
+		if {$delay_count > $max_delay} {
+			set max_delay $delay_count
+			print_debug_msg [format "dmi_busy_delay_count :%d" $delay_count]
+		}
 	}
 
 	puts [format "********************"]
@@ -292,6 +312,9 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 	puts [format "(%s) check reset-and-debug ..." $test_reset_and_debug_pass]
 	#puts [format "(%s) check that Program buffer and CPU domain are operational ..." $test_pbuf_work_pass]
 	puts [format "(%s) check accessing memory through CPU ..." $test_memory_access_pass]
+	if {$max_delay > $default_delay} {
+		puts [format "suggest starting ICEman with --dmi_busy_delay_count %d" $max_delay]
+	}
 	puts [format "********************"]
 
 	set time_end [clock seconds]

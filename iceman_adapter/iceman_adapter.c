@@ -995,6 +995,7 @@ static void update_debug_diag_v5(void)
 		fprintf(stderr, "ERROR: No debug_diag file, debug_diag.tcl\n");
 		exit(-1);
 	}
+	fprintf(debug_diag_tcl_new, "set NDS_MEM_TEST 0x%x\n", diagnosis_memory);
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
 	if(log_folder) {
 		fprintf(debug_diag_tcl_new, "add_script_search_dir %s\n", log_folder);
