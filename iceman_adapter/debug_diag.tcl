@@ -290,7 +290,7 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 	set default_delay 3
 	set max_delay $default_delay
 	if {$NDS_MEM_TEST == 1 && $test_memory_access_pass == "PASS"} {
-		puts [format "write 4 words from memory:0x%x to get dmi_busy_delay_count test" $NDS_MEM_ADDR]
+		puts [format "write 4 words from memory:0x%x to get dmi_busy_delay_count" $NDS_MEM_ADDR]
 		nds configure scan_retry_times 3
 		nds configure jtag_scans_optimize 4
 		nds configure jtag_max_scans 64
@@ -298,7 +298,14 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 		scan [nds get_dmi_delay] "%x" delay_count
 		if {$delay_count > $max_delay} {
 			set max_delay $delay_count
-			print_debug_msg [format "dmi_busy_delay_count :%d" $delay_count]
+			print_debug_msg [format "cpu mode dmi_busy_delay_count:%d" $delay_count]
+		}
+		#bus mode mww
+		dma_mww $NDS_MEM_ADDR 1 4
+		scan [nds get_dmi_delay] "%x" delay_count
+		if {$delay_count > $max_delay} {
+			set max_delay $delay_count
+			print_debug_msg [format "bus mode dmi_busy_delay_count:%d" $delay_count]
 		}
 	}
 
