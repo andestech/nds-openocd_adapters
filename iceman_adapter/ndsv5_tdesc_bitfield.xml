@@ -523,17 +523,17 @@
 </enum>
 <enum id="mvec_cfg_mw" size="4">
 <evalue name="vlen" value="0"/>
-<evalue name="vlen/2" value="1"/>
-<evalue name="vlen/4" value="2"/>
-<evalue name="vlen/8" value="3"/>
-<evalue name="2*vlen" value="4"/>
-<evalue name="4*vlen" value="5"/>
+<evalue name="vlen div 2" value="1"/>
+<evalue name="vlen div 4" value="2"/>
+<evalue name="vlen div 8" value="3"/>
+<evalue name="vlen mul 2" value="4"/>
+<evalue name="vlen mul 4" value="5"/>
 </enum>
 <enum id="mvec_cfg_dw" size="4">
 <evalue name="vlen" value="0"/>
-<evalue name="vlen/2" value="1"/>
-<evalue name="vlen/4" value="2"/>
-<evalue name="vlen/8" value="3"/>
+<evalue name="vlen div 2" value="1"/>
+<evalue name="vlen div 4" value="2"/>
+<evalue name="vlen div 8" value="3"/>
 </enum>
 <enum id="mvec_cfg_vlen" size="4">
 <evalue name="64" value="0"/>
