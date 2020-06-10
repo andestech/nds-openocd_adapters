@@ -1165,6 +1165,8 @@ static void update_openocd_cfg_v5(void)
         aceconf_desc += 1;	/* point to the one next to ',' */
     }
   }
+
+  fprintf(openocd_cfg, "source [find %s]\n", NDS32_USER_CFG);
 }
 
 static void update_openocd_cfg_vtarget(void)
