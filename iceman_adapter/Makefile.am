@@ -47,6 +47,7 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 		interface/aice_sdp.cfg \
 		interface/aice-mini-plus.cfg \
 		interface/aice_mini_plus_ftdi.cfg \
+		interface/bfc.cfg \
 		interface/calao-usb-a9260-c01.cfg \
 		interface/calao-usb-a9260-c02.cfg \
 		interface/cortino.cfg \
