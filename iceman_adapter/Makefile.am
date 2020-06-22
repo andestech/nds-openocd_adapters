@@ -31,6 +31,7 @@ dist_openocd_cfg_DATA += custom_lib.tcl \
 			 nds_reg_write.tcl
 dist_openocd_cfg_DATA += 70-ndsusb-v1.rules \
 			 ftdi_script-v1.sh
+dist_openocd_cfg_DATA += nds32_user.cfg
 
 
 openocd_boardcfgdir = $(bindir)/board
