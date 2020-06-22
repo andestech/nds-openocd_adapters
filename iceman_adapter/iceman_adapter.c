@@ -2441,7 +2441,7 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 		if ((ret_bnum != NULL && *ret_bnum == bnum) && \
 		    (ret_pnum != NULL && *ret_pnum == pnum) && \
 		    (ret_dnum != NULL && *ret_dnum == dnum)) {
-			return devnum;
+			return list_dev;
 		} else if( devnum == -1 && is_supported == 1 ) {
 			if( list_dev == 0 )
 				printf("\nList of Devices:\n");
