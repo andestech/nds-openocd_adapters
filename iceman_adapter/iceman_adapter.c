@@ -1347,8 +1347,13 @@ static void update_openocd_cfg(void)
 				fprintf(openocd_cfg, "adapter_nsrst_delay 500\n");
 				if( custom_interface != NULL )
 					fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
-				else
+				else {
 					fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
+					custom_interface = strdup("jtagkey.cfg");
+				}
+
+				if( strncmp(custom_interface, "jtagkey.cfg", 11) == 0 )
+					fprintf(openocd_cfg, "ftdi_layout_init 0x0b08 0x0f1b\n");
 
 				if( devnum != -1 ) {
 					uint8_t bnum = 0, pnum = 0, dnum = 0;
