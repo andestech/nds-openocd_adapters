@@ -7,6 +7,10 @@ proc print_info {msg} {
 	puts "Diagnosis: $msg"	
 }
 
+proc print_error_msg {msg} {
+	puts "Error: $msg"	
+}
+
 proc print_debug_msg {msg} {
 	global verbosity
 	if {$verbosity > 100} {
@@ -118,14 +122,29 @@ proc read_dmi_abstractdata {tap n} {
 	return [read_dmi $tap $DMI_ADDR_ABSTRACTDATA]
 }
 
+proc read_dmi_abstractcommand {tap} {
+	set DMI_ADDR_ABSTRACTCOMMAND 0x17
+	return [read_dmi $tap $DMI_ADDR_ABSTRACTCOMMAND]
+}
+
 proc read_dmi_abstractcs {tap} {
 	set DMI_ADDR_ABSTRACTCS 0x16
 	return [read_dmi $tap $DMI_ADDR_ABSTRACTCS]
 }
 
-proc read_dmi_abstractauto {tap wdata} {
+proc read_dmi_abstractauto {tap} {
 	set DMI_ADDR_ABSTRACTAUTO 0x18
 	return [read_dmi $tap $DMI_ADDR_ABSTRACTAUTO]
+}
+
+proc read_dmi_haltsum0 {tap} {
+	set DMI_ADDR_HALTSUM0 0x40
+	return [read_dmi $tap $DMI_ADDR_HALTSUM0]
+}
+
+proc read_dmi_haltsum1 {tap} {
+	set DMI_ADDR_HALTSUM1 0x13
+	return [read_dmi $tap $DMI_ADDR_HALTSUM1]
 }
 
 proc reset_dm {tap} {
@@ -174,7 +193,6 @@ proc is_selected_hart_running {tap} {
 	set ANYRUNNING_MASK 0x400
 	return  [expr $dmstatus & $ANYRUNNING_MASK]
 }
-
 
 # select_single_hart 
 # Return
@@ -259,6 +277,46 @@ proc resume_hart {tap hartsel} {
 	assert {[wait_selected_hart_running $tap 3000]} [format "Resume hart%d timeout" $hartsel]
 }
 
+proc wait_all_harts_resumeack_halted {tap timeout_ms} {
+	set ALLRESUMEACK_MASK 0x20000
+	set ALLHALTED_MASK 0x200
+	for {set i 0} {$i < $timeout_ms} {set i [expr $i+10]} {
+		after 10
+		set dmstatus [read_dmi_dmstatus $tap]
+		if {[expr $dmstatus & $ALLRESUMEACK_MASK] == 0} {
+			continue
+		}
+		if {[expr $dmstatus & $ALLHALTED_MASK] == 0} {
+			continue
+		}
+		return 1
+	}
+	return 0
+}
+
+proc resume_hart_on_step {tap hartsel} {
+	assert {[expr ($hartsel < 1024) & ($hartsel >=0)]} "hartsel out of range (0-1023)"
+
+	set bf_resumereq [expr 1<<30]
+	set bf_hartsel [expr $hartsel<<16]
+	set bf_dmactive 0x1
+	set dmcontrol [expr $bf_resumereq | $bf_hartsel | $bf_dmactive]
+
+	write_dmi_dmcontrol $tap $dmcontrol
+	set dmcontrol [expr $dmcontrol & ~($bf_resumereq)]
+
+	set result [wait_all_harts_resumeack_halted $tap 3000]
+	write_dmi_dmcontrol $tap $dmcontrol
+	if {$result == 0} {
+		puts [format "Unable to resume hart%d" $hartsel]
+		set dmstatus [read_dmi_dmstatus $tap]
+		puts [format " dmstatus = 0x%08x" $dmstatus]
+		puts "  was stepping, halting"
+		halt_hart $tap $hartsel
+	}
+	return 1
+}
+
 proc scan_harts {tap} {
 	set scan_hart_nums 0
 	set MAX_NHARTS 16
@@ -310,10 +368,11 @@ proc reset_and_halt_one_hart {tap hartsel} {
 	write_dmi_dmcontrol $tap $dmcontrol
 
 	set dmcontrol [read_dmi_dmcontrol $tap]
-	if {[expr ($dmcontrol & $HARTSEL_MASK) != ($hartsel << 16)]} {
-		break;
+	set cur_hart [expr ($dmcontrol & $HARTSEL_MASK) >> 16] 
+	if {$cur_hart != $hartsel} {
+		puts [format "expected selected harts:%d is diffrent with now selected hart:%d" $hartsel $cur_hart]
+		break
 	}
-
 	set dmstatus [read_dmi_dmstatus $tap]
 	set dmstatus_anynonexistent [expr ($dmstatus>>14)&0x1]
 	if {$dmstatus_anynonexistent} {
@@ -323,9 +382,33 @@ proc reset_and_halt_one_hart {tap hartsel} {
 	# De-assert ndmreset
 	set bf_haltreq [expr 1<<31]
 	set bf_dmactive 0x1
-	set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive]
+	set bf_hartsel [expr $hartsel<<16]
+	set dmcontrol [expr $bf_haltreq | $bf_dmactive | $bf_hartsel]
 	write_dmi_dmcontrol $tap $dmcontrol
-	assert {[wait_selected_hart_halted $tap 3000]} [format "halt hart%d timeout" $hartsel]
+	set timeout 0
+	while {1} {
+		after 10
+		set dmstatus [read_dmi_dmstatus $tap]
+		set dmstatus_allhalted [expr ($dmstatus>>9)&0x1]
+		if {$dmstatus_allhalted} {
+			break;
+		}
+		set timeout [expr $timeout + 10]
+		if {$timeout > 3000} {
+			puts "wait hart halted timeout"
+			return 1
+		}
+	}
+	# allhavereset
+	if {[expr ($dmstatus>>19)&0x1]} {
+		set bf_haltreq [expr 1<<31]
+		set bf_hartsel [expr $hartsel<<16]
+		set bf_ackhavereset [expr 1<<28]
+		set bf_dmactive 0x1
+		set dmcontrol [expr $bf_hartsel | $bf_ackhavereset | $bf_dmactive | $bf_haltreq]
+		write_dmi_dmcontrol $tap $dmcontrol
+	}
+	return 0
 }
 
 proc reset_and_halt_all_harts {tap hartstart hartcount} {
@@ -335,32 +418,38 @@ proc reset_and_halt_all_harts {tap hartstart hartcount} {
 		set bf_haltonreset [expr 1<<3]
 		set bf_haltreq [expr 1<<31]
 		set bf_hartsel [expr $hartsel<<16]
-		set bf_ndmreset [expr 1<<1]
 		set bf_dmactive 0x1
-		set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_ndmreset | $bf_dmactive | $bf_haltonreset]
+		set bf_ndmreset [expr 1<<1]
+		set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive | $bf_haltonreset]
 		write_dmi_dmcontrol $tap $dmcontrol
 
 		set dmcontrol [read_dmi_dmcontrol $tap]
-		if {[expr ($dmcontrol & $HARTSEL_MASK) != ($hartsel << 16)]} {
-			break;
+		set cur_hart [expr ($dmcontrol & $HARTSEL_MASK) >> 16] 
+		if {$cur_hart != $hartsel} {
+			puts [format "expected selected harts:%d is diffrent with now selected hart:%d" $hartsel $cur_hart]
+			continue
 		}
-
 		set dmstatus [read_dmi_dmstatus $tap]
 		set dmstatus_anynonexistent [expr ($dmstatus>>14)&0x1]
 		if {$dmstatus_anynonexistent} {
-			break;
+			continue
 		}
+	}
+	#set bf_ndmreset [expr 1<<1]
+	#write_dmi_dmcontrol $tap $dmcontrol
 
+	for {set hartsel $hartstart} {$hartsel < $hartcount} {incr $hartsel} {
 		# De-assert ndmreset
 		set bf_clr_haltonreset [expr 1<<4]
+		set bf_ackhavereset [expr 1<<28]
 		set bf_haltreq [expr 1<<31]
+		set bf_hartsel [expr $hartsel<<16]
 		set bf_dmactive 0x1
-		set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive | $bf_clr_haltonreset]
+		set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive | $bf_clr_haltonreset | $bf_ackhavereset]
 		write_dmi_dmcontrol $tap $dmcontrol
 		assert {[wait_selected_hart_halted $tap 3000]} [format "halt hart%d timeout" $hartsel]
 	}
 }
-
 
 proc is_abstractcs_busy {tap} {
 	set abstractcs [read_dmi_abstractcs $tap]
@@ -513,7 +602,7 @@ proc write_dpc {tap xlen wdata} {
 proc write_s0 {tap xlen wdata} {
 	write_register $tap $xlen 0x1008 $wdata
 
-        ## 0x09802403 lw      s0,152(zero) # 0x98 PROGBUF6
+	## 0x09802403 lw      s0,152(zero) # 0x98 PROGBUF6
 	## 0x00100073 ebreak
 	#write_dmi_progbuf $tap 0 0x09802403
 	#write_dmi_progbuf $tap 1 0x00100073
@@ -654,9 +743,6 @@ proc read_memory_word {tap addr} {
 	scan [nds target_xlen] "%x" xlen
 	write_s0 $tap $xlen $addr
 
-	set s0 [read_register $tap $xlen 0x1008]
-	echo [format "(After) s0:0x%x" $s0]
-
 	# 0x00042483: lw      s1,0(s0)
 	# 0x08902e23: sw      s1,156(zero) # 0x9c PROGBUF7
 	# 0x0000000f: fence   unknown,unknow
@@ -720,3 +806,31 @@ proc batch_read_memory_word {tap addr len} {
 	set data0 [read_dmi_abstractdata $tap 0]
 }
 
+proc abstractauto_addi {tap} {
+	assert {![is_selected_hart_anyunavail $tap]} "selected hart is unavailable"
+	assert {[is_selected_hart_halted $tap]} "selected hart is not halted"
+
+	#This is also testing that WFI() is a NOP during debug mode.
+	# 0x10500073: wfi
+	# 0x00140413: addi s0,s0,1
+	# 0x00100073: ebreak
+	write_dmi_progbuf $tap 0 0x10500073
+	write_dmi_progbuf $tap 1 0x00140413
+	write_dmi_progbuf $tap 2 0x00100073
+
+	write_dmi_abstractauto $tap 0x0
+	execute_progbuf $tap
+}
+
+proc execute_fence {tap} {
+	assert {![is_selected_hart_anyunavail $tap]} "selected hart is unavailable"
+	assert {[is_selected_hart_halted $tap]} "selected hart is not halted"
+
+	# 0x0000000f: fence   unknown,unknow
+	# 0x0000100f: fence_i unknown,unknow
+	# 0x00100073: ebreak
+	write_dmi_progbuf $tap 0 0x0000000f
+	write_dmi_progbuf $tap 1 0x0000100f
+	write_dmi_progbuf $tap 2 0x00100073
+	execute_progbuf $tap
+}
