@@ -8,7 +8,7 @@ proc print_info {msg} {
 }
 
 proc print_error_msg {msg} {
-	puts "Error: $msg"	
+	puts "<-- Error: $msg -->"	
 }
 
 proc print_debug_msg {msg} {
@@ -370,13 +370,13 @@ proc reset_and_halt_one_hart {tap hartsel} {
 	set dmcontrol [read_dmi_dmcontrol $tap]
 	set cur_hart [expr ($dmcontrol & $HARTSEL_MASK) >> 16] 
 	if {$cur_hart != $hartsel} {
-		puts [format "expected selected harts:%d is diffrent with now selected hart:%d" $hartsel $cur_hart]
-		break
+		print_error_msg [format "expected selected harts:%d is diffrent with now selected hart:%d" $hartsel $cur_hart]
+		return 1
 	}
 	set dmstatus [read_dmi_dmstatus $tap]
 	set dmstatus_anynonexistent [expr ($dmstatus>>14)&0x1]
 	if {$dmstatus_anynonexistent} {
-		break;
+		return 1
 	}
 
 	# De-assert ndmreset
@@ -395,7 +395,7 @@ proc reset_and_halt_one_hart {tap hartsel} {
 		}
 		set timeout [expr $timeout + 10]
 		if {$timeout > 3000} {
-			puts "wait hart halted timeout"
+			print_error_msg "wait hart halted timeout"
 			return 1
 		}
 	}
@@ -622,7 +622,7 @@ proc abstract_read_memory {tap xlen addr} {
 		write_dmi_abstractdata $tap 3 [expr ($addr >> 32) & 0xFFFFFFFF]
 		set aamsize [expr (1 << 20) | (1 << 21)]
 	} else {
-		puts [format "unknow xlen %d" $xlen]
+		print_error_msg [format "abstract_read_memory() unknow xlen %d" $xlen]
 		return 0
 	}
 
@@ -653,7 +653,7 @@ proc abstract_read_block_memory {tap xlen addr data_list} {
 		write_dmi_abstractdata $tap 3 [expr ($addr >> 32) & 0xFFFFFFFF]
 		set aamsize [expr (1 << 20) | (1 << 21)]
 	} else {
-		puts [format "unknow xlen %d" $xlen]
+		print_error_msg [format "abstract_read_block_memory() unknow xlen %d" $xlen]
 		return 0
 	}
 
@@ -683,7 +683,7 @@ proc abstract_read_block_memory {tap xlen addr data_list} {
 		}
 		if {$read_data != $expect_data} {
 			write_dmi_abstractauto $tap 0x0
-			puts [format "read/write memory mismatch: addr=0x%x, wdata=0x%x, rdata=0x%x" $addr $expect_data $read_data]
+			print_error_msg [format "abstract read/write memory mismatch: addr=0x%x, wdata=0x%x, rdata=0x%x" $addr $expect_data $read_data]
 			return 0
 		}
 	}
@@ -707,7 +707,7 @@ proc abstract_write_block_memory {tap xlen addr data_list} {
 		write_dmi_abstractdata $tap 3 [expr ($addr >> 32) & 0xFFFFFFFF]
 		set aamsize [expr (1 << 20) | (1 << 21)]
 	} else {
-		puts [format "unknow xlen %d" $xlen]
+		print_error_msg [format "abstract_write_block_memory() unknow xlen %d" $xlen]
 		return 0
 	}
 

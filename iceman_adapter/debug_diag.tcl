@@ -103,7 +103,7 @@ proc test_memory_rw {tap hart start_addr} {
 		set wdata [lindex $wdata_list $i]
 		write_memory_word $tap $addr $wdata
 		if {$ABSTRCT_ERR} {
-			print_error_msg [format "core%d: write memory error" $hart]
+			print_error_msg [format "core%d: write memory(address:0x%x) error" $hart $addr]
 			return "NG"
 		}
 	}
@@ -115,7 +115,7 @@ proc test_memory_rw {tap hart start_addr} {
 
 		set rdata [read_memory_word $tap $addr]
 		if {$ABSTRCT_ERR} {
-			print_error_msg [format "core%d: read memory error" $hart]
+			print_error_msg [format "core%d: read memory(address:0x%x) error" $hart $addr]
 			return "NG"
 		}
 		#assert {$rdata == $wdata } [format "read/write memory mismatch: addr=0x%x, wdata=0x%x, rdata=0x%x" $addr $wdata $rdata]
@@ -157,19 +157,21 @@ proc reset_test_pre_setting {tap debug_buffer_size debug_data_size} {
 }
 
 proc after_ndm_reset_check {tap abstractauto debug_buffer_size debug_data_size} {
+	puts "execute ndmreset should not affect these registers:abstractcs, abstractauto, program buffer and abstract data"
 	set abstractcs [read_dmi_abstractcs $tap]
 	set cmderr [expr ($abstractcs >> 8) & 0x7]
 	if {$cmderr != 2} {
-		print_error_msg "NDMRESET should not affect DMI_ABSTRACTCS"
+		print_error_msg [format "mismatch value of abstractcs.cmderr: before NDMRESET:2, after NDMRESET:%d" $cmderr]
 		return 1
 	}
 	set now_abstractauto [read_dmi_abstractauto $tap]
 	if {$now_abstractauto != $abstractauto} {
-		print_error_msg "NDMRESET should not affect DMI_ABSTRACTAUTO"
+		print_error_msg [format "mismatch value of abstractauto: before NDMRESET:0x%x, after NDMRESET:0x%x" $abstractauto $now_abstractauto]
 		return 1
 	}
 	# Clean up to avoid future test failures
 	# clear abstractcs.cmderr
+	puts "clear abstractcs.cmderr(W1C) and abstractauto(0)"
 	write_dmi_abstractcs $tap [expr 0x7 << 8]
 	write_dmi_abstractauto $tap 0x0
 
@@ -177,7 +179,7 @@ proc after_ndm_reset_check {tap abstractauto debug_buffer_size debug_data_size} 
 		set testvar [expr ($c + 1) * 0x11111111]
 		set data [read_dmi_progbuf $tap $c]
 		if {$data != $testvar} {
-			print_error_msg "PROGBUF words must not be affected by NDMRESET"
+			print_error_msg [format "mismatch value of program buffer %d: before NDMRESET:0x%x, after NDMRESET:0x%x" $c $testvar $data]
 			return 1
 		}
 	}
@@ -185,7 +187,7 @@ proc after_ndm_reset_check {tap abstractauto debug_buffer_size debug_data_size} 
 		set testvar [expr ($c + 1) * 0x11111111]
 		set data [read_dmi_abstractdata $tap $c]
 		if {$data != $testvar} {
-			print_error_msg "DATA words must not be affected by NDMRESET"
+			print_error_msg [format "mismatch value of abstract data %d: before NDMRESET:0x%x, after NDMRESET:0x%x" $c $testvar $data]
 			return 1
 		}
 	}
@@ -241,7 +243,7 @@ proc test_reset_and_halt_all_harts {tap hartstart hartcount debug_buffer_size de
 		set cause_reason [expr (($dcsr & $CAUSE_MASK) >> 6)]
 		array set str_cause {0 reserved 1 software-breakpoint 2 trigger-module 3 haltreq 4 single-step 5 resethaltreq}
 		if {$cause_reason != 5 && $cause_reason != 3} {
-			print_error_msg [format "core%d: enter debug mode should be haltreq or resethaltreq caused, but now is %s" $hartsel $str_cause($cause_reason)]
+			print_error_msg [format "core%d: Incorrect register dcsr.cause=%d(%s), expected 3(haltreq) or 5(resethaltreq)" $hartsel $cause_reason $str_cause($cause_reason)]
 			return "NG"
 		}
 		set ok_cores [expr $ok_cores + 1]
@@ -254,33 +256,34 @@ proc test_reset_and_halt_all_harts {tap hartstart hartcount debug_buffer_size de
 }
 
 proc after_dm_reset_check {tap debug_buffer_size debug_data_size} {
+	puts "execute DM reset should reset these registers:abstractcs, abstractauto, program buffer and abstract data"
 	set abstractcs [read_dmi_abstractcs $tap]
 	set cmderr [expr ($abstractcs >> 8) & 0x7]
 	if {$cmderr != 0} {
-		print_error_msg "DM RESET should RESET DMI_ABSTRACTCS"
+		print_error_msg [format "Incorrect register abstractcs.cmderr=%d, expected 0" $cmderr]
+		puts "clear abstractcs.cmderr(W1C)"
+		write_dmi_abstractcs $tap [expr 0x7 << 8]
 		return 1
 	}
 	set now_abstractauto [read_dmi_abstractauto $tap]
 	if {$now_abstractauto != 0} {
+		print_error_msg [format "Incorrect register abstractauto=0x%x, expected 0" $now_abstractauto]
+		puts "clear abstractauto(0)"
 		write_dmi_abstractauto $tap 0x0
-		print_error_msg "DM RESET should RESET DMI_ABSTRACTAUTO"
 		return 1
 	}
-	# Clean up to avoid future test failures
-	# clear abstractcs.cmderr
-	write_dmi_abstractcs $tap [expr 0x7 << 8]
 
 	for {set c 0} {$c < $debug_buffer_size} {incr $c} {
 		set data [read_dmi_progbuf $tap $c]
 		if {$data != 0} {
-			print_error_msg "PROGBUF words must be affected by DM RESET"
+			print_error_msg [format "Incorrect program buffer %d=0x%x, expected 0" $c $data]
 			return 1
 		}
 	}
 	for {set c 0} {$c < $debug_data_size} {incr $c} {
 		set data [read_dmi_abstractdata $tap $c]
 		if {$data != 0} {
-			print_error_msg "DATA words must be affected by DM RESET"
+			print_error_msg [format "Incorrect abstract data %d=0x%x, expected 0" $c $data]
 			return 1
 		}
 	}
@@ -365,16 +368,16 @@ parsing_targets
 set time_start [clock seconds]
 set time_end   [clock seconds]
 while {[expr $time_end-$time_start] < $time_target_sec} {
-	set test_dm_operate_pass "NOTEST"
-	set test_dtm_connect_pass "NOTEST"
-	set test_frequency_pass "NOTEST"
-	set test_gpr_access_pass "NOTEST"
-	set test_abstractauto_pass "NOTEST"
-	set test_single_step_pass "NOTEST"
-	set test_memory_access_pass "NOTEST"
-	set test_haltsum0_pass "NOTEST"
-	set test_haltsum1_pass "NOTEST"
-	set test_reset_and_debug_pass "NOTEST"
+	set test_dm_operate_pass "SKIP"
+	set test_dtm_connect_pass "SKIP"
+	set test_frequency_pass "SKIP"
+	set test_gpr_access_pass "SKIP"
+	set test_abstractauto_pass "SKIP"
+	set test_single_step_pass "SKIP"
+	set test_memory_access_pass "SKIP"
+	set test_haltsum0_pass "SKIP"
+	set test_haltsum1_pass "SKIP"
+	set test_reset_and_debug_pass "SKIP"
 	init
 	set targetcount $NDS_TARGETS_COUNT
 	for {set i 0} {$i < $targetcount} {incr $i} {
@@ -382,10 +385,10 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 		scan [nds jtag_tap_name] "%s" NDS_TAP
 		puts [format "== TEST target-%d ==" $i]
 
-		puts "Initializing Debug Module Interface"
+		puts "* Initializing Debug Module Interface"
 		init_dmi $NDS_TAP
 
-		puts "Initializing Debug Module"
+		puts "* Initializing Debug Module"
 		reset_dm $NDS_TAP
 		reset_ndm $NDS_TAP
 		set test_dm_operate_pass "PASS"
@@ -403,6 +406,7 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			continue
 		}
 
+		puts "* test frequency"
 		if {[test_frequency $NDS_TAP] == "PASS" && $test_frequency_pass != "NG"} {
 			set test_frequency_pass "PASS"
 		} else {
@@ -455,7 +459,7 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			puts [format "core%d: debug_buffer_size=0x%x" $hartsel $debug_buffer_size]
 
 			# Access GPRs
-			puts "Access GPRs testing"
+			puts "* Access GPRs testing"
 			for {set gpr_n 1} {$gpr_n < 32} {set gpr_n [expr $gpr_n << 1]} {
 				set GPR_Addr [expr 0x1000 + $gpr_n]
 				set testval [expr ($gpr_n | ($gpr_n << 32))]
@@ -469,14 +473,15 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 				if {$hartxlen == 64} {
 					if {$GPR_Value != $testval} {
 						set test_gpr_access_pass "NG"
-						print_error_msg [format "core%d: GPR%d read and write test fail" $hartsel $gpr_n]
+						print_error_msg [format "core%d: GPR%d read/write mismatch: rdata=0x%x, wdata=0x%x" $hartsel $gpr_n $GPR_Value $testval]
 					} elseif {$test_gpr_access_pass != "NG"} {
 						set test_gpr_access_pass "PASS"
 					}
 				} else {
-					if {[expr $GPR_Value != ($testval & 0xFFFFFFFF)]} {
+					set cmp_value [expr $testval & 0xFFFFFFFF]
+					if {$GPR_Value != $cmp_value} {
 						set test_gpr_access_pass "NG"
-						print_error_msg [format "core%d: GPR%d read and write test fail" $hartsel $gpr_n]
+						print_error_msg [format "core%d: GPR%d read/write mismatch: rdata=0x%x wdata=0x%x" $hartsel $gpr_n $GPR_Value $cmp_value]
 					} elseif {$test_gpr_access_pass != "NG"} {
 						set test_gpr_access_pass "PASS"
 					}
@@ -484,7 +489,7 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			}
 
 			# abstractauto
-			puts "Abstractauto testing"
+			puts "* Abstractauto testing"
 			write_dmi_abstractauto $NDS_TAP 0xFFFFFFFF
 			set abstractauto [read_dmi_abstractauto $NDS_TAP]
 			write_dmi_abstractauto $NDS_TAP 0x0
@@ -499,26 +504,20 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 					set fin_value [read_register $NDS_TAP $hartxlen $GPRS0_Addr]
 					if {$fin_value != $testvar} {
 						set test_abstractauto_pass "NG"
-						print_error_msg [format "core%d: abstractauto test failed - final_value: %d, expected value: %d" $hartsel $fin_value $testvar]
+						print_error_msg [format "core%d: Incorrect register abstractauto=%d, expected %d" $hartsel $fin_value $testvar]
 					} elseif {$test_abstractauto_pass != "NG"} {
 						set test_abstractauto_pass "PASS"
 					}
 				} else {
 					puts [format "core%d: progbuf size < 3, skip abstractauto test" $hartsel]
-					if {$test_abstractauto_pass != "PASS" || $test_abstractauto_pass != "NG"} {
-						set test_abstractauto_pass "SKIP"
-					}
 				}
 			} else {
 				puts [format "core%d: cannot write abstractauto(value 0), skip abstractauto test" $hartsel]
-				if {$test_abstractauto_pass != "PASS" || $test_abstractauto_pass != "NG"} {
-					set test_abstractauto_pass "SKIP"
-				}
 			}
 
 
 			# Single Step
-			puts "Single Step testing"
+			puts "* Single Step testing"
 			set dmstatus [read_dmi_dmstatus $NDS_TAP]
 			set dmstatus_impebreak [expr ($dmstatus>>22)&0x1]
 			if [ expr ($debug_buffer_size + $dmstatus_impebreak) >= 3 ] {
@@ -531,8 +530,9 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			# check the halt reason
 			set new_dcsr [read_register $NDS_TAP $hartxlen $CSR_DCSR]
 			set CAUSE_MASK 0x1C0
-			if {[expr (($new_dcsr & $CAUSE_MASK) >> 6)] != 4} {
-				print_error_msg [format "core%d: single step fail" $hartsel]
+			set cmp_cause [expr ($new_dcsr & $CAUSE_MASK) >> 6]
+			if {$cmp_cause != 4} {
+				print_error_msg [format "core%d: Incorrect register dcsr.cause=%d expected 4(single step)" $hartsel $cmp_cause]
 				set pc [read_dpc $NDS_TAP $hartxlen]
 				puts [format "core%d pc = 0x%x" $hartsel $pc]
 				set test_single_step_pass "NG"
@@ -546,7 +546,7 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			if [ expr $debug_buffer_size > 7 ] {
 				set rdata [read_memory_word $NDS_TAP $regaddr]
 				if {$ABSTRCT_ERR} {
-					print_error_msg [format "core%d: read SMU failed, maybe testing board's SMU register addrress is not 0x%x" $hartsel $regaddr]
+					puts [format "core%d: read SMU failed, maybe testing board's SMU register addrress is not 0x%x" $hartsel $regaddr]
 				}
 			} else {
 				set rdata [expr [abstract_read_memory $NDS_TAP $hartxlen $regaddr] & 0xFFFFFFFF]
@@ -557,6 +557,7 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			}
 
 			if {$NDS_MEM_TEST == 1} {
+				puts "* access memory"
 				if [ expr $debug_buffer_size > 7 ] {
 					if {[test_memory_rw $NDS_TAP $hartsel $NDS_MEM_ADDR] == "PASS" && $test_memory_access_pass != "NG"} {
 						set test_memory_access_pass "PASS"
@@ -570,26 +571,26 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 						set test_memory_access_pass "NG"
 					}
 				}
-			} else {
-				if {$test_memory_access_pass != "PASS" || $test_memory_access_pass != "NG"} {
-					set test_memory_access_pass "SKIP"
-				}
 			}
 		}
 
-		puts "Check haltsum0 value"
+		puts "* Check haltsum0 value"
 		set haltsum0 [read_dmi_haltsum0 $NDS_TAP]
 		if [expr $haltsum0 != $expected_haltharts0] {
 			set test_haltsum0_pass "NG"
-			print_error_msg [format "the number of halt harts is %d, but expected haltsum0 value:%d." $haltsum0 $expected_haltharts0]
+			print_error_msg [format "Incorrect register haltsum0=%d, expected %d." $haltsum0 $expected_haltharts0]
 		} elseif {$test_haltsum0_pass != "NG"} {
 			set test_haltsum0_pass "PASS"
 		}
-		puts "Check haltsum1 value"
+		puts "* Check haltsum1 value"
 		set haltsum1 [read_dmi_haltsum1 $NDS_TAP]
 		if [expr $haltsum1 != $expected_haltharts1] {
-			set test_haltsum1_pass "NG"
-			print_error_msg [format "the number of halt harts is %d, but expected haltsum1 value:%d." $haltsum1 $expected_haltharts1]
+			if {$hartcount < 33} {
+				puts "This register haltsum1 may not be present in systems with fewer than 33 harts."
+			} else {
+				set test_haltsum1_pass "NG"
+				print_error_msg [format "Incorrect register haltsum1=%d, expected %d." $haltsum1 $expected_haltharts1]
+			}
 		} elseif {$test_haltsum1_pass != "NG"} {
 			set test_haltsum1_pass "PASS"
 		}
@@ -622,14 +623,14 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 		nds configure jtag_scans_optimize 4
 		nds configure jtag_max_scans 64
 		mww $NDS_MEM_ADDR 1 4
-		scan [nds get_dmi_delay] "%x" delay_count
+		scan [nds get_dmi_delay] "%d" delay_count
 		if {$delay_count > $max_delay} {
 			set max_delay $delay_count
 			print_debug_msg [format "cpu mode dmi_busy_delay_count:%d" $delay_count]
 		}
 		#bus mode mww
 		dma_mww $NDS_MEM_ADDR 1 4
-		scan [nds get_dmi_delay] "%x" delay_count
+		scan [nds get_dmi_delay] "%d" delay_count
 		if {$delay_count > $max_delay} {
 			set max_delay $delay_count
 			print_debug_msg [format "bus mode dmi_busy_delay_count:%d" $delay_count]
@@ -639,18 +640,36 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 	puts [format "********************"]
 	puts [format "Diagnostic Report"]
 	puts [format "********************"]
-
-	puts [format "(%s) check that Debug Module (DM) is operational ..." $test_dm_operate_pass]
-	puts [format "(%s) check JTAG/DTM connectivity ..." $test_dtm_connect_pass]
-	puts [format "(%s) check changing the JTAG frequency ..." $test_frequency_pass]
-	puts [format "(%s) check GPRs access ..." $test_gpr_access_pass]
-	puts [format "(%s) check ABSTRACTAUTO should cause COMMAND to run the expected number of times ..." $test_abstractauto_pass]
-	puts [format "(%s) check all harts single step ..." $test_single_step_pass]
-	puts [format "(%s) check accessing memory through CPU ..." $test_memory_access_pass]
-	puts [format "(%s) check haltsum0 report summary of up 32 halted harts ..." $test_haltsum0_pass]
-	puts [format "(%s) check haltsum1 report summary of up 1024 halted harts ..." $test_haltsum1_pass]
-	puts [format "(%s) check reset-and-debug ..." $test_reset_and_debug_pass]
-	#puts [format "(%s) check that Program buffer and CPU domain are operational ..." $test_pbuf_work_pass]
+	if {$test_dm_operate_pass == "PASS" || $test_dm_operate_pass == "NG"} {
+		puts [format "(%s) check that Debug Module (DM) is operational ..." $test_dm_operate_pass]
+	}
+	if {$test_dtm_connect_pass == "PASS" || $test_dtm_connect_pass == "NG"} {
+		puts [format "(%s) check JTAG/DTM connectivity ..." $test_dtm_connect_pass]
+	}
+	if {$test_frequency_pass == "PASS" || $test_frequency_pass == "NG"} {
+		puts [format "(%s) check changing the JTAG frequency ..." $test_frequency_pass]
+	}
+	if {$test_gpr_access_pass == "PASS" || $test_gpr_access_pass == "NG"} {
+		puts [format "(%s) check GPRs access ..." $test_gpr_access_pass]
+	}
+	if {$test_abstractauto_pass == "PASS" || $test_abstractauto_pass == "NG"} {
+		puts [format "(%s) check ABSTRACTAUTO should cause COMMAND to run the expected number of times ..." $test_abstractauto_pass]
+	}
+	if {$test_single_step_pass == "PASS" || $test_single_step_pass == "NG"} {
+		puts [format "(%s) check all harts single step ..." $test_single_step_pass]
+	}
+	if {$test_memory_access_pass == "PASS" || $test_memory_access_pass == "NG"} {
+		puts [format "(%s) check accessing memory through CPU ..." $test_memory_access_pass]
+	}
+	if {$test_haltsum0_pass == "PASS" || $test_haltsum0_pass == "NG"} {
+		puts [format "(%s) check haltsum0 ..." $test_haltsum0_pass]
+	}
+	if {$test_haltsum1_pass == "PASS" || $test_haltsum1_pass == "NG"} {
+		puts [format "(%s) check haltsum1 ..." $test_haltsum1_pass]
+	}
+	if {$test_reset_and_debug_pass == "PASS" || $test_reset_and_debug_pass == "NG"} {
+		puts [format "(%s) check reset-and-halt ..." $test_reset_and_debug_pass]
+	}
 	if {$max_delay > $default_delay} {
 		puts [format "suggest starting ICEman with --dmi_busy_delay_count %d" $max_delay]
 	}
