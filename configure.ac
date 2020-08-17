@@ -65,6 +65,10 @@ case `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d' | sed 's/(//g'` 
 		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`])
         echo `cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`
 		;;
+   *HEAD*)
+		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 5 | sed 's/)//g'`])
+        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 5 | sed 's/)//g'`
+		;;
    *)
 		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`])
         echo `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`
