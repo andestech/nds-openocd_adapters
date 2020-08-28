@@ -77,6 +77,7 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 		interface/jtagkey2.cfg \
 		interface/jtagkey2p.cfg \
 		interface/jtagkey.cfg \
+		interface/jtagkey_sdp.cfg \
 		interface/jtag-lock-pick_tiny_2.cfg \
 		interface/kt-link.cfg \
 		interface/lisa-l.cfg \
