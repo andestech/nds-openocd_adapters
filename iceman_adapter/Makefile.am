@@ -46,6 +46,7 @@ openocd_interfacecfgdir = $(bindir)/interface
 dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 		interface/axm0432.cfg \
 		interface/aice_sdp.cfg \
+		interface/aice_micro_sdp.cfg \
 		interface/aice-mini-plus.cfg \
 		interface/aice_mini_plus_ftdi.cfg \
 		interface/bfc.cfg \
@@ -77,7 +78,6 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 		interface/jtagkey2.cfg \
 		interface/jtagkey2p.cfg \
 		interface/jtagkey.cfg \
-		interface/jtagkey_sdp.cfg \
 		interface/jtag-lock-pick_tiny_2.cfg \
 		interface/kt-link.cfg \
 		interface/lisa-l.cfg \
