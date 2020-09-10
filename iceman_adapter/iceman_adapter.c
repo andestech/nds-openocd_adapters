@@ -420,7 +420,6 @@ static char* as_filepath(const char* cfg_name)
 
 	if(log_folder) {
 		strncpy(output_path, log_folder, strlen(log_folder));
-		strcat(output_path, "/");
 		strcat(output_path, cfg_name);
 	} else {
 		strncpy(output_path, cfg_name, strlen(cfg_name));
@@ -429,7 +428,7 @@ static char* as_filepath(const char* cfg_name)
 #if _DEBUG_
 	printf("as_filepath: %s\n", output_path);
 #endif
-	return &output_path;
+	return output_path;
 }
 
 void removeChar(char *str, char garbage)
@@ -440,6 +439,50 @@ void removeChar(char *str, char garbage)
 		if (*dst != garbage) dst++;
 	}
 	*dst = '\0';
+}
+
+char* replaceWord(const char* s, const char* oldW, const char* newW) {
+	char* result;
+	int i, cnt = 0, end_len = 0;
+	int newWlen = strlen(newW);
+	int oldWlen = strlen(oldW);
+	// Counting the number of times old word
+	// occur in the string
+	for (i = 0; s[i] != '\0'; i++) {
+		if (strstr(&s[i], oldW) == &s[i]) {
+			cnt++;
+			// Jumping to index after the old word.
+			i += oldWlen - 1;
+		}
+	}
+	// check the end of directory path is '/'
+	if (s[i-1] != '/')
+		end_len = 1;
+	// Making new string of enough length
+	result = (char*)malloc(i + cnt * (newWlen - oldWlen) + end_len + 1);
+	i = 0;
+	while (*s) {
+		// compare the substring with the result
+		if (strstr(s, oldW) == s) {
+			strcpy(&result[i], newW);
+			i += newWlen;
+			s += oldWlen;
+		}
+		else
+			result[i++] = *s++;
+	}
+	if (end_len)
+		result[i++] = '/';
+	result[i] = '\0';
+	return result;
+}
+
+int isDirectoryExist(const char* path) {
+	struct stat stats;
+	stat(path, &stats);
+	if (S_ISDIR(stats.st_mode))
+		return 1;
+	return 0;
 }
 
 static int parse_param(int a_argc, char **a_argv) {
@@ -568,21 +611,42 @@ static int parse_param(int a_argc, char **a_argv) {
 				edm_port_op_file = optarg;
 				break;
 			case 'f':
-				log_output = optarg;
+				// process space, remove backslash for fopen(log_folder/file...)
+				// add '/' at the path end
+				log_output = replaceWord(optarg, "\\ ", " ");
+
+				// check directory exist or not
+				if (isDirectoryExist(log_output) == 0) {
+					printf("%s is not exist or not a directory!!\n", optarg);
+					return ERROR_FAIL;
+				}
 
 				// handle log folder path
 				log_folder = strdup(log_output);
-				dirname(log_folder);
+				// original: dirname() cannot process path contained space
+				// now     : strstr() can process path contained space
+				// the last directory name is _ICEman_ for AndeSight workspace
+				// on AndeSight, the path of config file(ex:openocd.cfg) must be the parent directory of _ICEman_
+				char *c = strstr(log_folder, "_ICEman_");
+				if (c) {
+					*c = '\0';
+				}
 
 				if( log_folder[0] == '\"' )
-					removeChar(log_folder, '\"');
+					removeChar((char *)log_folder, '\"');
 
 				// handle ICEman bin folder path
+				// original: dirname() cannot process path contained space
+				// now     : strstr() can process path contained space
+				// the file name is ICEman
 				bin_folder = strdup(a_argv[0]);
-				dirname(bin_folder);
+				c = strstr(bin_folder, "ICEman");
+				if (c) {
+					*c = '\0';
+				}
 
 				if( bin_folder[0] == '\"' )
-					removeChar(bin_folder, '\"');
+					removeChar((char *)bin_folder, '\"');
 
 			#if _DEBUG_
 				printf("[DEBUG] log_folder:%s\n", log_folder);
@@ -997,8 +1061,8 @@ static void update_debug_diag_v5(void)
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_TEST 0x%x\n", diagnosis_memory);
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
 	if(log_folder) {
-		fprintf(debug_diag_tcl_new, "add_script_search_dir %s\n", log_folder);
-		fprintf(debug_diag_tcl_new, "add_script_search_dir %s\n", bin_folder);
+		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", log_folder);
+		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", bin_folder);
 	}
 
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL) {
@@ -1018,16 +1082,18 @@ static void update_openocd_cfg_v5(void)
 		exit(-1);
 	}
 	/* update openocd.cfg */
-	if( log_output == NULL )
+	if( log_folder == NULL )
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
-		fprintf(openocd_cfg, "add_script_search_dir %s\n", log_folder);
-		fprintf(openocd_cfg, "add_script_search_dir %s\n", bin_folder);
+		// write to file, please add \"$folder_path\" for path contained space
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_output, strlen(log_output));
 		strncat(line_buffer, "iceman_debug0.log", 17);
-		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+		// write to file, please add \"$folder_path\" for path contained space
+		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
@@ -1181,16 +1247,18 @@ static void update_openocd_cfg_vtarget(void)
 		exit(-1);
 	}
 	/* update openocd.cfg */
-	if( log_output == NULL )
+	if( log_folder == NULL )
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
-		fprintf(openocd_cfg, "add_script_search_dir %s\n", log_folder);
-		fprintf(openocd_cfg, "add_script_search_dir %s\n", bin_folder);
+		// write to file, please add \"$folder_path\" for path contained space
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_output, strlen(log_output));
 		strncat(line_buffer, "iceman_debug0.log", 17);
-		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+		// write to file, please add \"$folder_path\" for path contained space
+		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
@@ -1320,16 +1388,18 @@ static void update_openocd_cfg(void)
 	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
-	if( log_output == NULL )
+	if( log_folder == NULL )
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
-		fprintf(openocd_cfg, "add_script_search_dir %s\n", log_folder);
-		fprintf(openocd_cfg, "add_script_search_dir %s\n", bin_folder);
+		// write to file, please add \"$folder_path\" for path contained space
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_output, strlen(log_output));
 		strncat(line_buffer, "iceman_debug0.log", 17);
-		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+		// write to file, please add \"$folder_path\" for path contained space
+		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
@@ -1406,7 +1476,8 @@ static void update_interface_cfg(void)
 		fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
-	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, as_filepath(target_cfg_name_str));
+	// write to file, please add \"$folder_path\" for path contained space
+	fprintf(interface_cfg, "aice port_config %d %d \"%s\"\n", burner_port, total_num_of_ports, as_filepath(target_cfg_name_str));
 
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %d %d\n", count_to_check_dbger, clock_setting);
@@ -1964,13 +2035,13 @@ int main(int argc, char **argv) {
 	openocd_argv[0] = "openocd";
 	openocd_argv[1] = "-d-3";
 	if( log_folder ) {
-		char output_path[LINE_BUFFER_SIZE];
-		memset(output_path, 0, sizeof(char)*LINE_BUFFER_SIZE);
-		strncpy(output_path, log_folder, strlen(log_folder));
-		strcat(output_path, "/openocd.cfg");
+		char line_buffer[LINE_BUFFER_SIZE];
+		memset(line_buffer, 0, sizeof(char)*LINE_BUFFER_SIZE);
+		strncpy(line_buffer, log_folder, strlen(log_folder));
+		strcat(line_buffer, "openocd.cfg");
 
 		openocd_argv[2] = "-f";
-		openocd_argv[3] = output_path;
+		openocd_argv[3] = line_buffer;
 	}
 	//openocd_argv[2] = "-l";
 	//openocd_argv[3] = "iceman_debug.log";
