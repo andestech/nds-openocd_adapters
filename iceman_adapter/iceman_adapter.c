@@ -832,7 +832,6 @@ static FILE *board_cfg_tpl = NULL;
 static FILE *board_cfg = NULL;
 static FILE *target_cfg_tpl = NULL;
 static FILE *target_cfg[AICE_MAX_NUM_CORE];
-static FILE *openocd_cfg_usrdef = NULL;
 char target_cfg_name[64];
 char *target_cfg_name_str = (char *)&target_cfg_name[0];
 
@@ -880,7 +879,6 @@ static void open_config_files(void) {
 			target_cfg[coreid] = fopen(as_filepath(line_buffer), "w");
 		}
 	}
-	openocd_cfg_usrdef = fopen(as_filepath(NDS32_USER_CFG), "a");
 }
 
 static void close_config_files(void) {
@@ -912,8 +910,6 @@ static void close_config_files(void) {
 			fclose(target_cfg[coreid]);
 	}
 
-	if(openocd_cfg_usrdef != NULL)
-		fclose(openocd_cfg_usrdef);
 }
 
 static void parse_mem_operation(const char *mem_operation) {
@@ -1156,7 +1152,11 @@ static void update_openocd_cfg_v5(void)
 				fputs(line_buffer, openocd_cfg);
 			}
 		} else {
-			fputs(line_buffer, openocd_cfg);
+			if( strncmp(line_buffer, "source [find board/nds_v5.cfg]", 30) == 0 ) {
+				// write to file, please add \"$folder_path\" for path contained space
+				fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds_v5.cfg"));
+			} else
+				fputs(line_buffer, openocd_cfg);
 		}
 	}
 
@@ -1306,7 +1306,11 @@ static void update_openocd_cfg_vtarget(void)
 				fputs(line_buffer, openocd_cfg);
 			}
 		} else {
-			fputs(line_buffer, openocd_cfg);
+			if( strncmp(line_buffer, "source [find board/nds_vtarget.cfg]", 35) == 0 ) {
+				// write to file, please add \"$folder_path\" for path contained space
+				fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds_vtarget.cfg"));
+			} else
+				fputs(line_buffer, openocd_cfg);
 		}
 	}
 
@@ -1432,10 +1436,21 @@ static void update_openocd_cfg(void)
 
 				fprintf(openocd_cfg, "reset_config trst_only\n");
 			} else {
-				fputs(line_buffer, openocd_cfg);
+				if( strncmp(line_buffer, "source [find board/nds32_xc5.cfg]", 33) == 0 ) {
+					// write to file, please add \"$folder_path\" for path contained space
+					fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds32_xc5.cfg"));
+				} else
+					fputs(line_buffer, openocd_cfg);
 			}
 		} else {
-			fputs(line_buffer, openocd_cfg);
+			if( strncmp(line_buffer, "source [find interface/nds32-aice.cfg]", 38) == 0 ) {
+				// write to file, please add \"$folder_path\" for path contained space
+				fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("interface/nds32-aice.cfg"));
+			} else if( strncmp(line_buffer, "source [find board/nds32_xc5.cfg]", 33) == 0 ) {
+				// write to file, please add \"$folder_path\" for path contained space
+				fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds32_xc5.cfg"));
+			} else
+				fputs(line_buffer, openocd_cfg);
 		}
 	}
 	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
@@ -1650,16 +1665,17 @@ static void update_board_cfg(void)
 					if(target_str)
 						fputs(line_buffer, board_cfg);
 					if (target_type[coreid] == TARGET_V3) {
-						target_str = "source [find target/nds32v3_%d.cfg]\n";
+						sprintf(target_str, "target/nds32v3_%d.cfg", coreid);
 					} else if (target_type[coreid] == TARGET_V2) {
-						target_str = "source [find target/nds32v2_%d.cfg]\n";
+						sprintf(target_str, "target/nds32v2_%d.cfg", coreid);
 					} else if (target_type[coreid] == TARGET_V3m) {
-						target_str = "source [find target/nds32v3m_%d.cfg]\n";
+						sprintf(target_str, "target/nds32v3m_%d.cfg", coreid);
 					} else {
 						fprintf(stderr, "No target specified\n");
 						exit(0);
 					}
-					sprintf(line_buffer, target_str, coreid);
+					// write to file, please add \"$folder_path\" for path contained space
+					sprintf(line_buffer, "source [find \"%s\"]\n", as_filepath(target_str));
 				}
 			}
 		} else if ((find_pos = strstr(line_buffer, "--soft-reset-halt")) != NULL) {
