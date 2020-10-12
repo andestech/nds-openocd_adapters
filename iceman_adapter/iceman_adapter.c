@@ -1550,7 +1550,7 @@ static void update_ftdi_v3_board_cfg(void)
 
 	//fprintf(board_cfg, "nds retry_times %d\n", aice_retry_time);
 	fprintf(board_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
-	//fprintf(board_cfg, "nds port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
+	fprintf(openocd_cfg, "nds burn_port %d\n", burner_port);
 
 	if (count_to_check_dbger)
 		fprintf(board_cfg, "nds runtest_num_clocks %d\n", count_to_check_dbger);
