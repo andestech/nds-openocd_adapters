@@ -1655,7 +1655,7 @@ static void update_board_cfg(void)
 
 	/* update nds32_xc5.cfg */
 	char *find_pos;
-	char *target_str = NULL;
+	char target_str[512];
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
 			if (custom_target_cfg) {
