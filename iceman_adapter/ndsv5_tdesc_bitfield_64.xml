@@ -661,6 +661,7 @@
 <field name="vcgl1_en" start="10" end="10"/>
 <field name="vcgl2_en" start="11" end="11"/>
 <field name="vcgl3_en" start="12" end="12"/>
+<field name="ldx0nxp" start="13" end="13"/>
 </flags>
 <struct id="reg_mmisc_ctl" size="8">
 <field name="" start="0" end="63" type="mmisc_ctl_flags"/>
