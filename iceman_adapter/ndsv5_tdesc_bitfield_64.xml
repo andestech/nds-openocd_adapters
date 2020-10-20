@@ -43,11 +43,10 @@
 </flags>
 <struct id="reg_mstatus" size="8">
 <field name="" start="0" end="63" type="mstatus_flags"/>
-<field name="HPP" start="9" end="10" type="uint64"/>
+<field name="VS" start="9" end="10" type="mstatus_FS"/>
 <field name="MPP" start="11" end="12" type="uint64"/>
 <field name="FS" start="13" end="14" type="mstatus_FS"/>
 <field name="XS" start="15" end="16" type="mstatus_FS"/>
-<field name="VS" start="23" end="24" type="mstatus_FS"/>
 <field name="UXL" start="32" end="33" type="mstatus_UXL"/>
 <field name="SXL" start="34" end="35" type="mstatus_UXL"/>
 </struct>
@@ -503,6 +502,7 @@
 <field name="vl4" start="34" end="34"/>
 <field name="crashsave" start="35" end="35"/>
 <field name="veccfg" start="36" end="36"/>
+<field name="finv" start="37" end="37"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -535,20 +535,10 @@
 <evalue name="vlen div 4" value="2"/>
 <evalue name="vlen div 8" value="3"/>
 </enum>
-<enum id="mvec_cfg_vlen" size="8">
-<evalue name="64" value="0"/>
-<evalue name="128" value="1"/>
-<evalue name="256" value="2"/>
-<evalue name="512" value="3"/>
-<evalue name="1024" value="4"/>
-</enum>
-<flags id="mvec_cfg_flags" size="8">
-<field name="finv" start="18" end="18"/>
-</flags>
 <struct id="reg_mvec_cfg" size="8">
-<field name="" start="0" end="63" type="mvec_cfg_flags"/>
-<field name="ver" start="0" end="4" type="uint64"/>
-<field name="vlen" start="5" end="7" type="mvec_cfg_vlen"/>
+<field name="" start="0" end="63" type="uint64"/>
+<field name="minor" start="0" end="3" type="uint64"/>
+<field name="major" start="4" end="7" type="uint64"/>
 <field name="dw" start="8" end="10" type="mvec_cfg_dw"/>
 <field name="mw" start="11" end="13" type="mvec_cfg_mw"/>
 <field name="misew" start="14" end="15" type="mvec_cfg_misew"/>
@@ -790,9 +780,9 @@
 
 <struct id="reg_sstatus" size="8">
 <field name="" start="0" end="63" type="mstatus_flags"/>
+<field name="VS" start="9" end="10" type="mstatus_FS"/>
 <field name="FS" start="13" end="14" type="mstatus_FS"/>
 <field name="XS" start="15" end="16" type="mstatus_FS"/>
-<field name="VS" start="23" end="24" type="mstatus_FS"/>
 <field name="UXL" start="32" end="33" type="mstatus_UXL"/>
 </struct>
 
