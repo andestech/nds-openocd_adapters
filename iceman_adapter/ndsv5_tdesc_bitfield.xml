@@ -38,11 +38,9 @@
 </flags>
 <struct id="reg_mstatus" size="4">
 <field name="" start="0" end="31" type="mstatus_flags"/>
-<field name="HPP" start="9" end="10" type="uint32"/>
 <field name="MPP" start="11" end="12" type="uint32"/>
 <field name="FS" start="13" end="14" type="mstatus_FS"/>
 <field name="XS" start="15" end="16" type="mstatus_FS"/>
-<field name="VS" start="23" end="24" type="mstatus_FS"/>
 </struct>
 
 <flags id="mie_flags" size="4">
@@ -507,6 +505,7 @@
 <field name="vl4" start="2" end="2"/>
 <field name="crashsave" start="3" end="3"/>
 <field name="veccfg" start="4" end="4"/>
+<field name="finv" start="5" end="5"/>
 </flags>
 <struct id="reg_mmsc_cfg2" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg2_flags"/>
@@ -535,20 +534,10 @@
 <evalue name="vlen div 4" value="2"/>
 <evalue name="vlen div 8" value="3"/>
 </enum>
-<enum id="mvec_cfg_vlen" size="4">
-<evalue name="64" value="0"/>
-<evalue name="128" value="1"/>
-<evalue name="256" value="2"/>
-<evalue name="512" value="3"/>
-<evalue name="1024" value="4"/>
-</enum>
-<flags id="mvec_cfg_flags" size="4">
-<field name="finv" start="18" end="18"/>
-</flags>
 <struct id="reg_mvec_cfg" size="4">
-<field name="" start="0" end="31" type="mvec_cfg_flags"/>
-<field name="ver" start="0" end="4" type="uint32"/>
-<field name="vlen" start="5" end="7" type="mvec_cfg_vlen"/>
+<field name="" start="0" end="31" type="uint32"/>
+<field name="minor" start="0" end="3" type="uint32"/>
+<field name="major" start="4" end="7" type="uint32"/>
 <field name="dw" start="8" end="10" type="mvec_cfg_dw"/>
 <field name="mw" start="11" end="13" type="mvec_cfg_mw"/>
 <field name="misew" start="14" end="15" type="mvec_cfg_misew"/>
@@ -792,7 +781,6 @@
 <field name="" start="0" end="31" type="mstatus_flags"/>
 <field name="FS" start="13" end="14" type="mstatus_FS"/>
 <field name="XS" start="15" end="16" type="mstatus_FS"/>
-<field name="VS" start="23" end="24" type="mstatus_FS"/>
 </struct>
 
 <struct id="reg_sie" size="4">
