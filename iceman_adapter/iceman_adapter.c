@@ -611,18 +611,22 @@ static int parse_param(int a_argc, char **a_argv) {
 				edm_port_op_file = optarg;
 				break;
 			case 'f':
+				log_output = optarg;
+				// process \": Linux server caanot ignore \" (str:\" from IDE)
+				if( log_output[0] == '\"' )
+					removeChar((char *)log_output, '\"');
+
+				// handle log folder path
 				// process space, remove backslash for fopen(log_folder/file...)
 				// add '/' at the path end
-				log_output = replaceWord(optarg, "\\ ", " ");
+				log_folder = replaceWord(log_output, "\\ ", " ");
 
-				// check directory exist or not
-				if (isDirectoryExist(log_output) == 0) {
+				// check directory exist or not, must use log_folder(remove \" and \\ )
+				// if path error, show original path:optarg for user
+				if (isDirectoryExist(log_folder) == 0) {
 					printf("%s is not exist or not a directory!!\n", optarg);
 					return ERROR_FAIL;
 				}
-
-				// handle log folder path
-				log_folder = strdup(log_output);
 				// original: dirname() cannot process path contained space
 				// now     : strstr() can process path contained space
 				// the last directory name is _ICEman_ for AndeSight workspace
@@ -632,21 +636,18 @@ static int parse_param(int a_argc, char **a_argv) {
 					*c = '\0';
 				}
 
-				if( log_folder[0] == '\"' )
-					removeChar((char *)log_folder, '\"');
-
 				// handle ICEman bin folder path
+				bin_folder = strdup(a_argv[0]);
+				// process \": Linux server caanot ignore \" (str:\" from IDE)
+				if( bin_folder[0] == '\"' )
+					removeChar((char *)bin_folder, '\"');
 				// original: dirname() cannot process path contained space
 				// now     : strstr() can process path contained space
 				// the file name is ICEman
-				bin_folder = strdup(a_argv[0]);
 				c = strstr(bin_folder, "ICEman");
 				if (c) {
 					*c = '\0';
 				}
-
-				if( bin_folder[0] == '\"' )
-					removeChar((char *)bin_folder, '\"');
 
 			#if _DEBUG_
 				printf("[DEBUG] log_folder:%s\n", log_folder);
@@ -1086,7 +1087,7 @@ static void update_openocd_cfg_v5(void)
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
-		strncpy(line_buffer, log_output, strlen(log_output));
+		strncpy(line_buffer, log_folder, strlen(log_folder));
 		strncat(line_buffer, "iceman_debug0.log", 17);
 		// write to file, please add \"$folder_path\" for path contained space
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
@@ -1257,7 +1258,7 @@ static void update_openocd_cfg_vtarget(void)
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
-		strncpy(line_buffer, log_output, strlen(log_output));
+		strncpy(line_buffer, log_folder, strlen(log_folder));
 		strncat(line_buffer, "iceman_debug0.log", 17);
 		// write to file, please add \"$folder_path\" for path contained space
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
@@ -1402,7 +1403,7 @@ static void update_openocd_cfg(void)
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
-		strncpy(line_buffer, log_output, strlen(log_output));
+		strncpy(line_buffer, log_folder, strlen(log_folder));
 		strncat(line_buffer, "iceman_debug0.log", 17);
 		// write to file, please add \"$folder_path\" for path contained space
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
