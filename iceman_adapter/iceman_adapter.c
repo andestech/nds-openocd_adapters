@@ -258,7 +258,7 @@ static void parse_edm_operation(const char *edm_operation);
 //extern char *BRANCH_NAME, *COMMIT_ID;
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
-static const char *log_output = NULL;
+static const char *workspace_folder = NULL;
 static const char *log_folder = NULL;
 static const char *bin_folder = NULL;
 static const char *custom_interface = NULL;
@@ -418,8 +418,8 @@ static char* as_filepath(const char* cfg_name)
 {
 	memset(output_path, 0, sizeof(char)*LINE_BUFFER_SIZE);
 
-	if(log_folder) {
-		strncpy(output_path, log_folder, strlen(log_folder));
+	if(workspace_folder) {
+		strncpy(output_path, workspace_folder, strlen(workspace_folder));
 		strcat(output_path, cfg_name);
 	} else {
 		strncpy(output_path, cfg_name, strlen(cfg_name));
@@ -611,15 +611,15 @@ static int parse_param(int a_argc, char **a_argv) {
 				edm_port_op_file = optarg;
 				break;
 			case 'f':
-				log_output = optarg;
+			{
+				char *temp_path = optarg;
 				// process \": Linux server caanot ignore \" (str:\" from IDE)
-				if( log_output[0] == '\"' )
-					removeChar((char *)log_output, '\"');
+				if( temp_path[0] == '\"' )
+					removeChar((char *)temp_path, '\"');
 
-				// handle log folder path
-				// process space, remove backslash for fopen(log_folder/file...)
+				// process space, remove backslash for fopen(folder/file...)
 				// add '/' at the path end
-				log_folder = replaceWord(log_output, "\\ ", " ");
+				log_folder = replaceWord(temp_path, "\\ ", " ");
 
 				// check directory exist or not, must use log_folder(remove \" and \\ )
 				// if path error, show original path:optarg for user
@@ -627,11 +627,16 @@ static int parse_param(int a_argc, char **a_argv) {
 					printf("%s is not exist or not a directory!!\n", optarg);
 					return ERROR_FAIL;
 				}
+
+				// log_folder: iceman log folder(for IDE, contain folder: _ICEman_)
+				// workspace_folder: for config file(ex:openocd.cfg, for IDE, need remove _ICEman_)
+				workspace_folder = strdup(log_folder);
+
 				// original: dirname() cannot process path contained space
 				// now     : strstr() can process path contained space
 				// the last directory name is _ICEman_ for AndeSight workspace
 				// on AndeSight, the path of config file(ex:openocd.cfg) must be the parent directory of _ICEman_
-				char *c = strstr(log_folder, "_ICEman_");
+				char *c = strstr(workspace_folder, "_ICEman_");
 				if (c) {
 					*c = '\0';
 				}
@@ -651,6 +656,7 @@ static int parse_param(int a_argc, char **a_argv) {
 
 			#if _DEBUG_
 				printf("[DEBUG] log_folder:%s\n", log_folder);
+				printf("[DEBUG] workspace_folder:%s\n", workspace_folder);
 				printf("[DEBUG] bin_folder:%s\n", bin_folder);
 			#endif
 
@@ -658,6 +664,7 @@ static int parse_param(int a_argc, char **a_argv) {
 				mkdir( as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
 				mkdir( as_filepath("target"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
 				break;
+			}
 			case 'g':
 				force_debug = 1;
 				break;
@@ -1057,8 +1064,8 @@ static void update_debug_diag_v5(void)
 	}
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_TEST 0x%x\n", diagnosis_memory);
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
-	if(log_folder) {
-		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", log_folder);
+	if(workspace_folder) {
+		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", bin_folder);
 	}
 
@@ -1079,11 +1086,11 @@ static void update_openocd_cfg_v5(void)
 		exit(-1);
 	}
 	/* update openocd.cfg */
-	if( log_folder == NULL )
+	if(log_folder == NULL)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
 		// write to file, please add \"$folder_path\" for path contained space
-		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
@@ -1250,11 +1257,11 @@ static void update_openocd_cfg_vtarget(void)
 		exit(-1);
 	}
 	/* update openocd.cfg */
-	if( log_folder == NULL )
+	if(log_folder == NULL)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
 		// write to file, please add \"$folder_path\" for path contained space
-		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
@@ -1395,11 +1402,11 @@ static void update_openocd_cfg(void)
 	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
-	if( log_folder == NULL )
+	if(log_folder == NULL)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
 		// write to file, please add \"$folder_path\" for path contained space
-		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
@@ -2053,10 +2060,10 @@ int main(int argc, char **argv) {
 
 	openocd_argv[0] = "openocd";
 	openocd_argv[1] = "-d-3";
-	if( log_folder ) {
+	if(workspace_folder) {
 		char line_buffer[LINE_BUFFER_SIZE];
 		memset(line_buffer, 0, sizeof(char)*LINE_BUFFER_SIZE);
-		strncpy(line_buffer, log_folder, strlen(log_folder));
+		strncpy(line_buffer, workspace_folder, strlen(workspace_folder));
 		strcat(line_buffer, "openocd.cfg");
 
 		openocd_argv[2] = "-f";
@@ -2077,13 +2084,13 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	if( list_device ) {
+	if(list_device) {
 		devnum = -1;
 		list_devices(-1, -1, NULL, NULL, NULL);
 		return 0;
 	}
 
-	if( log_folder )
+	if(log_folder)
 		openocd_main(4, openocd_argv);
 	else
 		openocd_main(2, openocd_argv);
