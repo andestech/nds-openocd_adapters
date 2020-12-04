@@ -503,6 +503,7 @@
 <field name="crashsave" start="35" end="35"/>
 <field name="veccfg" start="36" end="36"/>
 <field name="finv" start="37" end="37"/>
+<field name="pp16" start="38" end="38"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
