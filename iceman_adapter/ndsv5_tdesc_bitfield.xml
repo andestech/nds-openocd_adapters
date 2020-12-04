@@ -630,6 +630,8 @@
 <field name="dpref_en" start="10" end="10"/>
 <field name="ic_1st_wd" start="11" end="11"/>
 <field name="dc_1st_wd" start="12" end="12"/>
+<field name="dc_cohen" start="19" end="19"/>
+<field name="dc_cohsta" start="20" end="20"/>
 </flags>
 <struct id="reg_mcache_ctl" size="4">
 <field name="" start="0" end="31" type="mcache_ctl_flags"/>
@@ -896,6 +898,102 @@
 <field name="pmp13cfg" start="8" end="15" type="pmp0cfg_S"/>
 <field name="pmp14cfg" start="16" end="23" type="pmp0cfg_S"/>
 <field name="pmp15cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg4" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp16cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp17cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp18cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp19cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg5" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp20cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp21cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp22cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp23cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg6" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp24cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp25cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp26cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp27cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg7" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp28cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp29cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp30cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp31cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg8" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp32cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp33cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp34cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp35cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg9" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp36cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp37cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp38cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp39cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg10" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp40cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp41cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp42cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp43cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg11" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp44cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp45cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp46cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp47cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg12" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp48cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp49cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp50cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp51cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg13" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp52cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp53cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp54cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp55cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg14" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp56cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp57cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp58cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp59cfg" start="24" end="31" type="pmp0cfg_S"/>
+</struct>
+
+<struct id="reg_pmpcfg15" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="pmp60cfg" start="0" end="7" type="pmp0cfg_S"/>
+<field name="pmp61cfg" start="8" end="15" type="pmp0cfg_S"/>
+<field name="pmp62cfg" start="16" end="23" type="pmp0cfg_S"/>
+<field name="pmp63cfg" start="24" end="31" type="pmp0cfg_S"/>
 </struct>
 
 <flags id="mcounteren_flags" size="4">
@@ -1302,6 +1400,30 @@
 <reg name="pmpcfg2" bitsize="32" type="reg_pmpcfg2"/>
 <reg name="csr931" bitsize="32" type="reg_pmpcfg3"/>
 <reg name="pmpcfg3" bitsize="32" type="reg_pmpcfg3"/>
+<reg name="csr932" bitsize="32" type="reg_pmpcfg4"/>
+<reg name="pmpcfg4" bitsize="32" type="reg_pmpcfg4"/>
+<reg name="csr933" bitsize="32" type="reg_pmpcfg5"/>
+<reg name="pmpcfg5" bitsize="32" type="reg_pmpcfg5"/>
+<reg name="csr934" bitsize="32" type="reg_pmpcfg6"/>
+<reg name="pmpcfg6" bitsize="32" type="reg_pmpcfg6"/>
+<reg name="csr935" bitsize="32" type="reg_pmpcfg7"/>
+<reg name="pmpcfg7" bitsize="32" type="reg_pmpcfg7"/>
+<reg name="csr936" bitsize="32" type="reg_pmpcfg8"/>
+<reg name="pmpcfg8" bitsize="32" type="reg_pmpcfg8"/>
+<reg name="csr937" bitsize="32" type="reg_pmpcfg9"/>
+<reg name="pmpcfg9" bitsize="32" type="reg_pmpcfg9"/>
+<reg name="csr938" bitsize="32" type="reg_pmpcfg10"/>
+<reg name="pmpcfg10" bitsize="32" type="reg_pmpcfg10"/>
+<reg name="csr939" bitsize="32" type="reg_pmpcfg11"/>
+<reg name="pmpcfg11" bitsize="32" type="reg_pmpcfg11"/>
+<reg name="csr940" bitsize="32" type="reg_pmpcfg12"/>
+<reg name="pmpcfg12" bitsize="32" type="reg_pmpcfg12"/>
+<reg name="csr941" bitsize="32" type="reg_pmpcfg13"/>
+<reg name="pmpcfg13" bitsize="32" type="reg_pmpcfg13"/>
+<reg name="csr942" bitsize="32" type="reg_pmpcfg14"/>
+<reg name="pmpcfg14" bitsize="32" type="reg_pmpcfg14"/>
+<reg name="csr943" bitsize="32" type="reg_pmpcfg15"/>
+<reg name="pmpcfg15" bitsize="32" type="reg_pmpcfg15"/>
 <reg name="csr774" bitsize="32" type="reg_mcounteren"/>
 <reg name="mcounteren" bitsize="32" type="reg_mcounteren"/>
 <reg name="csr1987" bitsize="32" type="reg_mnvec"/>
