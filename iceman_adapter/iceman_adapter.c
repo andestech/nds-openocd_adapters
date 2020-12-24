@@ -2246,7 +2246,6 @@ int nds_target_cfg_transfer(const char *p_user) {
 				if( group_id != 0 ) {
 					//printf("DEBUG!!! tap %d, target %d, group %d\n", tap_id, target_id, group_id);
 					target_core_group[tap_id][target_id] = group_id;
-					break;
 				}
 
 
