@@ -19,6 +19,7 @@ set CSR_MIMPID     0xf13
 set CSR_MISA       0x301
 set CSR_DCSR       0x7b0
 set CSR_MNVEC      0x7c3
+set CSR_MMSC_CFG   0xfc2
 
 
 proc single_step_set_dcsr {tap xlen} {
@@ -452,6 +453,8 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			puts [format "core%d: dcsr=0x%x" $hartsel $dcsr]
 			set mnvec [read_register $NDS_TAP $hartxlen $CSR_MNVEC]
 			puts [format "core%d: mnvec=0x%x" $hartsel $mnvec]
+			set mmsc_cfg [read_register $NDS_TAP $hartxlen $CSR_MMSC_CFG]
+			puts [format "core%d: mmsc_cfg=0x%x" $hartsel $mmsc_cfg]
 			set pc [read_dpc $NDS_TAP $hartxlen]
 			puts [format "core%d: pc = 0x%x" $hartsel $pc]
 			set abstractcs [read_dmi_abstractcs $NDS_TAP]
