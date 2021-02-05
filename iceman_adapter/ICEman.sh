@@ -60,5 +60,9 @@ then
 fi
 
 echo -e "[SUCCEED] Please disconnect and reconnect the USB cable to reset AICE adapter!!!"
+
+#For AndeSight query usb device list
+chmod o+w /dev/bus/usb/*/001
+
 echo "Done!"
 
