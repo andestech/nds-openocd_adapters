@@ -26,7 +26,7 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
-#define ICEMAN_VERSION     "v4.6.4"
+#define ICEMAN_VERSION     "v5.0.0"
 #define NDS32_USER_CFG     "nds32_user.cfg"
 //#define FILENAME_USER_TARGET_CFG  "./target/user_target_cfg_table.txt"
 #define FILENAME_TARGET_CFG_TPL     "./target/nds32_target_cfg.tpl"
