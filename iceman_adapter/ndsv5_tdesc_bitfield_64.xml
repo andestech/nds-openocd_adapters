@@ -505,6 +505,8 @@
 <field name="finv" start="37" end="37"/>
 <field name="pp16" start="38" end="38"/>
 <field name="vsih" start="40" end="40"/>
+<field name="vdot" start="43" end="43"/>
+<field name="vpfh" start="44" end="44"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -512,6 +514,7 @@
 <field name="addpmc" start="7" end="11" type="mmsc_cfg_addpmc"/>
 <field name="vcctl" start="18" end="19" type="uint64"/>
 <field name="excslvl" start="20" end="21" type="mmsc_cfg_excslvl"/>
+<field name="ecdv" start="41" end="42" type="uint64"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="8">

@@ -508,9 +508,12 @@
 <field name="finv" start="5" end="5"/>
 <field name="pp16" start="6" end="6"/>
 <field name="vsih" start="8" end="8"/>
+<field name="vdot" start="11" end="11"/>
+<field name="vpfh" start="12" end="12"/>
 </flags>
 <struct id="reg_mmsc_cfg2" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg2_flags"/>
+<field name="ecdv" start="9" end="10" type="uint32"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="4">
