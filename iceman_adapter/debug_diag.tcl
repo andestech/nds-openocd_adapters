@@ -20,6 +20,8 @@ set CSR_MISA       0x301
 set CSR_DCSR       0x7b0
 set CSR_MNVEC      0x7c3
 
+set CHECK_SMU 0
+
 
 proc single_step_set_dcsr {tap xlen} {
 	global CSR_DCSR
@@ -542,18 +544,20 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 			# restore dcsr
 			write_register $NDS_TAP $hartxlen $CSR_DCSR $dcsr
 
-			set regaddr 0xF0100000
-			if [ expr $debug_buffer_size > 7 ] {
-				set rdata [read_memory_word $NDS_TAP $regaddr]
-				if {$ABSTRCT_ERR} {
-					puts [format "core%d: read SMU failed, maybe testing board's SMU register addrress is not 0x%x" $hartsel $regaddr]
+			if {$CHECK_SMU != 0} {
+				set regaddr 0xF0100000
+				if [ expr $debug_buffer_size > 7 ] {
+					set rdata [read_memory_word $NDS_TAP $regaddr]
+					if {$ABSTRCT_ERR} {
+						puts [format "core%d: read SMU failed, maybe testing board's SMU register addrress is not 0x%x" $hartsel $regaddr]
+					}
+				} else {
+					set rdata [expr [abstract_read_memory $NDS_TAP $hartxlen $regaddr] & 0xFFFFFFFF]
 				}
-			} else {
-				set rdata [expr [abstract_read_memory $NDS_TAP $hartxlen $regaddr] & 0xFFFFFFFF]
-			}
-			if {$ABSTRCT_ERR == 0} {
-				set platform_name [get_platform_name $rdata]
-				puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
+				if {$ABSTRCT_ERR == 0} {
+					set platform_name [get_platform_name $rdata]
+					puts [format "REG_SMU=0x%x %s" $rdata $platform_name]
+				}
 			}
 
 			if {$NDS_MEM_TEST == 1} {
