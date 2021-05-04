@@ -64,6 +64,7 @@
 #define LONGOPT_DEVICE_USB_COMBO        20
 #define LONGOPT_RV32                    21
 #define LONGOPT_RV64                    22
+#define LONGOPT_DETECT_2WIRE            23
 int long_opt_flag = 0;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -84,6 +85,7 @@ struct option long_option[] = {
 	{"device-usb-combo", required_argument, &long_opt_flag, LONGOPT_DEVICE_USB_COMBO},
 	{"rv32-bus-only", no_argument, &long_opt_flag, LONGOPT_RV32},
 	{"rv64-bus-only", no_argument, &long_opt_flag, LONGOPT_RV64},
+	{"detect-2wire", no_argument, &long_opt_flag, LONGOPT_DETECT_2WIRE},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
@@ -270,6 +272,7 @@ static unsigned int edm_dimb = DIMBR_DEFAULT;
 static unsigned int use_sdm = 0;
 static unsigned int use_smp = 0;
 static unsigned int usd_halt_on_reset = 0;
+static unsigned int detect_2wire = 0;
 
 #define L2C_BASE (0x90F00000u)
 static unsigned int l2c_base = L2C_BASE;
@@ -411,6 +414,7 @@ static void show_usage(void) {
 	printf("--list-device: \t\tList all connected device\n");
 	printf("--device <device-id>:\tConnect selected device directly\n");
 	printf("--custom-aice-init:\t\tUse custom script to do initialization process\n");
+	printf("--detect-2wire:\t\tif JTAG scan chain interrogation failed, use 2wire mode to retry\n");
 }
 
 char output_path[LINE_BUFFER_SIZE];
@@ -544,6 +548,8 @@ static int parse_param(int a_argc, char **a_argv) {
 				} else if (long_opt == LONGOPT_RV64) {
 					vtarget_xlen = 64;
 					vtarget_enable = 1;
+				} else if (long_opt == LONGOPT_DETECT_2WIRE) {
+					detect_2wire = 1;
 				}
 				break;
 			case 'a': /* reset-aice */
@@ -1115,6 +1121,8 @@ static void update_openocd_cfg_v5(void)
 	} else {
 		fprintf(openocd_cfg, "set _use_smp 0\n");
 	}
+	if (detect_2wire == 1)
+		fprintf(openocd_cfg, "detect_2wire\n");
 
 	int replace_target_create = 0;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
