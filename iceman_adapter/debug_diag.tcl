@@ -465,7 +465,16 @@ while {[expr $time_end-$time_start] < $time_target_sec} {
 
 			# Access GPRs
 			puts "* Access GPRs testing"
-			for {set gpr_n 1} {$gpr_n < 32} {set gpr_n [expr $gpr_n << 1]} {
+
+			if { [expr $misa & 0x10] } {
+				puts "RV32E base ISA (16 GPRs)"
+				set max_reg 16
+			} else {
+				puts "RV32 base ISA (32 GPRs)"
+				set max_reg 32
+			}
+
+			for {set gpr_n 1} {$gpr_n < $max_reg} {set gpr_n [expr $gpr_n << 1]} {
 				set GPR_Addr [expr 0x1000 + $gpr_n]
 				set testval [expr ($gpr_n | ($gpr_n << 32))]
 				write_register $NDS_TAP $hartxlen $GPR_Addr $testval
