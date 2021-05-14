@@ -133,4 +133,3 @@ for {set i 0} {$i < $number_of_target} {incr i} {
 	}
 }
 
-reset_config srst_only
