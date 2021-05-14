@@ -103,13 +103,25 @@ for {set i 0} {$i < $max_of_target} {incr i} {
 		set target_name_2nd "_target_$CORE_ID($i)"
 		set TARGET_NAME($i) "$target_name_1st$target_name_2nd"
 	}
-	set CHAIN_POSITION($i) $TAP_BASE.$TAP_TYPE$position
+	
+	if [expr $position == 0x0] {
+		set CHAIN_POSITION($i) $TAP_BASE.$TAP_TYPE
+	} else {
+		set CHAIN_POSITION($i) $TAP_BASE.$TAP_TYPE$position
+	}
 	set tap_position [expr $tap_position + 1]
 	set target_coreid [expr $target_coreid + 1]
 }
 
 for {set i 0} {$i < $number_of_tap} {incr i} {
-    jtag newtap $TAP_BASE $TAP_TYPE$i -expected-id $TAP_EXP_CPUID($i) -irlen $TAP_IRLEN($i)
+	if [expr $i == 0x0] {
+		jtag newtap $TAP_BASE $TAP_TYPE -expected-id $TAP_EXP_CPUID($i) -irlen $TAP_IRLEN($i)
+		#echo "jtag newtap $TAP_BASE $TAP_TYPE -expected-id $TAP_EXP_CPUID($i) -irlen $TAP_IRLEN($i)"
+	} else {
+		jtag newtap $TAP_BASE $TAP_TYPE$i -expected-id $TAP_EXP_CPUID($i) -irlen $TAP_IRLEN($i)
+		#echo "jtag newtap $TAP_BASE $TAP_TYPE$i -expected-id $TAP_EXP_CPUID($i) -irlen $TAP_IRLEN($i)"
+	}
+	
 }
 
 for {set i 0} {$i < $number_of_target} {incr i} {
