@@ -80,25 +80,25 @@ proc dma_mwb {args} {
 
 proc dma_mdw {args} {
 	nds mem_access bus
-	eval mdw $args
+	echo [eval mdw $args]
 	nds mem_access cpu
 }
 
 proc dma_mdh {args} {
 	nds mem_access bus
-	eval mdh $args
+	echo [eval mdh $args]
 	nds mem_access cpu
 }
 
 proc dma_mdb {args} {
 	nds mem_access bus
-	eval mdb $args
+	echo [eval mdb $args]
 	nds mem_access cpu
 }
 
 proc dma_read_buffer {args} {
 	nds mem_access bus
-	eval nds read_buffer $args
+	echo [eval nds read_buffer $args]
 	nds mem_access cpu
 }
 
