@@ -284,9 +284,8 @@ int nds_target_cfg_checkif_transfer(const char *p_user);
 int nds_target_cfg_transfer(const char *p_user);
 int nds_target_cfg_merge(const char *p_tpl, const char *p_out);
 
-static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t *ret_pnum, uint8_t *ret_dnum);
-static int list_device = 0;
-static ssize_t devnum = -1;
+static uint8_t list_devices(uint8_t devnum);
+static uint8_t dev_dnum = -1;
 static int vtarget_xlen;
 static int vtarget_enable = 0;
 
@@ -535,13 +534,16 @@ static int parse_param(int a_argc, char **a_argv) {
 				} else if (long_opt == LONGOPT_HALT_ON_RESET) {
 					usd_halt_on_reset = strtol(optarg, NULL, 0);
 				} else if (long_opt == LONGOPT_LIST_DEVICE) {
-					list_device = 1;
+					list_devices(-1);
+					return ERROR_FAIL; /* Force ICEman exits*/
 				} else if (long_opt == LONGOPT_DEVICE) {
-					sscanf(optarg, "%d", &devnum);
+					uint8_t num;
+					sscanf(optarg, "%d", &num);
+					dev_dnum = list_devices(num);
 				} else if (long_opt == LONGOPT_DEVICE_USB_COMBO) {
 					uint8_t bnum = 0, pnum = 0, dnum = 0;
 					sscanf(optarg, "%u:%u:%u", &bnum, &pnum, &dnum);
-					devnum = list_devices(-1, -1, &bnum, &pnum, &dnum);
+					dev_dnum = dnum;
 				} else if (long_opt == LONGOPT_RV32) {
 					vtarget_xlen = 32;
 					vtarget_enable = 1;
@@ -1132,12 +1134,8 @@ static void update_openocd_cfg_v5(void)
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 
-			if( devnum != -1 ) {
-				uint8_t bnum = 0, pnum = 0, dnum = 0;
-				list_devices(-1, -1, &bnum, &pnum, &dnum);
-				//fprintf(openocd_cfg, "ftdi_location %u:%u\n", bnum, pnum);
-				fprintf(openocd_cfg, "ftdi_device_address %u\n", dnum);
-			}
+			if (dev_dnum != (uint8_t)-1)
+				fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
 			continue;
 		}
 		
@@ -1303,12 +1301,8 @@ static void update_openocd_cfg_vtarget(void)
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 
-			if( devnum != -1 ) {
-				uint8_t bnum = 0, pnum = 0, dnum = 0;
-				list_devices(-1, -1, &bnum, &pnum, &dnum);
-				//fprintf(openocd_cfg, "ftdi_location %u:%u\n", bnum, pnum);
-				fprintf(openocd_cfg, "ftdi_device_address %u\n", dnum);
-			}
+			if (dev_dnum != (uint8_t)-1)
+				fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
 			continue;
 		}
 		if (custom_target_cfg) {
@@ -1445,12 +1439,8 @@ static void update_openocd_cfg(void)
 				if( strncmp(custom_interface, "jtagkey.cfg", 11) == 0 )
 					fprintf(openocd_cfg, "ftdi_layout_init 0x0b08 0x0f1b\n");
 
-				if( devnum != -1 ) {
-					uint8_t bnum = 0, pnum = 0, dnum = 0;
-					list_devices(-1, -1, &bnum, &pnum, &dnum);
-					//fprintf(openocd_cfg, "ftdi_location %u:%u\n", bnum, pnum);
-					fprintf(openocd_cfg, "ftdi_device_address %u\n", dnum);
-				}
+				if (dev_dnum != (uint8_t)-1)
+					fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
 
 				fprintf(openocd_cfg, "reset_config trst_only\n");
 			} else {
@@ -2092,12 +2082,6 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	if(list_device) {
-		devnum = -1;
-		list_devices(-1, -1, NULL, NULL, NULL);
-		return 0;
-	}
-
 	if(log_folder)
 		openocd_main(4, openocd_argv);
 	else
@@ -2501,17 +2485,17 @@ int nds_target_cfg_transfer_main(void) {
 }
 */
 
-static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t *ret_pnum, uint8_t *ret_dnum)
+static uint8_t list_devices(uint8_t devnum)
 {
 	libusb_context *ctx;
 	int err;
 	libusb_device **list;
 	struct libusb_device_descriptor desc;
-	ssize_t num_devs, i, list_dev=0;
+	ssize_t num_devs, i, list_dev = 0;
 
 	err = libusb_init(&ctx);
 	num_devs = libusb_get_device_list(ctx, &list);
-	for(i = 0; i < num_devs; i++) {
+	for (i = 0; i < num_devs; i++) {
 		char NullName[] = {""};
 		char *pdescp_Manufacturer = (char *)&NullName[0];
 		char *pdescp_Product = (char *)&NullName[0];
@@ -2520,61 +2504,56 @@ static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t 
 		libusb_device *dev = list[i];
 		libusb_get_device_descriptor(dev, &desc);
 		uint8_t bnum = libusb_get_bus_number(dev);
-		uint8_t dnum = libusb_get_device_address(dev);
 		uint8_t pnum = libusb_get_port_number(dev);
-		int is_supported = -1, j;
+		uint8_t dnum = libusb_get_device_address(dev);
+		int j;
 
 		struct jtag_libusb_device_handle *devh = NULL;
 		err = libusb_open(dev, &devh);
-		if (err) {
-			//printf("libusb_open() failed with %s\n",
-			//		libusb_error_name(err));
+		if (err)
 			continue;
-		}
+
 		struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
 		jtag_libusb_get_descriptor_string(devh, udev,
 				&pdescp_Manufacturer,
 				&pdescp_Product,
 				&descp_bcdDevice);
 
-		for( j = 0; j < MAX_WHITELIST; j++ ) {
+		/* Check whitelist for Andes  */
+		for (j = 0; j < MAX_WHITELIST; j++) {
 			if(desc.idVendor  == device_whitelist[j].vid &&
 			   desc.idProduct == device_whitelist[j].pid ) {
-				is_supported = 1;
 				break;
 			}
 		}
 
-		if ((ret_bnum != NULL && *ret_bnum == bnum) && \
-		    (ret_pnum != NULL && *ret_pnum == pnum) && \
-		    (ret_dnum != NULL && *ret_dnum == dnum)) {
-			return list_dev;
-		} else if( devnum == -1 && is_supported == 1 ) {
-			if( list_dev == 0 )
+		/* If not found supported device, cloase usb and continue */
+		if (j >= MAX_WHITELIST) {
+			libusb_close(devh);
+			continue;
+		}
+
+
+		/* Print the list if devnum not select */
+		if (devnum == (uint8_t)-1) {
+			if (list_dev == 0)
 				printf("\nList of Devices:\n");
 
-			//printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s %s\n",
-			//		list_dev, bnum, pnum, dnum,
-			//		desc.idVendor, desc.idProduct,
-			//		pdescp_Manufacturer, pdescp_Product);
 			printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s\n",
 					list_dev, bnum, pnum, dnum,
 					desc.idVendor, desc.idProduct,
 					device_whitelist[j].description);
-		} else if ( devnum == list_dev && is_supported == 1 ) {
-			*ret_bnum = bnum;
-			*ret_dnum = dnum;
-			*ret_pnum = pnum;
-			return 0;
-		}
+		} else if (devnum == list_dev)
+			return dnum;
 
-		if( is_supported == 1 )
-			list_dev++;
-
+		list_dev++;
 		libusb_close(devh);
 	}
 
 	libusb_free_device_list(list, 0);
-	return 0;
+
+	if (devnum != (uint8_t)-1)
+		printf("Error! Could found supported adapter!!\n");
+	return (uint8_t)-1; /* Not found the supported list*/
 }
 
