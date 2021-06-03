@@ -1126,7 +1126,7 @@ static void update_openocd_cfg_v5(void)
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 
-			if (dev_dnum != -1)
+			if (dev_dnum != (uint8_t)-1)
 				fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
 			continue;
 		}
@@ -1291,7 +1291,7 @@ static void update_openocd_cfg_vtarget(void)
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 
-			if (dev_dnum != -1)
+			if (dev_dnum != (uint8_t)-1)
 				fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
 			continue;
 		}
@@ -1429,7 +1429,7 @@ static void update_openocd_cfg(void)
 				if( strncmp(custom_interface, "jtagkey.cfg", 11) == 0 )
 					fprintf(openocd_cfg, "ftdi_layout_init 0x0b08 0x0f1b\n");
 
-				if (dev_dnum != -1)
+				if (dev_dnum != (uint8_t)-1)
 					fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
 
 				fprintf(openocd_cfg, "reset_config trst_only\n");
@@ -2545,6 +2545,6 @@ static uint8_t list_devices(uint8_t devnum)
 
 	if (devnum != (uint8_t)-1)
 		printf("Error! Could found supported adapter!!\n");
-	return -1; /* Not found the supported list*/
+	return (uint8_t)-1; /* Not found the supported list*/
 }
 
