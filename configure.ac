@@ -1,4 +1,4 @@
-AC_INIT([openocd_adapter], [1.0], [hkwang@andestech.com])
+AC_INIT([openocd_adapter], [5.0.0])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall])
 AC_LANG_C
@@ -60,20 +60,17 @@ case `uname` in
 		;;
 esac
 
-case `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d' | sed 's/(//g'` in 
-   *detached*)
-		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`])
-        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`
-		;;
-   *HEAD*)
-		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 5 | sed 's/)//g'`])
-        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 5 | sed 's/)//g'`
-		;;
-   *)
-		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`])
-        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`
-		;;
-esac
+
+#case `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d' | sed 's/(//g'` in 
+#   *detached*)
+#		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`])
+#        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 3 | sed -n '2p' | sed 's/(//g'`
+#		;;
+#   *)
+#		AC_SUBST([BRANCH_NAME], [`cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`])
+#        echo `cd ${srcdir} ; git branch | cut -d ' ' -f 2 | sed '/^$/d'`
+#		;;
+#esac
 
 AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
 AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
@@ -86,8 +83,8 @@ AC_MSG_NOTICE([PKG_CONFIG_LIBDIR = $PKG_CONFIG_LIBDIR])
 AC_MSG_NOTICE([PKG_CONFIG_PATH   = $PKG_CONFIG_PATH])
 
 # Define variables
-AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
-AC_SUBST([COMMIT_ID], [`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`])
+#AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
+#AC_SUBST([COMMIT_ID], [`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`])
 
 AC_CONFIG_FILES([Makefile aice_adapter/Makefile iceman_adapter/Makefile])
 AC_OUTPUT

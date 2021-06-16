@@ -26,11 +26,12 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
-#define ICEMAN_VERSION     "v5.0.0"
 #define NDS32_USER_CFG     "nds32_user.cfg"
 //#define FILENAME_USER_TARGET_CFG  "./target/user_target_cfg_table.txt"
 #define FILENAME_TARGET_CFG_TPL     "./target/nds32_target_cfg.tpl"
 #define FILENAME_TARGET_CFG_OUT     "./target/nds32_target_cfg.out"
+#define ICEMAN_VERSION \
+	"Andes ICEman (OpenOCD) " VERSION RELSTR " (" PKGBLDDATE ")"
 
 #define MAX_LEN_ACECONF_NAME 2048
 #define TOSTR(x)	#x
@@ -257,7 +258,6 @@ extern int nds32_registry_portnum_without_bind(int port_num);
 extern int nds32_registry_portnum(int port_num);
 static void parse_edm_operation(const char *edm_operation);
 //extern int force_turnon_V3_EDM;
-//extern char *BRANCH_NAME, *COMMIT_ID;
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 static const char *workspace_folder = NULL;
@@ -290,14 +290,12 @@ static uint8_t dev_dnum = -1;
 static int vtarget_xlen;
 static int vtarget_enable = 0;
 
+extern char *OPENOCD_VERSION_STR; ///< define in openocd.c
 static void show_version(void) {
-	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
-	printf("Copyright (C) 2007-2020 Andes Technology Corporation\n");
-}
-
-static void show_srccode_ver(void) {
-	printf("Branch: %s\n", BRANCH_NAME);
-	printf("Commit: %s\n", COMMIT_ID);
+	/* printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", VERSION, PKGBLDDATE); */
+	printf("%s\n", ICEMAN_VERSION);
+	printf("Copyright (C) 2007-2021 Andes Technology Corporation\n");
+	printf("%s\n", OPENOCD_VERSION_STR);
 }
 
 static void show_usage(void) {
@@ -739,9 +737,6 @@ static int parse_param(int a_argc, char **a_argv) {
 				memcpy(memory_resume_sequence, "resume-seq ", 11);
 				memcpy(memory_resume_sequence + 11, optarg, optarg_len + 1);
 				break;
-			case 's': /* source */
-				show_srccode_ver();
-				exit(0);
 			case 'S':
 				optarg_len = strlen(optarg);
 				memory_stop_sequence = malloc(optarg_len + 1 + 9);  /* +9 for stop-seq */
@@ -754,6 +749,7 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 'T':
 				boot_time = strtol(optarg, NULL, 0);
 				break;
+			case 's': /* source */
 			case 'v':
 					show_version();
 					exit(0);
@@ -1178,7 +1174,7 @@ static void update_openocd_cfg_v5(void)
 	}
 
 	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
-	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
+	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
 	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
 	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
@@ -1336,7 +1332,7 @@ static void update_openocd_cfg_vtarget(void)
 	}
 
 	// fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
-	// fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
+	// fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
 	// fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
 	// fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
 	// fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
@@ -1497,7 +1493,7 @@ static void update_interface_cfg(void)
 	/* update nds32-aice.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, interface_cfg_tpl) != NULL)
 		fputs(line_buffer, interface_cfg);
-	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
+	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
 	if (diagnosis)
 		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
 	
@@ -2037,7 +2033,8 @@ int main(int argc, char **argv) {
 		printf("tcl port num error\n");
 		return 0;
 	}
-	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
+	/* printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", VERSION, PKGBLDDATE); */
+	printf("%s\n", ICEMAN_VERSION);
 	printf("Burner listens on %d\n", burner_port);
 	printf("Telnet port: %d\n", telnet_port);
 	printf("TCL port: %d\n", tcl_port);

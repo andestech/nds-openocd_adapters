@@ -151,9 +151,13 @@ else
 ICEman_CFLAGS +=
 endif
 
-ICEman_CFLAGS += -DBUILD_ID=\"$(BUILD_ID)\" \
-	-DBRANCH_NAME=\"$(BRANCH_NAME)\" \
-	-DCOMMIT_ID=\"$(COMMIT_ID)\"
+#ICEman_CFLAGS += -DBUILD_ID=\"$(BUILD_ID)\" \
+#	-DBRANCH_NAME=\"$(BRANCH_NAME)\" \
+#	-DCOMMIT_ID=\"$(COMMIT_ID)\"
+
+ICEman_CFLAGS += -DRELSTR=\"`$(top_srcdir)/guess-rev.sh $(top_srcdir)`\"
+ICEman_CFLAGS += -DPKGBLDDATE=\"`date +%F-%R`\"
+
 
 #ICEman_LDFLAGS = -all-static
 #ICEman_LDFLAGS += ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
