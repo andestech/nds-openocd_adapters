@@ -6,6 +6,11 @@
 #include <string.h>
 #include <getopt.h>
 #include <signal.h>
+#include <ctype.h>
+#include "libusb10_common.h"
+#include <libgen.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifndef ERROR_OK
 #define ERROR_OK           (0)
@@ -21,8 +26,15 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
-#define ICEMAN_VERSION     "v3.4.1"
+#define ICEMAN_VERSION     "v4.6.1"
 #define NDS32_USER_CFG     "nds32_user.cfg"
+//#define FILENAME_USER_TARGET_CFG  "./target/user_target_cfg_table.txt"
+#define FILENAME_TARGET_CFG_TPL     "./target/nds32_target_cfg.tpl"
+#define FILENAME_TARGET_CFG_OUT     "./target/nds32_target_cfg.out"
+
+#define MAX_LEN_ACECONF_NAME 2048
+#define TOSTR(x)	#x
+#define XTOSTR(x)	TOSTR(x)
 
 #ifdef __GNUC__
 #  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
@@ -36,8 +48,37 @@
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
 
-const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHkK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
+#define LONGOPT_CP0                     7
+#define LONGOPT_CP1                     8
+#define LONGOPT_CP2                     9
+#define LONGOPT_CP3                     10
+#define LONGOPT_USE_SDM                 11
+#define LONGOPT_AICE_INIT               12
+#define LONGOPT_L2C                     13
+#define LONGOPT_DMI_DELAY               14
+#define LONGOPT_USER_TARGET_CFG         15
+#define LONGOPT_SMP                     16
+#define LONGOPT_HALT_ON_RESET           17
+#define LONGOPT_LIST_DEVICE             18
+#define LONGOPT_DEVICE                  19
+int long_opt_flag = 0;
+uint32_t cop_reg_nums[4] = {0,0,0,0};
+const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
+	{"cp0reg", required_argument, &long_opt_flag, LONGOPT_CP0},
+	{"cp1reg", required_argument, &long_opt_flag, LONGOPT_CP1},
+	{"cp2reg", required_argument, &long_opt_flag, LONGOPT_CP2},
+	{"cp3reg", required_argument, &long_opt_flag, LONGOPT_CP3},
+	{"use-sdm", no_argument, &long_opt_flag, LONGOPT_USE_SDM},
+	{"custom-aice-init", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
+	{"l2c", required_argument, &long_opt_flag, LONGOPT_L2C},
+	{"dmi_busy_delay_count", required_argument, &long_opt_flag, LONGOPT_DMI_DELAY},
+	{"target-cfg", required_argument, &long_opt_flag, LONGOPT_USER_TARGET_CFG},
+	{"smp", no_argument, &long_opt_flag, LONGOPT_SMP},
+	{"halt-on-reset", required_argument, &long_opt_flag, LONGOPT_HALT_ON_RESET},
+	{"list-device", no_argument, &long_opt_flag, LONGOPT_LIST_DEVICE},
+	{"device", required_argument, &long_opt_flag, LONGOPT_DEVICE},
+
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-crst-detect", no_argument, 0, 'A'},
 	{"bport", required_argument, 0, 'b'},
@@ -54,13 +95,14 @@ struct option long_option[] = {
 	{"enable-global-stop", no_argument, 0, 'G'},
 	{"help", no_argument, 0, 'h'},
 	{"reset-hold", no_argument, 0, 'H'},
+	{"interface", required_argument, 0, 'I'},
 	//{"enable-virtual-hosting", no_argument, 0, 'j'},
 	//{"disable-virtual-hosting", no_argument, 0, 'J'},
 	{"word-access-mem", no_argument, 0, 'k'},
 	{"soft-reset-hold", optional_argument, 0, 'K'},
 	{"custom-srst", required_argument, 0, 'l'},
 	{"custom-trst", required_argument, 0, 'L'},
-    {"edm-dimb", required_argument, 0, 'M'},
+	{"edm-dimb", required_argument, 0, 'M'},
 	{"custom-restart", required_argument, 0, 'N'},
 	{"reset-time", required_argument, 0, 'o'},
 	{"edm-port-operation", required_argument, 0, 'O'},
@@ -102,10 +144,31 @@ const char *aice_clk_string[] = {
 	""
 };
 */
+const char *v5_clk_string[] = { 
+	"30 MHz",
+	"15 MHz",
+	"7.5 MHz",
+	"3.75 MHz",
+	"1.875 MHz",
+	"909.091 KHz",
+	"461.538 KHz",
+	"232.558 KHz",
+	"10 MHz",
+	"10 MHz",
+	"10 MHz",
+	"6 MHz",
+	"3 MHz",
+	"1.5 MHz",
+	"750 KHz",
+	"375 KHz",
+	""
+};
+
 enum TARGET_TYPE {
 	TARGET_V2 = 0,
 	TARGET_V3,
 	TARGET_V3m,
+	TARGET_V5,
 	TARGET_INVALID,
 };
 
@@ -121,6 +184,21 @@ struct EDM_OPERATIONS {
 	int data;
 };
 
+struct device_info {
+	int vid;
+	int pid;
+	char* description;
+};
+
+#define MAX_WHITELIST          5
+const struct device_info device_whitelist[] = {
+	{ .vid = 0x0403, .pid = 0x6010, .description = "AndeShape AICE-MICRO / FTDI USB device" },
+	{ .vid = 0x15ba, .pid = 0x002a, .description = "Olimex ARM-USB-TINY-H" },
+	{ .vid = 0x1cfc, .pid = 0x0000, .description = "AndeShape AICE/AICE-MCU/AICE-MINI/AICE2" },
+	{ .vid = 0x1cfc, .pid = 0x0001, .description = "AndeShape AICE-MINI+" },
+	{ .vid = 0x28e9, .pid = 0x058f, .description = "GigaDevice GD32" },
+};
+
 #define MAX_MEM_OPERATIONS_NUM 32
 
 struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
@@ -130,7 +208,7 @@ int resume_sequences_num = 0;
 
 extern struct EDM_OPERATIONS nds32_edm_ops[];
 extern uint32_t nds32_edm_ops_num;
-
+extern uint32_t nds_skip_dmi;
 
 static char *memory_stop_sequence = NULL;
 static char *memory_resume_sequence = NULL;
@@ -139,7 +217,7 @@ static const char *edm_port_op_file = NULL;
 static int aice_retry_time = 2;//50;
 static int aice_no_crst_detect = 0;
 static int clock_setting = 16;
-static int debug_level = 3;
+static int debug_level = 2;
 static int boot_code_debug;
 static int gdb_port[AICE_MAX_NUM_PORTS];
 static char *gdb_port_str = NULL;
@@ -160,6 +238,7 @@ static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_V3};
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
 static const char *custom_restart_script = NULL;
+static const char *custom_initial_script = NULL;
 static const char *aceconf_desc_list = NULL;
 static int diagnosis = 0;
 static int diagnosis_memory = 0;
@@ -174,13 +253,35 @@ static void parse_edm_operation(const char *edm_operation);
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
 static const char *log_output = NULL;
+static const char *log_folder = NULL;
+static const char *bin_folder = NULL;
+static const char *custom_interface = NULL;
+static const char *custom_target_cfg = NULL;
+static unsigned int efreq_range = 0;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
+static unsigned int use_sdm = 0;
+static unsigned int use_smp = 0;
+static unsigned int usd_halt_on_reset = 0;
+
+#define L2C_BASE (0x90F00000u)
+static unsigned int l2c_base = L2C_BASE;
+static unsigned int dmi_busy_delay_count = 0;
+static unsigned int nds_v3_ftdi = 0;
+extern unsigned int nds_mixed_mode_checking;
+
+int nds_target_cfg_checkif_transfer(const char *p_user);
+int nds_target_cfg_transfer(const char *p_user);
+int nds_target_cfg_merge(const char *p_tpl, const char *p_out);
+
+static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t *ret_pnum, uint8_t *ret_dnum);
+static int list_device = 0;
+static ssize_t devnum = -1;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
-	printf("Copyright (C) 2007-2017 Andes Technology Corporation\n");
+	printf("Copyright (C) 2007-2020 Andes Technology Corporation\n");
 }
 
 static void show_srccode_ver(void) {
@@ -191,23 +292,48 @@ static void show_srccode_ver(void) {
 static void show_usage(void) {
 	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
-	printf("-a, --reset-aice:\tReset AICE as ICEman startup\n");
+	printf("-a, --reset-aice (For AICE only):\tReset AICE as ICEman startup\n");
 	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
 	//printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
-	printf("-c, --clock:\t\tSpecify JTAG clock setting\n");
+
+	// V3
+	printf("-c, --clock (For V3):\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
 	for (i=0; i<=15; i++)
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
-
 	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
 	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
-	printf("-C, --check-times:\tCount/Second to check DBGER\n");
+	printf("\t\t\tAICE-2 supports extended TCK frequency range\n");
+	printf("\t\t\t\tUsage: -c <clock range>Hz/KHz/MHz\n");
+
+	// V5
+	printf("-c, --clock (For V5):\t\tSpecify JTAG clock setting\n");
+	printf("\t\tUsage: -c num\n");
+	printf("\t\t\tnum should be the following:\n");
+	for (i=0; i<=15; i++) {
+		if( (i==8) || (i==9) )
+			continue;
+
+		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
+	}
+	printf("\n");
+	printf("\t\t\tFTDI-based Adapter (AICE-MICRO) and AICE-MINI+ support extended TCK frequency range.\n");
+	printf("\t\t\tThe TCK frequency of AICE-MICRO ranges from 1KHz to 10MHz and that of AICE-MINI+ ranges from 1KHz to 5.6MHz.\n");
+	printf("\t\t\t\tUsage: -c <clock range>KHz/MHz\n");
+
+
+	printf("-C, --check-times (For V3):\tCount/Second to check DBGER\n");
 	printf("\t\t\t(default: 500 times)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 times\n");
+	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
+	printf("-C, --check-times (For V5):\tSecond to check DTM\n");
+	printf("\t\t\t(default: 3 seconds)\n");
+	printf("\t\tExample:\n");
+	printf("\t\t\t1. -C 100 to check 100 millisecond\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
 	//printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
 	printf("-D, --larger-logfile:\tThe maximum size of the log file is 1MBx2. The size is increased to 512MBx2 with this option.\n");
@@ -219,16 +345,17 @@ static void show_usage(void) {
 	printf("\t\t\twrite_edm 6:0x1111;\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
 	//printf("-g, --force-debug: \n");
-	printf("-G, --enable-global-stop: Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
+	printf("-G, --enable-global-stop (Only for V3): Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
 	printf("-h, --help:\t\tThe usage is for ICEman\n");
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
 	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
 	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
-	printf("-k, --word-access-mem:\tAlways use word-aligned address to access device\n");
-	printf("-K, --soft-reset-hold:\tUse soft reset-and-hold\n");
+	printf("-I, --interface:\tSpecify an interface config file in ice/interface.\n");
+	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
+	printf("-K, --soft-reset-hold (Only for V3):\tUse soft reset-and-hold\n");
 	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
 	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
-	printf("-M, --edm-dimb:\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
+	printf("-M, --edm-dimb (Only for V3):\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
 	printf("\t\t\t(default: 0xFFFF0000)\n");
 	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
 	//printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
@@ -239,7 +366,7 @@ static void show_usage(void) {
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
 	printf("-p, --port:\t\tSocket port number for gdb connection\n");
 	printf("-P, --passcode (Only for Secure MPU):\t\tPASSCODE of secure MPU\n");
-	printf("-r, --ice-retry:\tRetry count when AICE command timeout\n");
+	printf("-r, --ice-retry (Only for V3):\tRetry count when AICE command timeout\n");
 	printf("\t\t\t(default: 50 times)\n");
 	printf("-s, --source:\t\tShow commit ID of this version\n");
 	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
@@ -261,26 +388,103 @@ static void show_usage(void) {
 	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
-	printf("-y, --idlm-base:\t\tDefine ILM&DLM base and size\n");
-	printf("-z, --ace-conf :\t\tSpecify ACE file on each core\n");
+	printf("-y, --idlm-base (Only for V3):\t\tDefine ILM&DLM base and size\n");
+	printf("-z, --ace-conf:\t\tSpecify ACE file on each core\n");
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
-	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m)\n");
+	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
+	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
+	//printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
+	printf("--use-sdm (Only for V3):Use System Debug Module\n");
+	printf("--l2c:<Address>:\tIndicate the base address of L2C\n");
+	printf("--target-cfg:\t\tSpecify the CPU configuration file for a complex multicore system\n");
+	printf("--smp:\t\t\tEnable SMP mode for multi-cores\n");
+	printf("--halt-on-reset (Only for V5):\t\tEnable/Disable halt-on-reset functionality\n");
+	printf("--list-device: \t\tList all connected device\n");
+	printf("--device <device-id>:\tConnect selected device directly\n");
+	//printf("--custom-aice-init (Only for V3):\t\tUse custom script to do aice-initialization\n");
+}
+
+char output_path[LINE_BUFFER_SIZE];
+static char* as_filepath(const char* cfg_name)
+{
+	memset(output_path, 0, sizeof(char)*LINE_BUFFER_SIZE);
+
+	if(log_folder) {
+		strncpy(output_path, log_folder, strlen(log_folder));
+		strcat(output_path, "/");
+		strcat(output_path, cfg_name);
+	} else {
+		strncpy(output_path, cfg_name, strlen(cfg_name));
+	}
+
+#if _DEBUG_
+	printf("as_filepath: %s\n", output_path);
+#endif
+	return &output_path;
+}
+
+void removeChar(char *str, char garbage)
+{
+	char *src, *dst;
+	for (src = dst = str; *src != '\0'; src++) {
+		*dst = *src;
+		if (*dst != garbage) dst++;
+	}
+	*dst = '\0';
 }
 
 static int parse_param(int a_argc, char **a_argv) {
 	while(1) {
 		int c = 0;
-		int option_index;
+		int option_index = 0;
 		int optarg_len;
 		char tmpchar = 0;
+		int long_opt = 0;
+		uint32_t cop_nums = 0;
+		char tmpstr[10] = {0};
 		//uint32_t ms_check_dbger = 0;
+		unsigned int i;
+		int status;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
+
 		if (c == EOF)
 			break;
 
 		switch (c) {
+			case 0:
+				long_opt = *long_option[option_index].flag;
+				//printf("option %s,", long_option[option_index].name);
+				if ((long_opt >= LONGOPT_CP0) &&
+					(long_opt <= LONGOPT_CP3)) {
+						cop_nums = strtol(optarg, NULL, 0);
+						if (cop_nums > 4096) {
+							printf("cop_nums max is 4096 \n");
+						} else {
+							cop_reg_nums[long_opt - LONGOPT_CP0] = cop_nums;
+							printf("cop_reg_nums[%d]=%d \n", long_opt - LONGOPT_CP0, cop_reg_nums[long_opt - LONGOPT_CP0]);
+						}
+				} else if (long_opt == LONGOPT_USE_SDM) {
+					use_sdm = 1;
+				} else if (long_opt == LONGOPT_AICE_INIT) {
+					custom_initial_script = optarg;
+				} else if (long_opt == LONGOPT_L2C) {
+					sscanf(optarg, "0x%x", &l2c_base);
+				} else if (long_opt == LONGOPT_DMI_DELAY) {
+					sscanf(optarg, "%d", &dmi_busy_delay_count);
+				} else if (long_opt == LONGOPT_USER_TARGET_CFG) {
+					custom_target_cfg = optarg;
+				} else if (long_opt == LONGOPT_SMP) {
+					use_smp = 1;
+				} else if (long_opt == LONGOPT_HALT_ON_RESET) {
+					usd_halt_on_reset = strtol(optarg, NULL, 0);
+				} else if (long_opt == LONGOPT_LIST_DEVICE) {
+					list_device = 1;
+				} else if (long_opt == LONGOPT_DEVICE) {
+					sscanf(optarg, "%d", &devnum);
+				}
+				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
 				break;
@@ -294,12 +498,36 @@ static int parse_param(int a_argc, char **a_argv) {
 				boot_code_debug = 1;
 				break;
 			case 'c':
+				sscanf(optarg, "%u%s", &efreq_range, (char *)&tmpstr[0]);
+				if( strlen(tmpstr) != 0 ) {
+					for( i = 0; i < strlen(tmpstr); i++ )
+						tmpstr[i] = tolower(tmpstr[i]);
+
+					if( strncmp(tmpstr, "hz", 2)  == 0 )
+						;
+					else if( strncmp(tmpstr, "khz", 3) == 0 ) 
+						efreq_range *= 1000;
+					else if( strncmp(tmpstr, "mhz", 3) == 0 )
+						efreq_range *= 1000 * 1000;
+
+					if( efreq_range < 1 ||
+					    efreq_range > (48*1000*1000) ) {
+
+						printf("Unsupport efreq range!!\n");
+						return ERROR_FAIL;
+					}
+
+					break;
+				}
+
+				efreq_range = 0;
 				clock_setting = strtol(optarg, NULL, 0);
 				if ((clock_setting < 0) ||
-					(clock_setting > 15)) {
+				    (clock_setting > 15)   ) {
 					printf("-c %d is an invalid option, the valid range for '-c' is 0-15.\n", clock_setting);
 					return ERROR_FAIL;
 				}
+
 				break;
 			case 'C':
 				sscanf(optarg, "%u%c", &count_to_check_dbger, &tmpchar);
@@ -321,9 +549,32 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 'F':
 				edm_port_op_file = optarg;
 				break;
-            case 'f':
-                log_output = optarg;
-                break;
+			case 'f':
+				log_output = optarg;
+
+				// handle log folder path
+				log_folder = strdup(log_output);
+				dirname(log_folder);
+
+				if( log_folder[0] == '\"' )
+					removeChar(log_folder, '\"');
+
+				// handle ICEman bin folder path
+				bin_folder = strdup(a_argv[0]);
+				dirname(bin_folder);
+
+				if( bin_folder[0] == '\"' )
+					removeChar(bin_folder, '\"');
+
+			#if _DEBUG_
+				printf("[DEBUG] log_folder:%s\n", log_folder);
+				printf("[DEBUG] bin_folder:%s\n", bin_folder);
+			#endif
+
+				mkdir( as_filepath("board"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+				mkdir( as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+				mkdir( as_filepath("target"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+				break;
 			case 'g':
 				force_debug = 1;
 				break;
@@ -332,6 +583,9 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'H':
 				startup_reset_halt = 1;
+				break;
+			case 'I':
+				custom_interface = optarg;	
 				break;
 			case 'k':
 				word_access_mem = 1;
@@ -428,6 +682,8 @@ static int parse_param(int a_argc, char **a_argv) {
 					target_type[0] = TARGET_V3;
 				} else if (strncmp(optarg, "v3m", optarg_len) == 0) {
 					target_type[0] = TARGET_V3m;
+				} else if (strncmp(optarg, "v5", optarg_len) == 0) {
+					target_type[0] = TARGET_V5;
 				} else {
 					target_type[0] = TARGET_INVALID;
 				}
@@ -466,98 +722,154 @@ static char *clock_hz[] = {
 	"0",
 };
 
-static FILE *openocd_cfg_tpl;
-static FILE *openocd_cfg;
-static FILE *interface_cfg_tpl;
-static FILE *interface_cfg;
-static FILE *board_cfg_tpl;
-static FILE *board_cfg;
-static FILE *target_cfg_tpl;
+static char *clock_v5_hz[] = {
+	"30000",
+	"15000",
+	"7500",
+	"3750",
+	"1875",
+	"909",
+	"461",
+	"232",
+	"10000",
+	"10000",
+	"10000",
+	"6000",
+	"3000",
+	"1500",
+	"750",
+	"375",
+	"10000",	// Default
+};
+
+static FILE *openocd_cfg_tpl = NULL;
+static FILE *openocd_cfg = NULL;
+static FILE *interface_cfg_tpl = NULL;
+static FILE *interface_cfg = NULL;
+static FILE *board_cfg_tpl = NULL;
+static FILE *board_cfg = NULL;
+static FILE *target_cfg_tpl = NULL;
 static FILE *target_cfg[AICE_MAX_NUM_CORE];
-static FILE *openocd_cfg_usrdef;
+static FILE *openocd_cfg_usrdef = NULL;
 char target_cfg_name[64];
 char *target_cfg_name_str = (char *)&target_cfg_name[0];
+
 static void open_config_files(void) {
 	openocd_cfg_tpl = fopen("openocd.cfg.tpl", "r");
-	openocd_cfg = fopen("openocd.cfg", "w");
+	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w");
 	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
 		fprintf(stderr, "ERROR: No config file, openocd.cfg\n");
 		exit(-1);
 	}
 
-	interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
-	interface_cfg = fopen("interface/nds32-aice.cfg", "w");
-	if ((interface_cfg_tpl == NULL) || (interface_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No interface config file, nds32-aice.cfg\n");
-		exit(-1);
+	if (nds_v3_ftdi == 0) {
+		interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
+		interface_cfg = fopen( as_filepath("interface/nds32-aice.cfg"), "w");
+		if ((interface_cfg_tpl == NULL) || (interface_cfg == NULL)) {
+			fprintf(stderr, "ERROR: No interface config file, nds32-aice.cfg\n");
+			exit(-1);
+		}
 	}
-
 	board_cfg_tpl = fopen("board/nds32_xc5.cfg.tpl", "r");
-	board_cfg = fopen("board/nds32_xc5.cfg", "w");
+	board_cfg = fopen( as_filepath("board/nds32_xc5.cfg"), "w");
 	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
 		fprintf(stderr, "ERROR: No board config file, nds32_xc5.cfg\n");
 		exit(-1);
 	}
 
-	target_cfg_tpl = fopen("target/nds32.cfg.tpl", "r");
-
-	int coreid;
-	char *target_str = NULL;
-	char line_buffer[LINE_BUFFER_SIZE];
-
-	for (coreid = 0; coreid < 1; coreid++){
-		if (target_type[coreid] == TARGET_V3) {
-			target_str = "target/nds32v3_%d.cfg";
-		} else if (target_type[coreid] == TARGET_V2) {
-			target_str = "target/nds32v2_%d.cfg";
-		} else if (target_type[coreid] == TARGET_V3m) {
-			target_str = "target/nds32v3m_%d.cfg";
-		} else {
-			fprintf(stderr, "No target specified\n");
-			exit(0);
+	if (nds_v3_ftdi == 0) {
+		target_cfg_tpl = fopen("target/nds32.cfg.tpl", "r");
+		int coreid;
+		char *target_str = NULL;
+		char line_buffer[LINE_BUFFER_SIZE];
+		for (coreid = 0; coreid < 1; coreid++){
+			if (target_type[coreid] == TARGET_V3) {
+				target_str = "target/nds32v3_%d.cfg";
+			} else if (target_type[coreid] == TARGET_V2) {
+				target_str = "target/nds32v2_%d.cfg";
+			} else if (target_type[coreid] == TARGET_V3m) {
+				target_str = "target/nds32v3m_%d.cfg";
+			} else {
+				fprintf(stderr, "No target specified\n");
+				exit(0);
+			}
+			sprintf(target_cfg_name_str, target_str, coreid);
+			sprintf(line_buffer, target_str, coreid);
+			target_cfg[coreid] = fopen(as_filepath(line_buffer), "w");
 		}
-		sprintf(target_cfg_name_str, target_str, coreid);
-		sprintf(line_buffer, target_str, coreid);
-		target_cfg[coreid] = fopen(line_buffer, "w");
 	}
-	openocd_cfg_usrdef = fopen(NDS32_USER_CFG, "a");
+	openocd_cfg_usrdef = fopen(as_filepath(NDS32_USER_CFG), "a");
 }
 
 static void close_config_files(void) {
 	int coreid;
 
-	fclose(openocd_cfg_tpl);
-	fclose(openocd_cfg);
-	fclose(interface_cfg_tpl);
-	fclose(interface_cfg);
-	fclose(board_cfg_tpl);
-	fclose(board_cfg);
-	fclose(target_cfg_tpl);
-	for (coreid = 0; coreid < 1; coreid ++)
-		fclose(target_cfg[coreid]);
-	fclose(openocd_cfg_usrdef);
+	if (openocd_cfg_tpl != NULL)
+		fclose(openocd_cfg_tpl);
+
+	if(openocd_cfg != NULL)
+		fclose(openocd_cfg);
+
+	if(interface_cfg_tpl != NULL)
+		fclose(interface_cfg_tpl);
+
+	if(interface_cfg != NULL)
+		fclose(interface_cfg);
+
+	if(board_cfg_tpl != NULL)
+		fclose(board_cfg_tpl);
+
+	if(board_cfg != NULL)
+		fclose(board_cfg);
+
+	if(target_cfg_tpl != NULL)
+		fclose(target_cfg_tpl);
+
+	for (coreid = 0; coreid < 1; coreid ++) {
+		if(target_cfg[coreid] != NULL)
+			fclose(target_cfg[coreid]);
+	}
+
+	if(openocd_cfg_usrdef != NULL)
+		fclose(openocd_cfg_usrdef);
 }
 
 static void parse_mem_operation(const char *mem_operation) {
 	char *next_data;
 
 	if (strncmp(mem_operation, "stop-seq ", 9) == 0) {
-		stop_sequences[stop_sequences_num].address = strtoll(mem_operation+9, &next_data, 0);
-		stop_sequences[stop_sequences_num].data = strtoll(next_data+1, &next_data, 0);
-		if (*next_data == ':')
-			stop_sequences[stop_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
-		stop_sequences_num++;
-	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
-		resume_sequences[resume_sequences_num].address = strtoll(mem_operation+11, &next_data, 0);
-		if (*(next_data+1) == 'r')
-			resume_sequences[resume_sequences_num].restore = 1;
-		else {
-			resume_sequences[resume_sequences_num].restore = 0;
-			resume_sequences[resume_sequences_num].data = strtoll(next_data+1, &next_data, 0);
+		next_data = (char *)mem_operation + 9;
+		while(*next_data != 0x0) {
+			stop_sequences[stop_sequences_num].address = strtoll(next_data, &next_data, 0);
+			stop_sequences[stop_sequences_num].data = strtoll(next_data+1, &next_data, 0);
 			if (*next_data == ':')
-				resume_sequences[resume_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
+				stop_sequences[stop_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
+			stop_sequences_num++;
+			if (*next_data == ',')
+				next_data ++;
+			else
+				break;
 		}
-		resume_sequences_num++;
+	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
+		next_data = (char *)mem_operation + 11;
+		while(*next_data != 0x0) {
+			resume_sequences[resume_sequences_num].address = strtoll(next_data, &next_data, 0);
+			next_data ++;      // ":"
+			if (*next_data == 'r') {
+				next_data += 3;  // "rst"
+				resume_sequences[resume_sequences_num].restore = 1;
+			} else {
+				resume_sequences[resume_sequences_num].restore = 0;
+				resume_sequences[resume_sequences_num].data = strtoll(next_data, &next_data, 0);
+				if (*next_data == ':')
+					resume_sequences[resume_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
+			}
+			resume_sequences_num++;
+			if (*next_data == ',')
+				next_data ++;
+			else
+				break;
+		}
 	}
 }
 
@@ -652,30 +964,223 @@ static void update_gdb_port_num(void)
 	//printf("total_num_of_ports %x, gdb_port=%x\n", total_num_of_ports, gdb_port[0]);
 }
 
+static void update_debug_diag_v5(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
+	FILE *debug_diag_tcl = NULL;
+	FILE *debug_diag_tcl_new = NULL;
+
+	debug_diag_tcl = fopen("debug_diag.tcl", "r");
+	debug_diag_tcl_new = fopen( as_filepath("debug_diag_new.tcl"), "w" );
+	if (debug_diag_tcl == NULL) {
+		fprintf(stderr, "ERROR: No debug_diag file, debug_diag.tcl\n");
+		exit(-1);
+	}
+	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
+	if(log_folder) {
+		fprintf(debug_diag_tcl_new, "add_script_search_dir %s\n", log_folder);
+		fprintf(debug_diag_tcl_new, "add_script_search_dir %s\n", bin_folder);
+	}
+
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL) {
+		fputs(line_buffer, debug_diag_tcl_new);
+	}
+	fclose(debug_diag_tcl_new);
+	fclose(debug_diag_tcl);
+}
+
+static void update_openocd_cfg_v5(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
+	openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
+	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w" );
+	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
+		fprintf(stderr, "ERROR: No config file, openocd.cfg.v5\n");
+		exit(-1);
+	}
+	/* update openocd.cfg */
+	if( log_output == NULL )
+		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
+	else {
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", bin_folder);
+
+		memset(line_buffer, 0, LINE_BUFFER_SIZE);
+		strncpy(line_buffer, log_output, strlen(log_output));
+		strncat(line_buffer, "iceman_debug0.log", 17);
+		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+	}
+	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
+	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
+	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
+	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
+
+	if( (int)(efreq_range/1000) != 0 )
+		fprintf(openocd_cfg, "adapter_khz %d\n", (int)(efreq_range/1000));
+	else if(efreq_range != 0 )
+		fprintf(openocd_cfg, "adapter_khz 1\n");
+	else
+		fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
+	if( use_smp == 1 ) {
+		fprintf(openocd_cfg, "set _use_smp 1\n");
+	} else {
+		fprintf(openocd_cfg, "set _use_smp 0\n");
+	}
+
+	int replace_target_create = 0;
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
+		if( strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0 ) {	/// interface
+			if( custom_interface != NULL )
+				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
+			else
+				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
+
+			if( devnum != -1 ) {
+				uint8_t bnum = 0, pnum = 0, dnum = 0;
+				list_devices(-1, -1, &bnum, &pnum, &dnum);
+				//fprintf(openocd_cfg, "ftdi_location %u:%u\n", bnum, pnum);
+				fprintf(openocd_cfg, "ftdi_device_address %u\n", dnum);
+			}
+			continue;
+		}
+		if (custom_target_cfg) {
+			if( strncmp(line_buffer, "##--target-create-start", 23) == 0 ) {	/// replace target-create start
+					fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
+					replace_target_create = 1;
+					fputs(line_buffer, openocd_cfg);
+			} else if( strncmp(line_buffer, "##--target-create-finish", 24) == 0 ) {	/// replace target-create finish
+					custom_target_cfg = NULL;
+					replace_target_create = 0;
+			}
+			if (replace_target_create == 0) {
+				fputs(line_buffer, openocd_cfg);
+			}
+		} else {
+			fputs(line_buffer, openocd_cfg);
+		}
+	}
+
+	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
+	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
+	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
+	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
+	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
+	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
+	//if (diagnosis)
+	//	fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+	if (count_to_check_dbger)
+		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
+
+	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
+
+	if (startup_reset_halt == 1)
+		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
+
+	if (dmi_busy_delay_count != 0)
+		fprintf(openocd_cfg, "nds dmi_busy_delay_count %d\n", dmi_busy_delay_count);
+
+	if (custom_srst_script) {
+		fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
+	}
+	if (custom_trst_script) {
+		fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
+	}
+	if (custom_restart_script) {
+		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
+	}
+	if (custom_initial_script) {
+		fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
+	}
+
+	if( aice_no_crst_detect != 0 )
+		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
+
+  // Handle ACE option
+  // Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
+  //       the path of conf or library and write the path to openocd_cfg
+  if (aceconf_desc_list) {
+    const char *aceconf_desc;
+    unsigned int core_id =0, read_byte = 0;
+    char aceconf[MAX_LEN_ACECONF_NAME + 1];
+    int ret;
+
+    aceconf_desc = aceconf_desc_list;
+    while (1) {
+      aceconf[0] = '\0';
+			core_id = 0;
+			ret = 0;
+
+			ret = sscanf(aceconf_desc, "core%u=%" XTOSTR(MAX_LEN_ACECONF_NAME) "[^,]%n",
+                   &core_id, aceconf, &read_byte);
+      if (ret != 2) {
+        printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
+        break;
+      }
+          
+      // Output the path of conf or library to V5 conf
+      // e.g.,     nds ace aceconf_path /home/wuiw/openocd/r6/lib/libacedbg.so
+      //       or  nds ace aceconf_path /home/wuiw/openocd/r6/lib/ICEman.conf
+      // OpenOCD will parse this command in V5 conf to load the shared library
+      fprintf(openocd_cfg, "nds ace aceconf_path %s\n", aceconf);
+
+		  /* TODO: support multi core */
+			aceconf_desc += read_byte;	/* aceconf points to ',' or '\0' */
+      if (*aceconf_desc == '\0')
+        break;
+      else
+        aceconf_desc += 1;	/* point to the one next to ',' */
+    }
+  }
+}
+
 static void update_openocd_cfg(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
-	//while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL)
-	//	fputs(line_buffer, openocd_cfg);
+	if( log_output == NULL )
+		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
+	else {
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", log_folder);
+		fprintf(openocd_cfg, "add_script_search_dir %s\n", bin_folder);
 
+		memset(line_buffer, 0, LINE_BUFFER_SIZE);
+		strncpy(line_buffer, log_output, strlen(log_output));
+		strncat(line_buffer, "iceman_debug0.log", 17);
+		fprintf(openocd_cfg, "log_output %s\n", line_buffer);
+	}
+	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
-    if( log_output == NULL )
-    	fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
-    else {
-        memset(line_buffer, 0, LINE_BUFFER_SIZE);
-        strncpy(line_buffer, log_output, strlen(log_output));
-        strncat(line_buffer, "iceman_debug0.log", 17);
-    	fprintf(openocd_cfg, "log_output %s\n", line_buffer);
-    }
-	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
 
-	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
-	fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
+	//fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
+	//fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
+		if (nds_v3_ftdi == 1) {
+			if( strncmp(line_buffer, "source [find interface", 22) == 0 ) {
+				fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
+				fprintf(openocd_cfg, "adapter_nsrst_delay 500\n");
+				if( custom_interface != NULL )
+					fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
+				else
+					fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 
+				if( devnum != -1 ) {
+					uint8_t bnum = 0, pnum = 0, dnum = 0;
+					list_devices(-1, -1, &bnum, &pnum, &dnum);
+					//fprintf(openocd_cfg, "ftdi_location %u:%u\n", bnum, pnum);
+					fprintf(openocd_cfg, "ftdi_device_address %u\n", dnum);
+				}
+
+				fprintf(openocd_cfg, "reset_config trst_only\n");
+			} else {
+				fputs(line_buffer, openocd_cfg);
+			}
+		} else {
+			fputs(line_buffer, openocd_cfg);
+		}
+	}
 	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
 	if (custom_def_idlm_base)
 		fprintf(openocd_cfg, "nds idlm_base_size %d %d %d %d\n", ilm_base, ilm_size, dlm_base, dlm_size);
@@ -706,10 +1211,15 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
 	if (diagnosis)
 		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
-	fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
+	
+	if( efreq_range != 0 ) {
+		fprintf(interface_cfg, "aice efreq_hz %d\n", efreq_range);
+		fprintf(interface_cfg, "adapter_khz 0\n");
+	} else
+		fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
-	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
+	fprintf(interface_cfg, "aice port_config %d %d %s\n", burner_port, total_num_of_ports, as_filepath(target_cfg_name_str));
 
 	if (count_to_check_dbger)
 		fprintf(interface_cfg, "aice count_to_check_dbger %d %d\n", count_to_check_dbger, clock_setting);
@@ -726,6 +1236,9 @@ static void update_interface_cfg(void)
 	if (custom_restart_script) {
 		fprintf(interface_cfg, "aice custom_restart_script %s\n", custom_restart_script);
 	}
+	if (custom_initial_script) {
+		fprintf(interface_cfg, "aice custom_initial_script %s\n", custom_initial_script);
+	}
 	if (startup_reset_halt) {
 		if (soft_reset_halt)
 			fprintf(interface_cfg, "aice reset_halt_as_init %d\n", soft_reset_halt);
@@ -735,10 +1248,103 @@ static void update_interface_cfg(void)
 	if (reset_aice_as_startup) {
 		fprintf(interface_cfg, "aice reset_aice_as_startup\n");
 	}
-    if (edm_dimb != DIMBR_DEFAULT) {
-        fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
-    }
+	if (edm_dimb != DIMBR_DEFAULT) {
+		fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
+	}
+	if (l2c_base != L2C_BASE) {
+		fprintf(interface_cfg, "aice l2c_base 0x%x\n", l2c_base);
+	}
+	unsigned int i;
+
+	for (i=0; i<4; i++) {
+		if (cop_reg_nums[i] != 0) {
+			fprintf(interface_cfg, "aice misc_config cop %d %d 1\n", i, cop_reg_nums[i]);
+		}
+	}
+	if (use_sdm == 1) {
+		fprintf(interface_cfg, "aice sdm use_sdm\n");
+		//fprintf(interface_cfg, "aice misc_config usb_timeout 1000\n");
+	}
 	fputs("\n", interface_cfg);
+}
+
+static void update_ftdi_v3_board_cfg(void)
+{
+	if (diagnosis)
+		fprintf(board_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+
+	//fprintf(board_cfg, "nds retry_times %d\n", aice_retry_time);
+	fprintf(board_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
+	//fprintf(board_cfg, "nds port_config %d %d %s\n", burner_port, total_num_of_ports, target_cfg_name_str);
+
+	if (count_to_check_dbger)
+		fprintf(board_cfg, "nds runtest_num_clocks %d\n", count_to_check_dbger);
+	else
+		fprintf(board_cfg, "nds runtest_num_clocks 5\n");
+
+	fprintf(board_cfg, "nds ftdi_jtag_opt 0\n");
+	fprintf(board_cfg, "nds ftdi_log_detail 0\n");
+	/* custom srst/trst/restart scripts */
+	if (custom_srst_script) {
+		fprintf(board_cfg, "nds custom_srst_script %s\n", custom_srst_script);
+	}
+	if (custom_trst_script) {
+		fprintf(board_cfg, "nds custom_trst_script %s\n", custom_trst_script);
+	}
+	if (custom_restart_script) {
+		fprintf(board_cfg, "nds custom_restart_script %s\n", custom_restart_script);
+	}
+	if (custom_initial_script) {
+		fprintf(board_cfg, "nds custom_initial_script %s\n", custom_initial_script);
+	}
+
+	if (nds_mixed_mode_checking == 0x03) {
+		if (custom_srst_script) {
+			fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
+		}
+		if (custom_trst_script) {
+			fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
+		}
+		if (custom_restart_script) {
+			fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
+		}
+		if (custom_initial_script) {
+			fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
+		}
+		fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", ICEMAN_VERSION, BUILD_ID);
+	}
+
+	if (startup_reset_halt) {
+		if (soft_reset_halt)
+			fprintf(board_cfg, "nds reset_halt_as_init %d\n", soft_reset_halt);
+		else
+			fprintf(board_cfg, "nds reset_halt_as_init 1\n");
+	}
+	//if (reset_aice_as_startup) {
+	//	fprintf(board_cfg, "nds reset_aice_as_startup\n");
+	//}
+	if (edm_dimb != DIMBR_DEFAULT) {
+		fprintf(board_cfg, "nds edm_dimb 0x%x\n", edm_dimb);
+	}
+	if (l2c_base != L2C_BASE) {
+		fprintf(board_cfg, "nds l2c_base 0x%x\n", l2c_base);
+	}
+	unsigned int i;
+
+	for (i=0; i<4; i++) {
+		if (cop_reg_nums[i] != 0) {
+			fprintf(board_cfg, "nds misc_config cop %d %d 1\n", i, cop_reg_nums[i]);
+		}
+	}
+	if (use_sdm == 1) {
+		fprintf(board_cfg, "nds sdm use_sdm\n");
+	}
+
+	if (nds_mixed_mode_checking == 0x03) {
+		fprintf(board_cfg, "source [find dmi.tcl]\n");
+		fprintf(board_cfg, "source [find custom_lib.tcl]\n");
+	}
+	fputs("\n", board_cfg);
 }
 
 static void update_target_cfg(void)
@@ -763,9 +1369,6 @@ static void update_target_cfg(void)
 	}
 }
 
-#define MAX_LEN_ACECONF_NAME 2048
-#define TOSTR(x)	#x
-#define XTOSTR(x)	TOSTR(x)
 static void update_board_cfg(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
@@ -780,20 +1383,26 @@ static void update_board_cfg(void)
 	char *target_str = NULL;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
-			for (coreid = 0; coreid < 1; coreid++){
-				if(target_str)
-					fputs(line_buffer, board_cfg);
-				if (target_type[coreid] == TARGET_V3) {
-					target_str = "source [find target/nds32v3_%d.cfg]\n";
-				} else if (target_type[coreid] == TARGET_V2) {
-					target_str = "source [find target/nds32v2_%d.cfg]\n";
-				} else if (target_type[coreid] == TARGET_V3m) {
-					target_str = "source [find target/nds32v3m_%d.cfg]\n";
-				} else {
-					fprintf(stderr, "No target specified\n");
-					exit(0);
+			if (custom_target_cfg) {
+				sprintf(line_buffer, "source [find %s]\n", custom_target_cfg);
+			} else if (nds_v3_ftdi == 1) {
+				strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
+			} else {
+				for (coreid = 0; coreid < 1; coreid++){
+					if(target_str)
+						fputs(line_buffer, board_cfg);
+					if (target_type[coreid] == TARGET_V3) {
+						target_str = "source [find target/nds32v3_%d.cfg]\n";
+					} else if (target_type[coreid] == TARGET_V2) {
+						target_str = "source [find target/nds32v2_%d.cfg]\n";
+					} else if (target_type[coreid] == TARGET_V3m) {
+						target_str = "source [find target/nds32v3m_%d.cfg]\n";
+					} else {
+						fprintf(stderr, "No target specified\n");
+						exit(0);
+					}
+					sprintf(line_buffer, target_str, coreid);
 				}
-				sprintf(line_buffer, target_str, coreid);
 			}
 		} else if ((find_pos = strstr(line_buffer, "--soft-reset-halt")) != NULL) {
 			if (soft_reset_halt) {
@@ -825,6 +1434,10 @@ static void update_board_cfg(void)
 					else
 						aceconf_desc += 1;	/* point to the one next to ',' */
 				}
+			}
+		} else if ((find_pos = strstr(line_buffer, "jtag init")) != NULL) {
+			if (nds_v3_ftdi == 1) {
+				strcpy(line_buffer, "#jtag init\n");
 			}
 		}
 
@@ -876,6 +1489,7 @@ static void update_board_cfg(void)
 	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
 			fprintf(board_cfg, "nds32.cpu%d configure -event halted {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
 			for (i = 0 ; i < stop_sequences_num ; i++) {
 				int stop_addr, stop_mask, stop_data;
@@ -892,6 +1506,7 @@ static void update_board_cfg(void)
 		}
 		if (resume_sequences_num > 0) {
 			fprintf(board_cfg, "nds32.cpu%d configure -event resumed {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
 			for (i = 0 ; i < resume_sequences_num ; i++) {
 				int resume_addr, resume_mask, resume_data;
@@ -908,6 +1523,87 @@ static void update_board_cfg(void)
 				}
 			}
 			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
+		}
+	}
+}
+
+static void update_board_cfg_v5(void)
+{
+	char line_buffer[LINE_BUFFER_SIZE];
+	int coreid;
+	int i;
+
+	board_cfg_tpl = fopen("board/nds_v5.cfg.tpl", "r");
+	board_cfg = fopen( as_filepath("board/nds_v5.cfg"), "w");
+	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
+		fprintf(stderr, "ERROR: No board config file, nds_v5.cfg\n");
+		exit(-1);
+	}
+
+	/* update nds_v5.cfg */
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
+		fputs(line_buffer, board_cfg);
+	}
+	fputs("\n", board_cfg);
+
+	/* open sw-reset-seq.txt */
+	FILE *sw_reset_fd = NULL;
+	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
+	if (sw_reset_fd != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL) {
+			parse_mem_operation(line_buffer);
+		}
+		fclose(sw_reset_fd);
+	}
+	if (memory_stop_sequence) {
+		parse_mem_operation(memory_stop_sequence);
+	}
+	if (memory_resume_sequence) {
+		parse_mem_operation(memory_resume_sequence);
+	}
+
+	for (i = 0 ; i < stop_sequences_num ; i++) {
+		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
+	}
+
+	for (coreid = 0; coreid < 1; coreid++) {
+		if (stop_sequences_num > 0) {
+			fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			for (i = 0 ; i < stop_sequences_num ; i++) {
+				int stop_addr, stop_mask, stop_data;
+				stop_addr = stop_sequences[i].address;
+				stop_mask = stop_sequences[i].mask;
+				stop_data = stop_sequences[i].data;
+				fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_addr);
+				fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_addr, stop_addr);
+				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
+				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
+			}
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
+		}
+		if (resume_sequences_num > 0) {
+			fprintf(board_cfg, "nds_v5.cpu%d configure -event resume-start {\n", coreid);
+			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			for (i = 0 ; i < resume_sequences_num ; i++) {
+				int resume_addr, resume_mask, resume_data;
+				resume_addr = resume_sequences[i].address;
+				resume_mask = resume_sequences[i].mask;
+				resume_data = resume_sequences[i].data;
+				if (resume_sequences[i].restore) {
+					fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_addr);
+					fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_addr, resume_addr);
+				} else {
+					fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", resume_addr, resume_addr);
+					fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
+					fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
+				}
+			}
+			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
 			fputs("}\n", board_cfg);
 		}
 	}
@@ -933,7 +1629,6 @@ int main(int argc, char **argv) {
 
 	/* prepare all valid port num */
 	update_gdb_port_num();
-	open_config_files();
 
 	for(i = 0; i < total_num_of_ports; i++)
 	{
@@ -964,23 +1659,543 @@ int main(int argc, char **argv) {
 	printf("Telnet port: %d\n", telnet_port);
 	printf("TCL port: %d\n", tcl_port);
 
-	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
-	update_openocd_cfg();
-	update_interface_cfg();
-	update_target_cfg();
-	update_board_cfg();
+	if (custom_target_cfg) {
+		if ( (nds_target_cfg_checkif_transfer(custom_target_cfg) == 0) &&
+			   (nds_target_cfg_transfer(custom_target_cfg) == 0) ) {
+			nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
+			custom_target_cfg = FILENAME_TARGET_CFG_OUT;
+		}
+	}
 
+	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
+	if (target_type[0] == TARGET_V5) {
+		update_openocd_cfg_v5();
+		update_board_cfg_v5();
+	} else if ((custom_interface != NULL) || (nds_mixed_mode_checking == 0x03)) {
+		// && (target_type[0] != TARGET_V5)
+		nds_v3_ftdi = 1;
+		open_config_files();
+		update_openocd_cfg();       // source [find interface/
+		//update_interface_cfg();   // move aice monitor-cmd to target monitor-cmd (update_ftdi_v3_board_cfg)
+		//update_target_cfg();      // must be user-define
+		update_board_cfg();
+		update_ftdi_v3_board_cfg();
+	} else {
+		open_config_files();
+		update_openocd_cfg();
+		update_interface_cfg();
+		update_target_cfg();
+		update_board_cfg();
+	}
 	/* close config files */
 	close_config_files();
 
 	openocd_argv[0] = "openocd";
 	openocd_argv[1] = "-d-3";
+	if( log_folder ) {
+		char output_path[LINE_BUFFER_SIZE];
+		memset(output_path, 0, sizeof(char)*LINE_BUFFER_SIZE);
+		strncpy(output_path, log_folder, strlen(log_folder));
+		strcat(output_path, "/openocd.cfg");
+
+		openocd_argv[2] = "-f";
+		openocd_argv[3] = output_path;
+	}
 	//openocd_argv[2] = "-l";
 	//openocd_argv[3] = "iceman_debug.log";
 
 	/* reset "optind", for the next getopt_long() usage */
 	optind = 1;
-	openocd_main(2, openocd_argv);
+
+	if ((target_type[0] == TARGET_V5) && (diagnosis == 1)) {
+		update_debug_diag_v5();
+		nds_skip_dmi = 1;
+		openocd_argv[2] = "-f";
+		openocd_argv[3] = as_filepath("debug_diag_new.tcl");
+		openocd_main(4, openocd_argv);
+		return 0;
+	}
+
+	if( list_device ) {
+		devnum = -1;
+		list_devices(-1, -1, NULL, NULL, NULL);
+		return 0;
+	}
+
+	if( log_folder )
+		openocd_main(4, openocd_argv);
+	else
+		openocd_main(2, openocd_argv);
 	//printf("return from openocd_main WOW!\n");
 	return 0;
 }
+
+#define LINEBUF_SIZE      1024
+#define CHECK_INFO_NUMS   4
+#define CHECK_TARGET      "_target_"
+#define CHECK_IRLEN       "_irlen"
+#define CHECK_EXP_ID      "_expect_id"
+#define CHECK_GROUP       "group_"
+
+#define MAX_NUMS_TAP      32
+#define MAX_NUMS_TARGET   1024
+
+unsigned int number_of_tap = 0;
+unsigned int number_of_target = 0;
+
+// TAP_ARCH: 1->v3, 2->v5, 3->v3_sdm, 4->others
+#define TAP_ARCH_V3       1  //"v3"
+#define TAP_ARCH_V5       2  //"v5"
+#define TAP_ARCH_V3_SDM   3  //"v3_sdm"
+#define TAP_ARCH_UNKNOWN  4
+
+unsigned int tap_irlen[MAX_NUMS_TAP];
+unsigned int tap_expect_id[MAX_NUMS_TAP];
+unsigned int tap_arch_list[MAX_NUMS_TAP];
+unsigned int target_arch_list[MAX_NUMS_TAP][MAX_NUMS_TARGET];
+unsigned int target_core_nums[MAX_NUMS_TAP][MAX_NUMS_TARGET];
+unsigned int target_core_group[MAX_NUMS_TAP][MAX_NUMS_TARGET];
+
+unsigned int target_arch_id[MAX_NUMS_TARGET];
+unsigned int target_core_id[MAX_NUMS_TARGET];
+unsigned int target_tap_position[MAX_NUMS_TARGET];
+unsigned int target_smp_list[MAX_NUMS_TARGET];
+unsigned int target_smp_core_nums[MAX_NUMS_TARGET];
+unsigned int target_group[MAX_NUMS_TARGET];
+
+char *gpCheckInfo[CHECK_INFO_NUMS] = {
+	CHECK_TARGET,
+	CHECK_IRLEN,
+	CHECK_EXP_ID,
+	CHECK_GROUP,
+};
+
+int nds_target_cfg_checkif_transfer(const char *p_user) {
+	FILE *fp_user = NULL;
+	char line_buf[LINEBUF_SIZE];
+	char *pline_buf = (char *)&line_buf[0];
+	char *cur_str;
+	unsigned int i;
+
+	fp_user = fopen(p_user, "r");
+	if (fp_user == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_user);
+		return -1;
+	}
+	// parsing the first line of the file
+	for (i = 0; i < 5; i++) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL) {
+			break;
+		}
+		// parsing the keyword "_target_"
+		cur_str = strstr(pline_buf, CHECK_TARGET);
+		if (cur_str != NULL) {
+			fclose(fp_user);
+			return 0;
+		}
+	}
+	fclose(fp_user);
+	return -1;
+}
+
+int nds_target_cfg_transfer(const char *p_user) {
+	FILE *fp_user = NULL;
+	char line_buf[LINEBUF_SIZE], tmp_buf[256];
+	char *pline_buf = (char *)&line_buf[0];
+	char *cur_str, *tmp_str;
+	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id, group_id=0;
+
+	fp_user = fopen(p_user, "r");
+	if (fp_user == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_user);
+		return -1;
+	}
+
+	for (i = 0; i < MAX_NUMS_TAP; i++) {
+		tap_irlen[i] = 0;
+		tap_expect_id[i] = 0;
+		tap_arch_list[i] = 0;
+		for (j = 0; j < MAX_NUMS_TARGET; j++) {
+			target_arch_list[i][j] = 0;
+			target_core_nums[i][j] = 0;
+			target_core_group[i][j] = 0;
+		}
+	}
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		target_arch_id[i] = 0;
+		target_core_id[i] = 0;
+		target_tap_position[i] = 0;
+		target_smp_list[i] = 0;
+		target_smp_core_nums[i] = 0;
+	}
+
+	while(1) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL) {
+			break;
+		}
+		//printf("%s \n", pline_buf);
+		for (i = 0; i < CHECK_INFO_NUMS; i++) {
+			cur_str = strstr(pline_buf, gpCheckInfo[i]);
+			if (cur_str != NULL) {
+				tmp_str = strstr(pline_buf, "#");
+				if (tmp_str != NULL)
+					break;
+				cur_str = strstr(pline_buf, "tap");
+				if (cur_str == NULL && i != 3)
+					break;
+
+				if (i == 1) {
+					// tap0_irlen 4
+					sscanf(cur_str, "tap%d_irlen %d", &tap_id, &irlen);
+					//printf("tap_id:%d, irlen:%d\n", tap_id, irlen);
+					if (tap_id >= MAX_NUMS_TAP) {
+						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
+						fclose(fp_user);
+						return -1;
+					}
+					tap_irlen[tap_id] = irlen;
+					break;
+				} else if (i == 2) {
+					// tap0_expect_id 0x1000063D
+					sscanf(cur_str, "tap%d_expect_id 0x%x", &tap_id, &exp_id);
+					//printf("tap_id:%d, exp_id:0x%x\n", tap_id, exp_id);
+					if (tap_id >= MAX_NUMS_TAP) {
+						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
+						fclose(fp_user);
+						return -1;
+					}
+					tap_expect_id[tap_id] = exp_id;
+					break;
+				} else if (i == 3) {
+					// group_1
+					sscanf(pline_buf, "group_%d", &group_id);
+					break;
+				}
+
+				// tap2_target_0   v5  1
+				sscanf(cur_str, "tap%d_target_%d %s %d", &tap_id, &target_id, &tmp_buf[0], &core_nums);
+
+				if( group_id != 0 ) {
+					//printf("DEBUG!!! tap %d, target %d, group %d\n", tap_id, target_id, group_id);
+					target_core_group[tap_id][target_id] = group_id;
+					break;
+				}
+
+
+				arch_id = TAP_ARCH_UNKNOWN;
+				cur_str = strstr(&tmp_buf[0], "v5");
+				if (cur_str != NULL)
+					arch_id = TAP_ARCH_V5;
+				else {
+					cur_str = strstr(&tmp_buf[0], "v3_sdm");
+					if (cur_str != NULL)
+						arch_id = TAP_ARCH_V3_SDM;
+					else {
+						cur_str = strstr(&tmp_buf[0], "v3");
+						if (cur_str != NULL)
+							arch_id = TAP_ARCH_V3;
+					}
+				}
+				if (tap_id >= MAX_NUMS_TAP) {
+					printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+				if (target_id >= MAX_NUMS_TARGET) {
+					printf("ERROR!! target_id > MAX_NUMS_TARGET !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+				if (arch_id == TAP_ARCH_UNKNOWN) {
+					printf("ERROR!! unknown arch !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+
+				tap_arch_list[tap_id] = arch_id;
+				//printf("tap_id:%d, target_id:%d arch:%d core_nums:%d\n", tap_id, target_id, arch_id, core_nums);
+				target_arch_list[tap_id][target_id] = arch_id;
+				target_core_nums[tap_id][target_id] = core_nums;
+				break;
+			}
+		}
+	}
+
+	for (i = 0; i < MAX_NUMS_TAP; i++) {
+		arch_id = target_arch_list[i][0];
+		if (arch_id == 0)
+			break;
+		core_nums = 0;
+		for (j = 0; j < MAX_NUMS_TARGET; j++) {
+			if (target_arch_list[i][j] == 0)
+				break;
+			if (target_arch_list[i][j] != arch_id) {
+				printf("ERROR!! There are different arch in the same tap !!\n");
+				fclose(fp_user);
+				return -1;
+			}
+			//printf("target_arch_list: %d\n", target_arch_list[i][j]);
+			//printf("target_core_nums: %d\n", target_core_nums[i][j]);
+			if ( target_core_nums[i][j] > 1 ) {
+				if (j != 0) {
+					printf("ERROR!! smp must be target_0 !!\n");
+					fclose(fp_user);
+					return -1;
+				}
+				target_smp_list[number_of_target] = 1;
+				target_smp_core_nums[number_of_target] = target_core_nums[i][j];
+			}
+			target_arch_id[number_of_target] = target_arch_list[i][j];
+			target_tap_position[number_of_target] = i;
+			target_core_id[number_of_target] = core_nums;
+			core_nums += target_core_nums[i][j];
+
+			target_group[number_of_target] = target_core_group[i][j]; 
+
+			number_of_target++;
+		}
+		number_of_tap ++;
+	}
+	if (number_of_target) {
+		if (target_arch_id[0] == TAP_ARCH_V5)
+			target_type[0] = TARGET_V5;
+		else
+			target_type[0] = TARGET_V3;
+
+		// V3 & V5 mixed-mode checking
+		for (i = 0; i < number_of_target; i++) {
+			if (target_arch_id[i] == TAP_ARCH_V5)
+				nds_mixed_mode_checking |= 0x02;
+			else if (target_arch_id[i] == TAP_ARCH_V3)
+				nds_mixed_mode_checking |= 0x01;
+			else if (target_arch_id[i] == TAP_ARCH_V3_SDM)
+				nds_mixed_mode_checking |= 0x01;
+		}
+	}
+
+/*
+	printf("number_of_tap: %d\n", number_of_tap);
+	printf("number_of_target: %d\n", number_of_target);
+
+	printf("\n target_arch_id:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_arch_id[i]);
+	}
+	printf("\n target_core_id:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_core_id[i]);
+	}
+	printf("\n target_tap_position:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_tap_position[i]);
+	}
+	printf("\n target_smp_list:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_smp_list[i]);
+	}
+	printf("\n target_smp_core_nums:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_smp_core_nums[i]);
+	}
+	printf("\n target_group:");
+	for (i = 0; i < MAX_NUMS_TARGET; i++) {
+		printf(" %d", target_group[i]);
+	}
+*/
+
+	fclose(fp_user);
+	return 0;
+}
+
+#define CHECK_TPL_INFO_NUMS   11
+#define CHECK_TPL_TAP_ARCH        "set tap_arch_list"
+#define CHECK_TPL_TAP_IRLEN       "set tap_irlen"
+#define CHECK_TPL_TAP_EXP_ID      "set tap_expected_id"
+
+#define CHECK_TPL_TARGET_ARCH     "set target_arch_list"
+#define CHECK_TPL_TARGET_CORE_ID  "set target_core_id"
+#define CHECK_TPL_TARGET_TAP_POS  "set target_tap_position"
+#define CHECK_TPL_TARGET_SMP      "set target_smp_list"
+#define CHECK_TPL_SMP_CORE_NUMS   "set target_smp_core_nums"
+
+#define CHECK_TPL_MAX_TAP         "set max_of_tap"
+#define CHECK_TPL_MAX_TARGET      "set max_of_target"
+
+#define CHECK_TPL_TARGET_GROUP    "set target_group"
+
+
+char *gpCheckTplFileInfo[CHECK_TPL_INFO_NUMS] = {
+	CHECK_TPL_TAP_ARCH,
+	CHECK_TPL_TAP_IRLEN,
+	CHECK_TPL_TAP_EXP_ID,
+	CHECK_TPL_TARGET_ARCH,
+	CHECK_TPL_TARGET_CORE_ID,
+	CHECK_TPL_TARGET_TAP_POS,
+	CHECK_TPL_TARGET_SMP,
+	CHECK_TPL_SMP_CORE_NUMS,
+
+	CHECK_TPL_MAX_TAP,
+	CHECK_TPL_MAX_TARGET,
+
+	CHECK_TPL_TARGET_GROUP,
+};
+
+unsigned int *gpUpdateNewTblInfo[CHECK_TPL_INFO_NUMS] = {
+	&tap_arch_list[0],
+	&tap_irlen[0],
+	&tap_expect_id[0],
+
+	&target_arch_id[0],
+	&target_core_id[0],
+	&target_tap_position[0],
+	&target_smp_list[0],
+	&target_smp_core_nums[0],
+
+	&number_of_tap,
+	&number_of_target,
+
+	&target_group[0],
+};
+
+int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
+	FILE *fp_tpl = NULL;
+	FILE *fp_output = NULL;
+	char line_buf[LINEBUF_SIZE], tmp_buf[512];
+	char *pline_buf = (char *)&line_buf[0];
+	char *cur_str, *tmp_str;
+	unsigned int i, j, num_char;
+	unsigned int *pnew_value, update_nums;
+
+	fp_tpl = fopen(p_tpl, "r");
+	fp_output = fopen(as_filepath(p_out), "wb");
+	if (fp_tpl == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_tpl);
+		return -1;
+	}
+	if (fp_output == NULL) {
+		printf("ERROR!! open %s fail !!\n", p_out);
+		return -1;
+	}
+	while(1) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_tpl) == NULL) {
+			break;
+		}
+		for (i = 0; i < CHECK_TPL_INFO_NUMS; i++) {
+			cur_str = strstr(pline_buf, gpCheckTplFileInfo[i]);
+			if (cur_str != NULL) {
+				//For max_of_tap & max_of_target
+				if( i == 8 || i == 9 ) {
+					sprintf(pline_buf, "%s %d\n", gpCheckTplFileInfo[i], *gpUpdateNewTblInfo[i]);
+					continue;
+				}
+
+				tmp_str = strstr(pline_buf, "#");
+				if (tmp_str != NULL)
+					break;
+				pnew_value = gpUpdateNewTblInfo[i];
+				//sprintf(line_buffer, "source [find target/%s]\n", custom_target_cfg);
+				if (i < 3)
+					update_nums = number_of_tap;
+				else
+					update_nums = number_of_target;
+				tmp_str = (char*)&tmp_buf[0];
+				for (j = 0; j < update_nums; j ++) {
+					if (i == 2)
+						num_char = sprintf(tmp_str, "0x%x ", *pnew_value++);
+					else
+						num_char = sprintf(tmp_str, "%d ", *pnew_value++);
+					tmp_str += num_char;
+				}
+				sprintf(pline_buf, "%s {%s}\n", gpCheckTplFileInfo[i], &tmp_buf[0]);
+			}
+		}
+		fputs(pline_buf, fp_output);
+	}
+	fclose(fp_tpl);
+	fclose(fp_output);
+	return 0;
+}
+/*
+int nds_target_cfg_transfer_main(void) {
+	if (nds_target_cfg_checkif_transfer(FILENAME_USER_TARGET_CFG) != 0)
+		return -1;
+	if (nds_target_cfg_transfer(FILENAME_USER_TARGET_CFG) != 0)
+		return -1;
+	nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
+	return 0;
+}
+*/
+
+static int list_devices(int vendorid, int productid, uint8_t *ret_bnum, uint8_t *ret_pnum, uint8_t *ret_dnum)
+{
+	libusb_context *ctx;
+	int err;
+	libusb_device **list;
+	struct libusb_device_descriptor desc;
+	ssize_t num_devs, i, list_dev=0;
+
+	err = libusb_init(&ctx);
+	num_devs = libusb_get_device_list(ctx, &list);
+	for(i = 0; i < num_devs; i++) {
+		char NullName[] = {""};
+		char *pdescp_Manufacturer = (char *)&NullName[0];
+		char *pdescp_Product = (char *)&NullName[0];
+		unsigned int descp_bcdDevice = 0x0;
+
+		libusb_device *dev = list[i];
+		libusb_get_device_descriptor(dev, &desc);
+		uint8_t bnum = libusb_get_bus_number(dev);
+		uint8_t dnum = libusb_get_device_address(dev);
+		uint8_t pnum = libusb_get_port_number(dev);
+		int is_supported = -1, j;
+
+		struct jtag_libusb_device_handle *devh = NULL;
+		err = libusb_open(dev, &devh);
+		if (err) {
+			//printf("libusb_open() failed with %s\n",
+			//		libusb_error_name(err));
+			continue;
+		}
+		struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
+		jtag_libusb_get_descriptor_string(devh, udev,
+				&pdescp_Manufacturer,
+				&pdescp_Product,
+				&descp_bcdDevice);
+
+		for( j = 0; j < MAX_WHITELIST; j++ ) {
+			if(desc.idVendor  == device_whitelist[j].vid &&
+			   desc.idProduct == device_whitelist[j].pid ) {
+				is_supported = 1;
+				break;
+			}
+		}
+
+		if( devnum == -1 && is_supported == 1 ) {
+			if( list_dev == 0 )
+				printf("\nList of Devices:\n");
+
+			//printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s %s\n",
+			//		list_dev, bnum, pnum, dnum,
+			//		desc.idVendor, desc.idProduct,
+			//		pdescp_Manufacturer, pdescp_Product);
+			printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s\n",
+					list_dev, bnum, pnum, dnum,
+					desc.idVendor, desc.idProduct,
+					device_whitelist[j].description);
+		} else if ( devnum == list_dev ) {
+			*ret_bnum = bnum;
+			*ret_dnum = dnum;
+			*ret_pnum = pnum;
+			return 0;
+		}
+
+		if( is_supported == 1 )
+			list_dev++;
+
+		libusb_close(devh);
+	}
+
+	libusb_free_device_list(list, 0);
+	return 0;
+}
+
