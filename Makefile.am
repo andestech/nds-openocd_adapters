@@ -1,2 +1,2 @@
-SUBDIRS = aice_adapter iceman_adapter
+SUBDIRS = iceman_adapter
 ACLOCAL_AMFLAGS = -I m4
