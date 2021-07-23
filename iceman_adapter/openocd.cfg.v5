@@ -60,6 +60,16 @@ nds configure sys_bus_access 1
 #nds memAccSize 0x80000000 0x100000000 32
 #nds memAccSize 0x00000000 0x800000 32
 
+proc dma_mwd {args} {
+	set val [nds mem_access]
+	set backup [lindex $val 4]
+	nds mem_access bus
+
+	eval mwd $args
+
+	nds mem_access [string tolower $backup]
+}
+
 proc dma_mww {args} {
 	set val [nds mem_access]
 	set backup [lindex $val 4]
@@ -86,6 +96,16 @@ proc dma_mwb {args} {
 	nds mem_access bus
 
 	eval mwb $args
+
+	nds mem_access [string tolower $backup]
+}
+
+proc dma_mdd {args} {
+	set val [nds mem_access]
+	set backup [lindex $val 4]
+	nds mem_access bus
+
+	echo [eval mdd $args]
 
 	nds mem_access [string tolower $backup]
 }
