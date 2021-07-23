@@ -60,6 +60,12 @@ nds configure sys_bus_access 1
 #nds memAccSize 0x80000000 0x100000000 32
 #nds memAccSize 0x00000000 0x800000 32
 
+proc dma_mwd {args} {
+	nds mem_access bus
+	eval mwd $args
+	nds mem_access cpu
+}
+
 proc dma_mww {args} {
 	nds mem_access bus
 	eval mww $args
@@ -75,6 +81,12 @@ proc dma_mwh {args} {
 proc dma_mwb {args} {
 	nds mem_access bus
 	eval mwb $args
+	nds mem_access cpu
+}
+
+proc dma_mdd {args} {
+	nds mem_access bus
+	echo [eval mdd $args]
 	nds mem_access cpu
 }
 
