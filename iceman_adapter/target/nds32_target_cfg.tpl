@@ -57,7 +57,7 @@ for {set i 0} {$i < $max_of_tap} {incr i} {
 	} elseif [ expr $TAP_ARCH($i) == 0x02 ] {
 		set TAP_IRLEN($i) 5
 		set TAP_EXP_CPUID($i)  0x1000563D
-	} else if [ expr $TAP_ARCH($i) == 0x3 ] {
+	} elseif [ expr $TAP_ARCH($i) == 0x3 ] {
 		set TAP_IRLEN($i) 4
 		set TAP_EXP_CPUID($i)  0x1000163D
 	} else {
@@ -103,7 +103,7 @@ for {set i 0} {$i < $max_of_target} {incr i} {
 		set target_name_2nd "_target_$CORE_ID($i)"
 		set TARGET_NAME($i) "$target_name_1st$target_name_2nd"
 	}
-	
+
 	if [expr $position == 0x0] {
 		set CHAIN_POSITION($i) $TAP_BASE.$TAP_TYPE
 	} else {
@@ -121,10 +121,13 @@ for {set i 0} {$i < $number_of_tap} {incr i} {
 		jtag newtap $TAP_BASE $TAP_TYPE$i -expected-id $TAP_EXP_CPUID($i) -irlen $TAP_IRLEN($i)
 		#echo "jtag newtap $TAP_BASE $TAP_TYPE$i -expected-id $TAP_EXP_CPUID($i) -irlen $TAP_IRLEN($i)"
 	}
-	
 }
 
 for {set i 0} {$i < $number_of_target} {incr i} {
+	if {$TARGET_ARCH_NAME($i) == "others"} {
+		continue
+	}
+
 	#target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [expr {$CORE_ID($i)+1}]
 	target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
 	if [ expr $IF_SMP($i) == 0x1 ] {
