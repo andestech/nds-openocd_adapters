@@ -2107,7 +2107,8 @@ unsigned int number_of_target = 0;
 #define TAP_ARCH_V3       1  //"v3"
 #define TAP_ARCH_V5       2  //"v5"
 #define TAP_ARCH_V3_SDM   3  //"v3_sdm"
-#define TAP_ARCH_UNKNOWN  4
+#define TAP_ARCH_OTHER    4  //"other"
+#define TAP_ARCH_UNKNOWN  5
 
 unsigned int tap_irlen[MAX_NUMS_TAP];
 unsigned int tap_expect_id[MAX_NUMS_TAP];
@@ -2243,29 +2244,44 @@ int nds_target_cfg_transfer(const char *p_user) {
 
 
 				arch_id = TAP_ARCH_UNKNOWN;
-				cur_str = strstr(&tmp_buf[0], "v5");
-				if (cur_str != NULL)
-					arch_id = TAP_ARCH_V5;
-				else {
-					cur_str = strstr(&tmp_buf[0], "v3_sdm");
-					if (cur_str != NULL)
-						arch_id = TAP_ARCH_V3_SDM;
-					else {
-						cur_str = strstr(&tmp_buf[0], "v3");
-						if (cur_str != NULL)
-							arch_id = TAP_ARCH_V3;
+				do {
+					cur_str = strstr(&tmp_buf[0], "v5");
+					if (cur_str != NULL) {
+						arch_id = TAP_ARCH_V5;
+						break;
 					}
-				}
+
+					cur_str = strstr(&tmp_buf[0], "v3_sdm");
+					if (cur_str != NULL) {
+						arch_id = TAP_ARCH_V3_SDM;
+						break;
+					}
+
+					cur_str = strstr(&tmp_buf[0], "v3");
+					if (cur_str != NULL) {
+						arch_id = TAP_ARCH_V3;
+						break;
+					}
+
+					cur_str = strstr(&tmp_buf[0], "other");
+					if (cur_str != NULL) {
+						arch_id = TAP_ARCH_OTHER;
+						break;
+					}
+				} while(0);
+
 				if (tap_id >= MAX_NUMS_TAP) {
 					printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
 					fclose(fp_user);
 					return -1;
 				}
+
 				if (target_id >= MAX_NUMS_TARGET) {
 					printf("ERROR!! target_id > MAX_NUMS_TARGET !!\n");
 					fclose(fp_user);
 					return -1;
 				}
+
 				if (arch_id == TAP_ARCH_UNKNOWN) {
 					printf("ERROR!! unknown arch !!\n");
 					fclose(fp_user);
