@@ -76,7 +76,7 @@ struct option long_option[] = {
 	{"cp3reg", required_argument, &long_opt_flag, LONGOPT_CP3},
 	{"use-sdm", no_argument, &long_opt_flag, LONGOPT_USE_SDM},
 	{"custom-aice-init", required_argument, &long_opt_flag, LONGOPT_AICE_INIT},
-	{"l2c", required_argument, &long_opt_flag, LONGOPT_L2C},
+	{"l2c", optional_argument, &long_opt_flag, LONGOPT_L2C},
 	{"dmi_busy_delay_count", required_argument, &long_opt_flag, LONGOPT_DMI_DELAY},
 	{"target-cfg", required_argument, &long_opt_flag, LONGOPT_USER_TARGET_CFG},
 	{"smp", no_argument, &long_opt_flag, LONGOPT_SMP},
@@ -268,14 +268,15 @@ static const char *custom_target_cfg = NULL;
 static unsigned int efreq_range = 0;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
+#define NDSV3_L2C_BASE (0x90F00000u)
+#define NDSV5_L2C_BASE (0xE0500000u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
 static unsigned int use_sdm = 0;
 static unsigned int use_smp = 0;
 static unsigned int usd_halt_on_reset = 0;
 static unsigned int detect_2wire = 0;
-
-#define L2C_BASE (0x90F00000u)
-static unsigned int l2c_base = L2C_BASE;
+static unsigned int enable_l2c = 0;
+static unsigned long long l2c_base = (unsigned long long)-1;
 static unsigned int dmi_busy_delay_count = 0;
 static unsigned int nds_v3_ftdi = 0;
 extern unsigned int nds_mixed_mode_checking;
@@ -404,7 +405,7 @@ static void show_usage(void) {
 	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	//printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):Use System Debug Module\n");
-	printf("--l2c:<Address>:\tIndicate the base address of L2C\n");
+	printf("--l2c=<Optional L2C Base Address>:\tIndicate the base address of L2C\n");
 	printf("--target-cfg:\t\tSpecify the CPU configuration file for a complex multicore system\n");
 	printf("--smp:\t\t\tEnable SMP mode for multi-cores\n");
 	printf("--halt-on-reset (Only for V5):\t\tEnable/Disable halt-on-reset functionality\n");
@@ -522,7 +523,9 @@ static int parse_param(int a_argc, char **a_argv) {
 				} else if (long_opt == LONGOPT_AICE_INIT) {
 					custom_initial_script = optarg;
 				} else if (long_opt == LONGOPT_L2C) {
-					sscanf(optarg, "0x%x", &l2c_base);
+					enable_l2c = 1;
+					if (optarg != NULL)
+						sscanf(optarg, "%llx", &l2c_base);
 				} else if (long_opt == LONGOPT_DMI_DELAY) {
 					sscanf(optarg, "%d", &dmi_busy_delay_count);
 				} else if (long_opt == LONGOPT_USER_TARGET_CFG) {
@@ -550,7 +553,7 @@ static int parse_param(int a_argc, char **a_argv) {
 					vtarget_enable = 1;
 				} else if (long_opt == LONGOPT_DETECT_2WIRE) {
 					detect_2wire = 1;
-				}
+				} 
 				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
@@ -700,9 +703,9 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 'L': /* customer-trst */
 				custom_trst_script = optarg;
 				break;
-            case 'M':
-                sscanf(optarg, "0x%x", &edm_dimb);
-                break;
+			case 'M':
+				sscanf(optarg, "0x%x", &edm_dimb);
+				break;
 			case 'N': /* customer-restart */
 				custom_restart_script = optarg;
 				break;
@@ -1201,6 +1204,12 @@ static void update_openocd_cfg_v5(void)
 	//if (custom_initial_script) {
 	//	fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
 	//}
+	if (enable_l2c) {
+		if (l2c_base == (unsigned long long)-1)
+			l2c_base = NDSV5_L2C_BASE;
+
+		fprintf(openocd_cfg, "nds configure l2c_base 0x%llx\n", l2c_base);
+	}
 
 	if( aice_no_crst_detect != 0 )
 		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
@@ -1528,8 +1537,10 @@ static void update_interface_cfg(void)
 	if (edm_dimb != DIMBR_DEFAULT) {
 		fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
 	}
-	if (l2c_base != L2C_BASE) {
-		fprintf(interface_cfg, "aice l2c_base 0x%x\n", l2c_base);
+	if (enable_l2c) {
+		if (l2c_base == (unsigned long long)-1) 
+			l2c_base = NDSV3_L2C_BASE;
+		fprintf(interface_cfg, "aice l2c_base 0x%08x\n", l2c_base);
 	}
 	unsigned int i;
 
@@ -1588,6 +1599,14 @@ static void update_ftdi_v3_board_cfg(void)
 		if (custom_initial_script) {
 			fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
 		}
+
+		if (enable_l2c) {
+			if (l2c_base == (unsigned long long)-1)
+				l2c_base = NDSV5_L2C_BASE;
+
+			fprintf(openocd_cfg, "nds configure l2c_base 0x%llx\n", l2c_base);
+		}
+
 		fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
 	}
 
@@ -1603,8 +1622,10 @@ static void update_ftdi_v3_board_cfg(void)
 	if (edm_dimb != DIMBR_DEFAULT) {
 		fprintf(board_cfg, "nds edm_dimb 0x%x\n", edm_dimb);
 	}
-	if (l2c_base != L2C_BASE) {
-		fprintf(board_cfg, "nds l2c_base 0x%x\n", l2c_base);
+	if (enable_l2c) {
+		if (l2c_base == (unsigned long long)-1)
+			l2c_base = NDSV3_L2C_BASE;
+		fprintf(board_cfg, "nds l2c_base 0x%08x\n", l2c_base);
 	}
 	unsigned int i;
 
