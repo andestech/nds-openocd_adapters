@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -498,10 +499,8 @@ static int parse_param(int a_argc, char **a_argv) {
 		char tmpstr[10] = {0};
 		//uint32_t ms_check_dbger = 0;
 		unsigned int i;
-		int status;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
-
 		if (c == EOF)
 			break;
 
@@ -539,11 +538,11 @@ static int parse_param(int a_argc, char **a_argv) {
 					return ERROR_FAIL; /* Force ICEman exits*/
 				} else if (long_opt == LONGOPT_DEVICE) {
 					uint8_t num;
-					sscanf(optarg, "%d", &num);
+					sscanf(optarg, "%"SCNu8, &num);
 					dev_dnum = list_devices(num);
 				} else if (long_opt == LONGOPT_DEVICE_USB_COMBO) {
 					uint8_t bnum = 0, pnum = 0, dnum = 0;
-					sscanf(optarg, "%u:%u:%u", &bnum, &pnum, &dnum);
+					sscanf(optarg, "%"SCNu8 ":%"SCNu8 ":%"SCNu8, &bnum, &pnum, &dnum);
 					dev_dnum = dnum;
 				} else if (long_opt == LONGOPT_RV32) {
 					vtarget_xlen = 32;
@@ -850,31 +849,47 @@ static FILE *target_cfg[AICE_MAX_NUM_CORE];
 char target_cfg_name[64];
 char *target_cfg_name_str = (char *)&target_cfg_name[0];
 
+static void cfg_error(const char *cfg_name, int w)
+{
+	fprintf(stderr, "ERROR: No config file, unable to %s %s\n", (w)?"write":"read", cfg_name);	
+	if (w) {
+		fprintf(stderr, "For Multi-User:\n");
+		fprintf(stderr, "Try to use --log-output/-f to specify other workspace\n"
+				"which user have full permissions.\n");
+	}
+	exit(-1);
+}
+
 static void open_config_files(void) {
 	openocd_cfg_tpl = fopen("openocd.cfg.tpl", "r");
-	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w");
-	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No config file, openocd.cfg\n");
-		exit(-1);
-	}
+	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
+	if (!openocd_cfg_tpl)
+		cfg_error("openocd.cfg.tpl", 0);
+	if (!openocd_cfg) 
+		cfg_error(as_filepath("openocd.cfg"), 1);
 
 	if (nds_v3_ftdi == 0) {
 		interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
-		interface_cfg = fopen( as_filepath("interface/nds32-aice.cfg"), "w");
-		if ((interface_cfg_tpl == NULL) || (interface_cfg == NULL)) {
-			fprintf(stderr, "ERROR: No interface config file, nds32-aice.cfg\n");
-			exit(-1);
-		}
+		interface_cfg = fopen(as_filepath("interface/nds32-aice.cfg"), "w");
+		if (!interface_cfg_tpl) 
+			cfg_error("interface/nds32-aice.cfg.tpl", 0);
+		if (!interface_cfg)
+			cfg_error(as_filepath("interface/nds32-aice.cfg"), 1);
+
 	}
+
 	board_cfg_tpl = fopen("board/nds32_xc5.cfg.tpl", "r");
-	board_cfg = fopen( as_filepath("board/nds32_xc5.cfg"), "w");
-	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No board config file, nds32_xc5.cfg\n");
-		exit(-1);
-	}
+	board_cfg = fopen(as_filepath("board/nds32_xc5.cfg"), "w");
+	if (!board_cfg_tpl)
+		cfg_error("board/nds32_xc5.cfg.tpl", 0);
+	if (!board_cfg)
+		cfg_error(as_filepath("board/nds32_xc5.cfg"), 1);
 
 	if (nds_v3_ftdi == 0) {
 		target_cfg_tpl = fopen("target/nds32.cfg.tpl", "r");
+		if (!target_cfg_tpl)
+			cfg_error("target/nds32.cfg.tpl", 0);
+
 		int coreid;
 		char *target_str = NULL;
 		char line_buffer[LINE_BUFFER_SIZE];
@@ -892,6 +907,8 @@ static void open_config_files(void) {
 			sprintf(target_cfg_name_str, target_str, coreid);
 			sprintf(line_buffer, target_str, coreid);
 			target_cfg[coreid] = fopen(as_filepath(line_buffer), "w");
+			if (!target_cfg[coreid])
+				cfg_error(as_filepath(line_buffer), 1);
 		}
 	}
 }
@@ -1064,11 +1081,12 @@ static void update_debug_diag_v5(void)
 	FILE *debug_diag_tcl_new = NULL;
 
 	debug_diag_tcl = fopen("debug_diag.tcl", "r");
-	debug_diag_tcl_new = fopen( as_filepath("debug_diag_new.tcl"), "w" );
-	if (debug_diag_tcl == NULL) {
-		fprintf(stderr, "ERROR: No debug_diag file, debug_diag.tcl\n");
-		exit(-1);
-	}
+	debug_diag_tcl_new = fopen(as_filepath("debug_diag_new.tcl"), "w");
+	if (!debug_diag_tcl)
+		cfg_error("debug_diag.tcl", 0);
+	if (!debug_diag_tcl_new)
+		cfg_error(as_filepath("debug_diag_new.tcl"), 1);
+
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_TEST 0x%x\n", diagnosis_memory);
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
 	if(workspace_folder) {
@@ -1087,11 +1105,12 @@ static void update_openocd_cfg_v5(void)
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
-	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w" );
-	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No config file, openocd.cfg.v5\n");
-		exit(-1);
-	}
+	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
+	if (!openocd_cfg_tpl)
+		cfg_error("openocd.cfg.v5", 0);
+	if (!openocd_cfg)
+		cfg_error(as_filepath("openocd.cfg"), 1);
+
 	/* update openocd.cfg */
 	if(log_folder == NULL)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
@@ -1179,12 +1198,8 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
 	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
-	//if (diagnosis)
-	//	fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
 	if (count_to_check_dbger)
 		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
-
-	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
 
 	if (startup_reset_halt == 1)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
@@ -1262,11 +1277,12 @@ static void update_openocd_cfg_vtarget(void)
 	} else {
 		openocd_cfg_tpl = fopen("openocd.cfg.rv64", "r");
 	}
-	openocd_cfg = fopen( as_filepath("openocd.cfg"), "w" );
-	if ((openocd_cfg_tpl == NULL) || (openocd_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No config file: openocd.cfg.rv32 or openocd.cfg.rv64\n");
-		exit(-1);
-	}
+	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
+	if (!openocd_cfg_tpl)
+		cfg_error("openocd.cfg.rv32 or openocd.cfg.rv64", 0);
+	if (!openocd_cfg)
+		cfg_error(as_filepath("openocd.cfg"), 1);
+
 	/* update openocd.cfg */
 	if(log_folder == NULL)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
@@ -1341,8 +1357,6 @@ static void update_openocd_cfg_vtarget(void)
 	//	fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
 	if (count_to_check_dbger)
 		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
-
-	//interface_cfg_tpl = fopen("interface/olimex-arm-usb-tiny-h.cfg", "r");
 
 	if (startup_reset_halt == 1)
 		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
@@ -1540,7 +1554,7 @@ static void update_interface_cfg(void)
 	if (enable_l2c) {
 		if (l2c_base == (unsigned long long)-1) 
 			l2c_base = NDSV3_L2C_BASE;
-		fprintf(interface_cfg, "aice l2c_base 0x%08x\n", l2c_base);
+		fprintf(interface_cfg, "aice l2c_base 0x%08llx\n", l2c_base);
 	}
 	unsigned int i;
 
@@ -1624,7 +1638,7 @@ static void update_ftdi_v3_board_cfg(void)
 	if (enable_l2c) {
 		if (l2c_base == (unsigned long long)-1)
 			l2c_base = NDSV3_L2C_BASE;
-		fprintf(board_cfg, "nds l2c_base 0x%08x\n", l2c_base);
+		fprintf(board_cfg, "nds l2c_base 0x%08llx\n", l2c_base);
 	}
 	unsigned int i;
 
@@ -1686,8 +1700,7 @@ static void update_board_cfg(void)
 				strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
 			} else {
 				for (coreid = 0; coreid < 1; coreid++){
-					if(target_str)
-						fputs(line_buffer, board_cfg);
+					fputs(line_buffer, board_cfg);
 					if (target_type[coreid] == TARGET_V3) {
 						sprintf(target_str, "target/nds32v3_%d.cfg", coreid);
 					} else if (target_type[coreid] == TARGET_V2) {
@@ -1753,7 +1766,8 @@ static void update_board_cfg(void)
 			parse_edm_operation(line_buffer);
 		}
 		fclose(edm_operation_fd);
-	}
+	} else 
+		cfg_error(edm_port_op_file, 0);
 	if (edm_port_operations) {
 		parse_edm_operation(edm_port_operations);
 	}
@@ -1833,11 +1847,12 @@ static void update_board_cfg_v5(void)
 	int i;
 
 	board_cfg_tpl = fopen("board/nds_v5.cfg.tpl", "r");
-	board_cfg = fopen( as_filepath("board/nds_v5.cfg"), "w");
-	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No board config file, nds_v5.cfg\n");
-		exit(-1);
-	}
+	board_cfg = fopen(as_filepath("board/nds_v5.cfg"), "w");
+	if (!board_cfg_tpl)
+		cfg_error("board/nds_v5.cfg.tpl", 0);
+	if (!board_cfg)
+		cfg_error(as_filepath("board/nds_v5.cfg"), 1);
+
 
 	/* update nds_v5.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
@@ -1914,11 +1929,12 @@ static void update_board_cfg_vtarget(void)
 	int i;
 
 	board_cfg_tpl = fopen("board/nds_vtarget.cfg.tpl", "r");
-	board_cfg = fopen( as_filepath("board/nds_vtarget.cfg"), "w");
-	if ((board_cfg_tpl == NULL) || (board_cfg == NULL)) {
-		fprintf(stderr, "ERROR: No board config file, nds_vtarget.cfg\n");
-		exit(-1);
-	}
+	board_cfg = fopen(as_filepath("board/nds_vtarget.cfg"), "w");
+	if (!board_cfg_tpl)
+		cfg_error("board/nds_vtarget.cfg.tpl", 0);
+	if (!board_cfg)
+		cfg_error(as_filepath("board/nds_vtarget.cfg"), 1);
+
 
 	/* update nds_v5.cfg */
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
@@ -2156,10 +2172,9 @@ int nds_target_cfg_checkif_transfer(const char *p_user) {
 	unsigned int i;
 
 	fp_user = fopen(p_user, "r");
-	if (fp_user == NULL) {
-		printf("ERROR!! open %s fail !!\n", p_user);
-		return -1;
-	}
+	if (!fp_user)
+		cfg_error(p_user, 0);
+
 	// parsing the first line of the file
 	for (i = 0; i < 5; i++) {
 		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL) {
@@ -2184,10 +2199,8 @@ int nds_target_cfg_transfer(const char *p_user) {
 	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id, group_id=0;
 
 	fp_user = fopen(p_user, "r");
-	if (fp_user == NULL) {
-		printf("ERROR!! open %s fail !!\n", p_user);
-		return -1;
-	}
+	if (!fp_user)
+		cfg_error(p_user, 0);
 
 	for (i = 0; i < MAX_NUMS_TAP; i++) {
 		tap_irlen[i] = 0;
@@ -2461,14 +2474,12 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
 
 	fp_tpl = fopen(p_tpl, "r");
 	fp_output = fopen(as_filepath(p_out), "wb");
-	if (fp_tpl == NULL) {
-		printf("ERROR!! open %s fail !!\n", p_tpl);
-		return -1;
-	}
-	if (fp_output == NULL) {
-		printf("ERROR!! open %s fail !!\n", p_out);
-		return -1;
-	}
+	if (!fp_tpl)
+		cfg_error(p_tpl, 0);
+	if (!fp_output)
+		cfg_error(as_filepath(p_out), 1);
+
+
 	while(1) {
 		if (fgets(pline_buf, LINEBUF_SIZE, fp_tpl) == NULL) {
 			break;
