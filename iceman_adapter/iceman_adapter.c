@@ -348,7 +348,10 @@ static void show_usage(void) {
 	//printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
 	printf("-D, --larger-logfile:\tThe maximum size of the log file is 1MBx2. The size is increased to 512MBx2 with this option.\n");
 	//printf("-e, --edm-retry:\tRetry count of getting EDM version as ICEman startup\n");
-	printf("-f, --log-output:\toutput log file path\n");
+	printf("-f, --log-output:\toutput path for config and log files\n");
+	printf("\t\t\tFor multi-user:\n");
+	printf("\t\t\t\tUse --log-output/-f to specify other workspace\n");
+	printf("\t\t\t\twhich user have full permissions.\n");
 	printf("-F, --edm-port-file (Only for Secure MPU):\tEDM port0/1 operations file name\n");
 	printf("\t\tFile format:\n");
 	printf("\t\t\twrite_edm 6:0x1234,7:0x1234;\n");
