@@ -59,6 +59,8 @@
 <field name="IMECCI" start="16" end="16"/>
 <field name="BWEI" start="17" end="17"/>
 <field name="PMOVI" start="18" end="18"/>
+<field name="IMECCDMR" start="19" end="19"/>
+<field name="ACEERR" start="24" end="24"/>
 </flags>
 <struct id="reg_mie" size="4">
 <field name="" start="0" end="31" type="mie_flags"/>
@@ -80,6 +82,8 @@
 <field name="IMECCI" start="16" end="16"/>
 <field name="BWEI" start="17" end="17"/>
 <field name="PMOVI" start="18" end="18"/>
+<field name="IMECCDMR" start="19" end="19"/>
+<field name="ACEERR" start="24" end="24"/>
 </flags>
 <struct id="reg_mip" size="4">
 <field name="" start="0" end="31" type="mip_flags"/>
@@ -389,6 +393,12 @@
 <evalue name="2048" value="5"/>
 <evalue name="4096" value="6"/>
 </enum>
+<enum id="micm_cfg_ic_repl" size="8">
+<evalue name="Unknown" value="0"/>
+<evalue name="Pseudo-LRU" value="1"/>
+<evalue name="Random" value="2"/>
+<evalue name="Reserved" value="3"/>
+</enum>
 <struct id="reg_micm_cfg" size="4">
 <field name="" start="0" end="31" type="uint32"/>
 <field name="iset" start="0" end="2" type="micm_cfg_iset"/>
@@ -402,6 +412,7 @@
 <field name="ilm_ecc" start="21" end="22" type="micm_cfg_ic_ecc"/>
 <field name="ilm_xonly" start="23" end="23" type="micm_cfg_ilm_xonly"/>
 <field name="seth" start="24" end="24" type="uint32"/>
+<field name="ic_repl" start="25" end="26" type="micm_cfg_ic_repl"/>
 </struct>
 
 <enum id="mdcm_cfg_dlmb" size="4">
@@ -429,6 +440,7 @@
 <field name="ulm_2bank" start="20" end="20" type="micm_cfg_ulm_2bank"/>
 <field name="dlm_ecc" start="21" end="22" type="micm_cfg_ic_ecc"/>
 <field name="seth" start="24" end="24" type="uint32"/>
+<field name="dc_repl" start="25" end="26" type="micm_cfg_ic_repl"/>
 </struct>
 
 <enum id="mmsc_cfg_addpmc" size="4">
@@ -506,9 +518,18 @@
 <field name="crashsave" start="3" end="3"/>
 <field name="veccfg" start="4" end="4"/>
 <field name="finv" start="5" end="5"/>
+<field name="pp16" start="6" end="6"/>
+<field name="vsih" start="8" end="8"/>
+<field name="vdot" start="11" end="11"/>
+<field name="vpfh" start="12" end="12"/>
+<field name="l2cmp_cfg" start="13" end="13"/>
+<field name="l2c" start="14" end="14"/>
+<field name="io_cohp" start="15" end="15"/>
 </flags>
 <struct id="reg_mmsc_cfg2" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg2_flags"/>
+<field name="ecdv" start="9" end="10" type="uint32"/>
+<field name="core_pclus" start="16" end="19" type="uint32"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="4">
@@ -594,6 +615,7 @@
 <field name="c" start="16" end="16"/>
 <field name="p" start="17" end="17"/>
 <field name="insn" start="22" end="22"/>
+<field name="syndr" start="23" end="23"/>
 </flags>
 <struct id="reg_mecc_code" size="4">
 <field name="" start="0" end="31" type="mecc_code_flags"/>
@@ -629,6 +651,8 @@
 <field name="dpref_en" start="10" end="10"/>
 <field name="ic_1st_wd" start="11" end="11"/>
 <field name="dc_1st_wd" start="12" end="12"/>
+<field name="dc_cohen" start="19" end="19"/>
+<field name="dc_cohsta" start="20" end="20"/>
 </flags>
 <struct id="reg_mcache_ctl" size="4">
 <field name="" start="0" end="31" type="mcache_ctl_flags"/>
@@ -637,6 +661,7 @@
 <field name="dc_warnd" start="13" end="14" type="mcache_ctl_dc_warnd"/>
 <field name="l2c_warnd" start="15" end="16" type="mcache_ctl_l2c_warnd"/>
 <field name="tlb_eccen" start="17" end="18" type="milmb_eccen"/>
+<field name="dpref_mode" start="21" end="22" type="uint32"/>
 </struct>
 
 <flags id="mmisc_ctl_flags" size="4">
@@ -690,6 +715,8 @@
 <field name="imecci" start="16" end="16"/>
 <field name="bwei" start="17" end="17"/>
 <field name="pmovi" start="18" end="18"/>
+<field name="imeccdmr" start="19" end="19"/>
+<field name="aceerr" start="24" end="24"/>
 </flags>
 <struct id="reg_mslideleg" size="4">
 <field name="" start="0" end="31" type="mslideleg_flags"/>
@@ -942,6 +969,7 @@
 
 <flags id="mcounterwen_flags" size="4">
 <field name="cy" start="0" end="0"/>
+<field name="tm" start="1" end="1"/>
 <field name="ir" start="2" end="2"/>
 <field name="hpm3" start="3" end="3"/>
 <field name="hpm4" start="4" end="4"/>
