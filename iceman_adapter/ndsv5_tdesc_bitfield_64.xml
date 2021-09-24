@@ -67,6 +67,9 @@
 <field name="IMECCI" start="16" end="16"/>
 <field name="BWEI" start="17" end="17"/>
 <field name="PMOVI" start="18" end="18"/>
+<field name="IMECCDMR" start="19" end="19"/>
+<field name="ACEERR" start="24" end="24"/>
+
 </flags>
 <struct id="reg_mie" size="8">
 <field name="" start="0" end="63" type="mie_flags"/>
@@ -88,6 +91,8 @@
 <field name="IMECCI" start="16" end="16"/>
 <field name="BWEI" start="17" end="17"/>
 <field name="PMOVI" start="18" end="18"/>
+<field name="IMECCDMR" start="19" end="19"/>
+<field name="ACEERR" start="24" end="24"/>
 </flags>
 <struct id="reg_mip" size="8">
 <field name="" start="0" end="63" type="mip_flags"/>
@@ -397,6 +402,12 @@
 <evalue name="2048" value="5"/>
 <evalue name="4096" value="6"/>
 </enum>
+<enum id="micm_cfg_ic_repl" size="8">
+<evalue name="Unknown" value="0"/>
+<evalue name="Pseudo-LRU" value="1"/>
+<evalue name="Random" value="2"/>
+<evalue name="Reserved" value="3"/>
+</enum>
 <struct id="reg_micm_cfg" size="8">
 <field name="" start="0" end="63" type="uint64"/>
 <field name="iset" start="0" end="2" type="micm_cfg_iset"/>
@@ -410,6 +421,7 @@
 <field name="ilm_ecc" start="21" end="22" type="micm_cfg_ic_ecc"/>
 <field name="ilm_xonly" start="23" end="23" type="micm_cfg_ilm_xonly"/>
 <field name="seth" start="24" end="24" type="uint64"/>
+<field name="ic_repl" start="25" end="26" type="micm_cfg_ic_repl"/>
 </struct>
 
 <enum id="mdcm_cfg_dlmb" size="8">
@@ -437,6 +449,7 @@
 <field name="ulm_2bank" start="20" end="20" type="micm_cfg_ulm_2bank"/>
 <field name="dlm_ecc" start="21" end="22" type="micm_cfg_ic_ecc"/>
 <field name="seth" start="24" end="24" type="uint64"/>
+<field name="dc_repl" start="25" end="26" type="micm_cfg_ic_repl"/>
 </struct>
 
 <enum id="mmsc_cfg_addpmc" size="8">
@@ -507,6 +520,9 @@
 <field name="vsih" start="40" end="40"/>
 <field name="vdot" start="43" end="43"/>
 <field name="vpfh" start="44" end="44"/>
+<field name="l2cmp_cfg" start="45" end="45"/>
+<field name="l2c" start="46" end="46"/>
+<field name="io_cohp" start="47" end="47"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -515,6 +531,7 @@
 <field name="vcctl" start="18" end="19" type="uint64"/>
 <field name="excslvl" start="20" end="21" type="mmsc_cfg_excslvl"/>
 <field name="ecdv" start="41" end="42" type="uint64"/>
+<field name="core_pclus" start="48" end="51" type="uint64"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="8">
@@ -600,6 +617,7 @@
 <field name="c" start="16" end="16"/>
 <field name="p" start="17" end="17"/>
 <field name="insn" start="22" end="22"/>
+<field name="syndr" start="23" end="23"/>
 </flags>
 <struct id="reg_mecc_code" size="8">
 <field name="" start="0" end="63" type="mecc_code_flags"/>
@@ -645,6 +663,7 @@
 <field name="dc_warnd" start="13" end="14" type="mcache_ctl_dc_warnd"/>
 <field name="l2c_warnd" start="15" end="16" type="mcache_ctl_l2c_warnd"/>
 <field name="tlb_eccen" start="17" end="18" type="milmb_eccen"/>
+<field name="dpref_mode" start="21" end="22" type="uint64"/>
 </struct>
 
 <flags id="mmisc_ctl_flags" size="8">
@@ -698,6 +717,8 @@
 <field name="imecci" start="16" end="16"/>
 <field name="bwei" start="17" end="17"/>
 <field name="pmovi" start="18" end="18"/>
+<field name="imeccdmr" start="19" end="19"/>
+<field name="aceerr" start="24" end="24"/>
 </flags>
 <struct id="reg_mslideleg" size="8">
 <field name="" start="0" end="63" type="mslideleg_flags"/>
@@ -1019,6 +1040,7 @@
 
 <flags id="mcounterwen_flags" size="4">
 <field name="cy" start="0" end="0"/>
+<field name="tm" start="1" end="1"/>
 <field name="ir" start="2" end="2"/>
 <field name="hpm3" start="3" end="3"/>
 <field name="hpm4" start="4" end="4"/>
