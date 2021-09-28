@@ -1635,10 +1635,9 @@ static void update_board_cfg()
 	int coreid;
 
 	/* update nds32_xc5.cfg */
-	char *find_pos;
 	char target_str[512];
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl)) {
-		if (find_pos = strstr(line_buffer, "--target")) {
+		if (strstr(line_buffer, "--target")) {
 			if (custom_target_cfg)
 				sprintf(line_buffer, "source [find %s]\n", custom_target_cfg);
 			else if (nds_v3_ftdi == 1)
@@ -1660,12 +1659,12 @@ static void update_board_cfg()
 					sprintf(line_buffer, "source [find \"%s\"]\n", as_filepath(target_str));
 				}
 			}
-		} else if (find_pos = strstr(line_buffer, "--soft-reset-halt")) {
+		} else if (strstr(line_buffer, "--soft-reset-halt")) {
 			if (soft_reset_halt)
 				strcpy(line_buffer, "nds soft_reset_halt on\n");
 			else
 				strcpy(line_buffer, "nds soft_reset_halt off\n");
-		} else if (find_pos = strstr(line_buffer, "--ace-conf")) {
+		} else if (strstr(line_buffer, "--ace-conf")) {
 			strcpy(line_buffer, "set _ACE_CONF \"\"\n");
 			if (aceconf_desc_list) {
 				aceconf_desc = aceconf_desc_list;
@@ -1690,7 +1689,7 @@ static void update_board_cfg()
 						aceconf_desc += 1;	/* point to the one next to ',' */
 				}
 			}
-		} else if (find_pos = strstr(line_buffer, "jtag init")) {
+		} else if (strstr(line_buffer, "jtag init")) {
 			if (nds_v3_ftdi == 1)
 				strcpy(line_buffer, "#jtag init\n");
 		}
@@ -2083,7 +2082,6 @@ int nds_target_cfg_checkif_transfer(const char *p_user)
 	FILE *fp_user = NULL;
 	char line_buf[LINEBUF_SIZE];
 	char *pline_buf = (char *)&line_buf[0];
-	char *cur_str;
 	unsigned int i;
 
 	fp_user = fopen(p_user, "r");
@@ -2096,8 +2094,7 @@ int nds_target_cfg_checkif_transfer(const char *p_user)
 			break;
 
 		// parsing the keyword "_target_"
-		cur_str = strstr(pline_buf, CHECK_TARGET);
-		if (cur_str) {
+		if (strstr(pline_buf, CHECK_TARGET)) {
 			fclose(fp_user);
 			return 0;
 		}
@@ -2111,8 +2108,8 @@ int nds_target_cfg_transfer(const char *p_user)
 	FILE *fp_user = NULL;
 	char line_buf[LINEBUF_SIZE], tmp_buf[256];
 	char *pline_buf = (char *)&line_buf[0];
-	char *cur_str, *tmp_str;
-	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id, group_id=0;
+	char *cur_str;
+	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id, group_id = 0;
 
 	fp_user = fopen(p_user, "r");
 	if (!fp_user)
@@ -2141,17 +2138,18 @@ int nds_target_cfg_transfer(const char *p_user)
 			break;
 
 		for (i = 0; i < CHECK_INFO_NUMS; i++) {
-			cur_str = strstr(pline_buf, gpCheckInfo[i]);
-			if (cur_str) {
-				tmp_str = strstr(pline_buf, "#");
-				if (tmp_str)
+			if (strstr(pline_buf, gpCheckInfo[i])) {
+				/* Check if contain comment symbol */
+				if (strstr(pline_buf, "#"))
 					break;
+
+				/* Check if not contained 'tap' */
 				cur_str = strstr(pline_buf, "tap");
-				if (!cur_str && i != 3)
+				if (!cur_str && (i != 3))
 					break;
 
 				if (i == 1) {
-					// tap0_irlen 4
+					/* EX: tap0_irlen 4 */
 					sscanf(cur_str, "tap%d_irlen %d", &tap_id, &irlen);
 					if (tap_id >= MAX_NUMS_TAP) {
 						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
@@ -2161,7 +2159,7 @@ int nds_target_cfg_transfer(const char *p_user)
 					tap_irlen[tap_id] = irlen;
 					break;
 				} else if (i == 2) {
-					// tap0_expect_id 0x1000063D
+					/* EX: tap0_expect_id 0x1000063D */
 					sscanf(cur_str, "tap%d_expect_id 0x%x", &tap_id, &exp_id);
 					if (tap_id >= MAX_NUMS_TAP) {
 						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
@@ -2171,43 +2169,26 @@ int nds_target_cfg_transfer(const char *p_user)
 					tap_expect_id[tap_id] = exp_id;
 					break;
 				} else if (i == 3) {
-					// group_1
+					/* EX: group_1 */
 					sscanf(pline_buf, "group_%d", &group_id);
 					break;
 				}
 
-				// tap2_target_0   v5  1
+				/* EX: tap2_target_0   v5  1 */
 				sscanf(cur_str, "tap%d_target_%d %s %d", &tap_id, &target_id, &tmp_buf[0], &core_nums);
 
 				if (group_id != 0)
 					target_core_group[tap_id][target_id] = group_id;
 
 				arch_id = TAP_ARCH_UNKNOWN;
-				do {
-					cur_str = strstr(&tmp_buf[0], "v5");
-					if (cur_str) {
-						arch_id = TAP_ARCH_V5;
-						break;
-					}
-
-					cur_str = strstr(&tmp_buf[0], "v3_sdm");
-					if (cur_str) {
-						arch_id = TAP_ARCH_V3_SDM;
-						break;
-					}
-
-					cur_str = strstr(&tmp_buf[0], "v3");
-					if (cur_str) {
-						arch_id = TAP_ARCH_V3;
-						break;
-					}
-
-					cur_str = strstr(&tmp_buf[0], "other");
-					if (cur_str) {
-						arch_id = TAP_ARCH_OTHER;
-						break;
-					}
-				} while(0);
+				if (strstr(&tmp_buf[0], "v5"))
+					arch_id = TAP_ARCH_V5;
+				else if (strstr(&tmp_buf[0], "v3_sdm"))
+					arch_id = TAP_ARCH_V3_SDM;
+				else if (strstr(&tmp_buf[0], "v3"))
+					arch_id = TAP_ARCH_V3;
+				else if (strstr(&tmp_buf[0], "other"))
+					arch_id = TAP_ARCH_OTHER;
 
 				if (tap_id >= MAX_NUMS_TAP) {
 					printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
@@ -2268,6 +2249,7 @@ int nds_target_cfg_transfer(const char *p_user)
 		}
 		number_of_tap ++;
 	}
+
 	if (number_of_target) {
 		if (target_arch_id[0] == TAP_ARCH_V5)
 			target_type[0] = TARGET_V5;
