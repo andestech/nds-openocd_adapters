@@ -476,7 +476,7 @@ static int parse_param(int a_argc, char **a_argv)
 					custom_initial_script = optarg;
 				else if (long_opt == LONGOPT_L2C) {
 					enable_l2c = 1;
-					if (optarg != NULL)
+					if (optarg)
 						sscanf(optarg, "%llx", &l2c_base);
 				} else if (long_opt == LONGOPT_DMI_DELAY)
 					sscanf(optarg, "%d", &dmi_busy_delay_count);
@@ -623,7 +623,7 @@ static int parse_param(int a_argc, char **a_argv)
 				word_access_mem = 1;
 				break;
 			case 'K':
-				if (optarg != NULL)
+				if (optarg)
 					sscanf(optarg, "%x", &soft_reset_halt);
 				else
 					soft_reset_halt = 2;
@@ -685,7 +685,7 @@ static int parse_param(int a_argc, char **a_argv)
 				exit(0);
 			case 'x':
 				diagnosis = 1;
-				if (optarg != NULL) {
+				if (optarg) {
 					diagnosis_memory = 1;
 					sscanf(optarg, "0x%x", &diagnosis_address);
 				} else
@@ -847,29 +847,29 @@ static void close_config_files()
 {
 	int coreid;
 
-	if (openocd_cfg_tpl != NULL)
+	if (openocd_cfg_tpl)
 		fclose(openocd_cfg_tpl);
 
-	if(openocd_cfg != NULL)
+	if (openocd_cfg)
 		fclose(openocd_cfg);
 
-	if(interface_cfg_tpl != NULL)
+	if (interface_cfg_tpl)
 		fclose(interface_cfg_tpl);
 
-	if(interface_cfg != NULL)
+	if (interface_cfg)
 		fclose(interface_cfg);
 
-	if(board_cfg_tpl != NULL)
+	if (board_cfg_tpl)
 		fclose(board_cfg_tpl);
 
-	if(board_cfg != NULL)
+	if (board_cfg)
 		fclose(board_cfg);
 
-	if(target_cfg_tpl != NULL)
+	if (target_cfg_tpl)
 		fclose(target_cfg_tpl);
 
 	for (coreid = 0; coreid < 1; coreid ++) {
-		if(target_cfg[coreid] != NULL)
+		if (target_cfg[coreid])
 			fclose(target_cfg[coreid]);
 	}
 
@@ -924,7 +924,7 @@ static void parse_edm_operation(const char *edm_operation)
 	int value;
 
 	processing_str = strstr(edm_operation, "write_edm ");
-	if (processing_str == NULL)
+	if (!processing_str)
 		return;
 	processing_str += 10;
 
@@ -956,7 +956,7 @@ char *str_replace(const char *string, const char *substr, const char *replacemen
 	char *head = NULL;
 
 	/* if either substr or replacement is NULL, duplicate string a let caller handle it */
-	if (substr == NULL || replacement == NULL)
+	if (!substr || !replacement)
 		return strdup(string);
 	newstr = strdup(string);
 	head = newstr;
@@ -964,7 +964,7 @@ char *str_replace(const char *string, const char *substr, const char *replacemen
 		oldstr = newstr;
 		newstr = malloc(strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
 		/*failed to alloc mem, free old string and return NULL */
-		if (newstr == NULL) {
+		if (!newstr) {
 			free (oldstr);
 			return NULL;
 		}
@@ -989,11 +989,11 @@ static void update_gdb_port_num()
 
 	if (gdb_port_str) {
 		port_str = strtok(gdb_port_str, ":");
-		if (port_str != NULL) {
+		if (port_str) {
 			port_id_start = strtol(port_str, NULL, 0);
 			port_id = port_id_start;
 			port_str = strtok (NULL, ":");
-			if (port_str != NULL)
+			if (port_str)
 				port_id_end = strtol(port_str, NULL, 0);
 
 			if (port_id_end >= port_id_start) {
@@ -1030,7 +1030,7 @@ static void update_debug_diag_v5()
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", bin_folder);
 	}
 
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL)
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl))
 		fputs(line_buffer, debug_diag_tcl_new);
 	fclose(debug_diag_tcl_new);
 	fclose(debug_diag_tcl);
@@ -1047,7 +1047,7 @@ static void update_openocd_cfg_v5()
 		cfg_error(as_filepath("openocd.cfg"), 1);
 
 	/* update openocd.cfg */
-	if(log_folder == NULL)
+	if (!log_folder)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
 		// write to file, please add \"$folder_path\" for path contained space
@@ -1081,10 +1081,10 @@ static void update_openocd_cfg_v5()
 		fprintf(openocd_cfg, "detect_2wire\n");
 
 	int replace_target_create = 0;
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl)) {
 		if (strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0) {
 			/* replace custom interface */
-			if (custom_interface != NULL)
+			if (custom_interface)
 				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
@@ -1258,10 +1258,10 @@ static void update_openocd_cfg_vtarget()
 		fprintf(openocd_cfg, "set _use_smp 0\n");
 
 	int replace_target_create = 0;
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl)) {
 		if (strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0) {
 			/* replace interface */
-			if (custom_interface != NULL)
+			if (custom_interface)
 				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
@@ -1394,12 +1394,12 @@ static void update_openocd_cfg()
 	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg]\n");
 	fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg]\n");
 	*/
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl)) {
 		if (nds_v3_ftdi == 1) {
 			if (strncmp(line_buffer, "source [find interface", 22) == 0) {
 				fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
 				fprintf(openocd_cfg, "adapter_nsrst_delay 500\n");
-				if (custom_interface != NULL)
+				if (custom_interface)
 					fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 				else {
 					fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
@@ -1457,7 +1457,7 @@ static void update_interface_cfg()
 	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update nds32-aice.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, interface_cfg_tpl) != NULL)
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, interface_cfg_tpl))
 		fputs(line_buffer, interface_cfg);
 	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
 	if (diagnosis)
@@ -1614,7 +1614,7 @@ static void update_target_cfg()
 	for (coreid = 0; coreid < 1; coreid++) {
 		fseek(target_cfg_tpl, 0, SEEK_SET);
 		sprintf(coreid_str, "%d", coreid);
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, target_cfg_tpl) != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, target_cfg_tpl)) {
 			line_buffer_tmp = str_replace(line_buffer, "<_TARGETID>", coreid_str);
 			line_buffer_tmp = str_replace(line_buffer_tmp, "<_TARGET_ARCH>", arch_str[target_type[coreid]]);
 			if (boot_code_debug)
@@ -1637,8 +1637,8 @@ static void update_board_cfg()
 	/* update nds32_xc5.cfg */
 	char *find_pos;
 	char target_str[512];
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
-		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl)) {
+		if (find_pos = strstr(line_buffer, "--target")) {
 			if (custom_target_cfg)
 				sprintf(line_buffer, "source [find %s]\n", custom_target_cfg);
 			else if (nds_v3_ftdi == 1)
@@ -1660,12 +1660,12 @@ static void update_board_cfg()
 					sprintf(line_buffer, "source [find \"%s\"]\n", as_filepath(target_str));
 				}
 			}
-		} else if ((find_pos = strstr(line_buffer, "--soft-reset-halt")) != NULL) {
+		} else if (find_pos = strstr(line_buffer, "--soft-reset-halt")) {
 			if (soft_reset_halt)
 				strcpy(line_buffer, "nds soft_reset_halt on\n");
 			else
 				strcpy(line_buffer, "nds soft_reset_halt off\n");
-		} else if ((find_pos = strstr(line_buffer, "--ace-conf")) != NULL) {
+		} else if (find_pos = strstr(line_buffer, "--ace-conf")) {
 			strcpy(line_buffer, "set _ACE_CONF \"\"\n");
 			if (aceconf_desc_list) {
 				aceconf_desc = aceconf_desc_list;
@@ -1690,7 +1690,7 @@ static void update_board_cfg()
 						aceconf_desc += 1;	/* point to the one next to ',' */
 				}
 			}
-		} else if ((find_pos = strstr(line_buffer, "jtag init")) != NULL) {
+		} else if (find_pos = strstr(line_buffer, "jtag init")) {
 			if (nds_v3_ftdi == 1)
 				strcpy(line_buffer, "#jtag init\n");
 		}
@@ -1702,10 +1702,10 @@ static void update_board_cfg()
 	/* login edm operations */
 	FILE *edm_operation_fd = NULL;
 	int i;
-	if (edm_port_op_file != NULL)
+	if (edm_port_op_file)
 		edm_operation_fd = fopen(edm_port_op_file, "r");
-	if (edm_operation_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd) != NULL)
+	if (edm_operation_fd) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd))
 			parse_edm_operation(line_buffer);
 		fclose(edm_operation_fd);
 	} else
@@ -1725,8 +1725,8 @@ static void update_board_cfg()
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
-	if (sw_reset_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL)
+	if (sw_reset_fd) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd))
 			parse_mem_operation(line_buffer);
 		fclose(sw_reset_fd);
 	}
@@ -1797,15 +1797,15 @@ static void update_board_cfg_v5()
 
 
 	/* update nds_v5.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL)
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl))
 		fputs(line_buffer, board_cfg);
 	fputs("\n", board_cfg);
 
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
-	if (sw_reset_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL)
+	if (sw_reset_fd) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd))
 			parse_mem_operation(line_buffer);
 		fclose(sw_reset_fd);
 	}
@@ -1875,15 +1875,15 @@ static void update_board_cfg_vtarget()
 
 
 	/* update nds_v5.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL)
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl))
 		fputs(line_buffer, board_cfg);
 	fputs("\n", board_cfg);
 
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
-	if (sw_reset_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL)
+	if (sw_reset_fd) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd))
 			parse_mem_operation(line_buffer);
 		fclose(sw_reset_fd);
 	}
@@ -1989,7 +1989,7 @@ int main(int argc, char **argv)
 	} else if (target_type[0] == TARGET_V5) {
 		update_openocd_cfg_v5();
 		update_board_cfg_v5();
-	} else if ((custom_interface != NULL) || (nds_mixed_mode_checking == 0x03)) {
+	} else if (custom_interface || (nds_mixed_mode_checking == 0x03)) {
 		nds_v3_ftdi = 1;
 		open_config_files();
 		update_openocd_cfg();       // source [find interface/
@@ -2097,7 +2097,7 @@ int nds_target_cfg_checkif_transfer(const char *p_user)
 
 		// parsing the keyword "_target_"
 		cur_str = strstr(pline_buf, CHECK_TARGET);
-		if (cur_str != NULL) {
+		if (cur_str) {
 			fclose(fp_user);
 			return 0;
 		}
@@ -2142,12 +2142,12 @@ int nds_target_cfg_transfer(const char *p_user)
 
 		for (i = 0; i < CHECK_INFO_NUMS; i++) {
 			cur_str = strstr(pline_buf, gpCheckInfo[i]);
-			if (cur_str != NULL) {
+			if (cur_str) {
 				tmp_str = strstr(pline_buf, "#");
-				if (tmp_str != NULL)
+				if (tmp_str)
 					break;
 				cur_str = strstr(pline_buf, "tap");
-				if (cur_str == NULL && i != 3)
+				if (!cur_str && i != 3)
 					break;
 
 				if (i == 1) {
@@ -2185,25 +2185,25 @@ int nds_target_cfg_transfer(const char *p_user)
 				arch_id = TAP_ARCH_UNKNOWN;
 				do {
 					cur_str = strstr(&tmp_buf[0], "v5");
-					if (cur_str != NULL) {
+					if (cur_str) {
 						arch_id = TAP_ARCH_V5;
 						break;
 					}
 
 					cur_str = strstr(&tmp_buf[0], "v3_sdm");
-					if (cur_str != NULL) {
+					if (cur_str) {
 						arch_id = TAP_ARCH_V3_SDM;
 						break;
 					}
 
 					cur_str = strstr(&tmp_buf[0], "v3");
-					if (cur_str != NULL) {
+					if (cur_str) {
 						arch_id = TAP_ARCH_V3;
 						break;
 					}
 
 					cur_str = strstr(&tmp_buf[0], "other");
-					if (cur_str != NULL) {
+					if (cur_str) {
 						arch_id = TAP_ARCH_OTHER;
 						break;
 					}
@@ -2393,7 +2393,7 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out)
 
 		for (i = 0; i < CHECK_TPL_INFO_NUMS; i++) {
 			cur_str = strstr(pline_buf, gpCheckTplFileInfo[i]);
-			if (cur_str != NULL) {
+			if (cur_str) {
 				//For max_of_tap & max_of_target
 				if( i == 8 || i == 9 ) {
 					sprintf(pline_buf, "%s %d\n", gpCheckTplFileInfo[i], *gpUpdateNewTblInfo[i]);
@@ -2401,7 +2401,7 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out)
 				}
 
 				tmp_str = strstr(pline_buf, "#");
-				if (tmp_str != NULL)
+				if (tmp_str)
 					break;
 				pnew_value = gpUpdateNewTblInfo[i];
 				//sprintf(line_buffer, "source [find target/%s]\n", custom_target_cfg);
