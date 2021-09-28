@@ -37,20 +37,6 @@
 #define TOSTR(x)	#x
 #define XTOSTR(x)	TOSTR(x)
 
-/*
-#ifdef __GNUC__
-#  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
-#else
-#  define UNUSED(x) UNUSED_ ## x
-#endif
-
-#ifdef __GNUC__
-#  define UNUSED_FUNCTION(x) __attribute__((__unused__)) UNUSED_ ## x
-#else
-#  define UNUSED_FUNCTION(x) UNUSED_ ## x
-#endif
-*/
-
 #define LONGOPT_CP0                     7
 #define LONGOPT_CP1                     8
 #define LONGOPT_CP2                     9
@@ -269,13 +255,15 @@ static int vtarget_xlen;
 static int vtarget_enable;
 
 extern char *OPENOCD_VERSION_STR; ///< define in openocd.c
-static void show_version(void) {
+static void show_version()
+{
 	printf("%s\n", ICEMAN_VERSION);
 	printf("Copyright (C) 2007-2021 Andes Technology Corporation\n");
 	printf("%s\n", OPENOCD_VERSION_STR);
 }
 
-static void show_usage(void) {
+static void show_usage()
+{
 	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
 	printf("-a, --reset-aice (For AICE only):\tReset AICE as ICEman startup\n");
@@ -392,9 +380,9 @@ static char* as_filepath(const char* cfg_name)
 	if(workspace_folder) {
 		strncpy(output_path, workspace_folder, strlen(workspace_folder));
 		strcat(output_path, cfg_name);
-	} else {
+	} else
 		strncpy(output_path, cfg_name, strlen(cfg_name));
-	}
+
 	return output_path;
 }
 
@@ -403,13 +391,15 @@ void removeChar(char *str, char garbage)
 	char *src, *dst;
 	for (src = dst = str; *src != '\0'; src++) {
 		*dst = *src;
-		if (*dst != garbage) dst++;
+		if (*dst != garbage)
+			dst++;
 	}
 	*dst = '\0';
 }
 
-char* replaceWord(const char* s, const char* oldW, const char* newW) {
-	char* result;
+char *replaceWord(const char *s, const char *oldW, const char *newW)
+{
+	char *result;
 	int i, cnt = 0, end_len = 0;
 	int newWlen = strlen(newW);
 	int oldWlen = strlen(oldW);
@@ -434,8 +424,7 @@ char* replaceWord(const char* s, const char* oldW, const char* newW) {
 			strcpy(&result[i], newW);
 			i += newWlen;
 			s += oldWlen;
-		}
-		else
+		} else
 			result[i++] = *s++;
 	}
 	if (end_len)
@@ -444,7 +433,8 @@ char* replaceWord(const char* s, const char* oldW, const char* newW) {
 	return result;
 }
 
-int isDirectoryExist(const char* path) {
+int isDirectoryExist(const char *path)
+{
 	struct stat stats;
 	stat(path, &stats);
 	if (S_ISDIR(stats.st_mode))
@@ -452,7 +442,8 @@ int isDirectoryExist(const char* path) {
 	return 0;
 }
 
-static int parse_param(int a_argc, char **a_argv) {
+static int parse_param(int a_argc, char **a_argv)
+{
 	while(1) {
 		int c = 0;
 		int option_index = 0;
@@ -471,31 +462,31 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 0:
 				long_opt = *long_option[option_index].flag;
 				if ((long_opt >= LONGOPT_CP0) &&
-					(long_opt <= LONGOPT_CP3)) {
-						cop_nums = strtol(optarg, NULL, 0);
-						if (cop_nums > 4096) {
-							printf("cop_nums max is 4096 \n");
-						} else {
-							cop_reg_nums[long_opt - LONGOPT_CP0] = cop_nums;
-							printf("cop_reg_nums[%d]=%d \n", long_opt - LONGOPT_CP0, cop_reg_nums[long_opt - LONGOPT_CP0]);
-						}
-				} else if (long_opt == LONGOPT_USE_SDM) {
+				    (long_opt <= LONGOPT_CP3)) {
+					cop_nums = strtol(optarg, NULL, 0);
+					if (cop_nums > 4096)
+						printf("cop_nums max is 4096\n");
+					else {
+						cop_reg_nums[long_opt - LONGOPT_CP0] = cop_nums;
+						printf("cop_reg_nums[%d]=%d\n", long_opt - LONGOPT_CP0, cop_reg_nums[long_opt - LONGOPT_CP0]);
+					}
+				} else if (long_opt == LONGOPT_USE_SDM)
 					use_sdm = 1;
-				} else if (long_opt == LONGOPT_AICE_INIT) {
+				else if (long_opt == LONGOPT_AICE_INIT)
 					custom_initial_script = optarg;
-				} else if (long_opt == LONGOPT_L2C) {
+				else if (long_opt == LONGOPT_L2C) {
 					enable_l2c = 1;
 					if (optarg != NULL)
 						sscanf(optarg, "%llx", &l2c_base);
-				} else if (long_opt == LONGOPT_DMI_DELAY) {
+				} else if (long_opt == LONGOPT_DMI_DELAY)
 					sscanf(optarg, "%d", &dmi_busy_delay_count);
-				} else if (long_opt == LONGOPT_USER_TARGET_CFG) {
+				else if (long_opt == LONGOPT_USER_TARGET_CFG)
 					custom_target_cfg = optarg;
-				} else if (long_opt == LONGOPT_SMP) {
+				else if (long_opt == LONGOPT_SMP)
 					use_smp = 1;
-				} else if (long_opt == LONGOPT_HALT_ON_RESET) {
+				else if (long_opt == LONGOPT_HALT_ON_RESET)
 					usd_halt_on_reset = strtol(optarg, NULL, 0);
-				} else if (long_opt == LONGOPT_LIST_DEVICE) {
+				else if (long_opt == LONGOPT_LIST_DEVICE) {
 					list_devices(-1);
 					return ERROR_FAIL; /* Force ICEman exits*/
 				} else if (long_opt == LONGOPT_DEVICE) {
@@ -512,9 +503,8 @@ static int parse_param(int a_argc, char **a_argv) {
 				} else if (long_opt == LONGOPT_RV64) {
 					vtarget_xlen = 64;
 					vtarget_enable = 1;
-				} else if (long_opt == LONGOPT_DETECT_2WIRE) {
+				} else if (long_opt == LONGOPT_DETECT_2WIRE)
 					detect_2wire = 1;
-				} 
 				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
@@ -530,35 +520,31 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'c':
 				sscanf(optarg, "%u%s", &efreq_range, (char *)&tmpstr[0]);
-				if( strlen(tmpstr) != 0 ) {
-					for( i = 0; i < strlen(tmpstr); i++ )
+				if (strlen(tmpstr) != 0) {
+					for (i = 0; i < strlen(tmpstr); i++)
 						tmpstr[i] = tolower(tmpstr[i]);
 
-					if( strncmp(tmpstr, "hz", 2)  == 0 )
+					if (strncmp(tmpstr, "hz", 2)  == 0)
 						;
-					else if( strncmp(tmpstr, "khz", 3) == 0 ) 
+					else if (strncmp(tmpstr, "khz", 3) == 0)
 						efreq_range *= 1000;
-					else if( strncmp(tmpstr, "mhz", 3) == 0 )
+					else if (strncmp(tmpstr, "mhz", 3) == 0)
 						efreq_range *= 1000 * 1000;
-
-					if( efreq_range < 1 ||
-					    efreq_range > (48*1000*1000) ) {
-
+					if (efreq_range < 1 ||
+					    efreq_range > (48*1000*1000)) {
 						printf("Unsupport efreq range!!\n");
 						return ERROR_FAIL;
 					}
-
 					break;
 				}
 
 				efreq_range = 0;
 				clock_setting = strtol(optarg, NULL, 0);
 				if ((clock_setting < 0) ||
-				    (clock_setting > 15)   ) {
+				    (clock_setting > 15)) {
 					printf("-c %d is an invalid option, the valid range for '-c' is 0-15.\n", clock_setting);
 					return ERROR_FAIL;
 				}
-
 				break;
 			case 'C':
 				sscanf(optarg, "%u%c", &count_to_check_dbger, &tmpchar);
@@ -576,11 +562,10 @@ static int parse_param(int a_argc, char **a_argv) {
 			case 'F':
 				edm_port_op_file = optarg;
 				break;
-			case 'f':
-			{
+			case 'f': {
 				char *temp_path = optarg;
 				// process \": Linux server caanot ignore \" (str:\" from IDE)
-				if( temp_path[0] == '\"' )
+				if (temp_path[0] == '\"')
 					removeChar((char *)temp_path, '\"');
 
 				// process space, remove backslash for fopen(folder/file...)
@@ -603,25 +588,23 @@ static int parse_param(int a_argc, char **a_argv) {
 				// the last directory name is _ICEman_ for AndeSight workspace
 				// on AndeSight, the path of config file(ex:openocd.cfg) must be the parent directory of _ICEman_
 				char *c = strstr(workspace_folder, "_ICEman_");
-				if (c) {
+				if (c)
 					*c = '\0';
-				}
 
 				// handle ICEman bin folder path
 				bin_folder = strdup(a_argv[0]);
 				// process \": Linux server caanot ignore \" (str:\" from IDE)
-				if( bin_folder[0] == '\"' )
+				if (bin_folder[0] == '\"')
 					removeChar((char *)bin_folder, '\"');
 				// original: dirname() cannot process path contained space
 				// now     : strstr() can process path contained space
 				// the file name is ICEman
 				c = strstr(bin_folder, "ICEman");
-				if (c) {
+				if (c)
 					*c = '\0';
-				}
-				mkdir( as_filepath("board"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
-				mkdir( as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
-				mkdir( as_filepath("target"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
+				mkdir(as_filepath("board"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+				mkdir(as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+				mkdir(as_filepath("target"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 				break;
 			}
 			case 'g':
@@ -634,18 +617,16 @@ static int parse_param(int a_argc, char **a_argv) {
 				startup_reset_halt = 1;
 				break;
 			case 'I':
-				custom_interface = optarg;	
+				custom_interface = optarg;
 				break;
 			case 'k':
 				word_access_mem = 1;
 				break;
 			case 'K':
-				if (optarg != NULL){
+				if (optarg != NULL)
 					sscanf(optarg, "%x", &soft_reset_halt);
-				}
-				else {
+				else
 					soft_reset_halt = 2;
-				}
 				break;
 			case 'l': /* customer-srst */
 				custom_srst_script = optarg;
@@ -669,7 +650,6 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'p':
 				optarg_len = strlen(optarg);
-				//gdb_port_str = malloc(AICE_MAX_NUM_CORE * 6);
 				gdb_port_str = malloc(optarg_len + 1);
 				memcpy(gdb_port_str, optarg, optarg_len + 1);
 				break;
@@ -701,14 +681,14 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 's': /* source */
 			case 'v':
-					show_version();
-					exit(0);
+				show_version();
+				exit(0);
 			case 'x':
 				diagnosis = 1;
-				if (optarg != NULL){
+				if (optarg != NULL) {
 					diagnosis_memory = 1;
 					sscanf(optarg, "0x%x", &diagnosis_address);
-				}else
+				} else
 					diagnosis_memory = 0;
 				break;
 			case 'X': /* uncnd-reset-hold, the same as 'H' */
@@ -723,29 +703,27 @@ static int parse_param(int a_argc, char **a_argv) {
 				break;
 			case 'Z':
 				optarg_len = strlen(optarg);
-				if (strncmp(optarg, "v2", optarg_len) == 0) {
+				if (strncmp(optarg, "v2", optarg_len) == 0)
 					target_type[0] = TARGET_V2;
-				} else if (strncmp(optarg, "v3", optarg_len) == 0) {
+				else if (strncmp(optarg, "v3", optarg_len) == 0)
 					target_type[0] = TARGET_V3;
-				} else if (strncmp(optarg, "v3m", optarg_len) == 0) {
+				else if (strncmp(optarg, "v3m", optarg_len) == 0)
 					target_type[0] = TARGET_V3m;
-				} else if (strncmp(optarg, "v5", optarg_len) == 0) {
+				else if (strncmp(optarg, "v5", optarg_len) == 0)
 					target_type[0] = TARGET_V5;
-				} else {
+				else
 					target_type[0] = TARGET_INVALID;
-				}
 				break;
 			case 'h':
 			case '?':
 			default:
-					show_usage ();
-					exit(0);
+				show_usage();
+				exit(0);
 		}
 	}
 
-	if (optind < a_argc) {
+	if (optind < a_argc)
 		printf("<-- Unknown argument: %s -->\n", a_argv[optind]);
-	}
 	return ERROR_OK;
 }
 
@@ -802,7 +780,7 @@ char *target_cfg_name_str = (char *)&target_cfg_name[0];
 
 static void cfg_error(const char *cfg_name, int w)
 {
-	fprintf(stderr, "ERROR: No config file, unable to %s %s\n", (w)?"write":"read", cfg_name);	
+	fprintf(stderr, "ERROR: No config file, unable to %s %s\n", (w) ? "write" : "read", cfg_name);
 	if (w) {
 		fprintf(stderr, "For Multi-User:\n");
 		fprintf(stderr, "Try to use --log-output/-f to specify other workspace\n"
@@ -811,18 +789,19 @@ static void cfg_error(const char *cfg_name, int w)
 	exit(-1);
 }
 
-static void open_config_files(void) {
+static void open_config_files()
+{
 	openocd_cfg_tpl = fopen("openocd.cfg.tpl", "r");
 	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
 	if (!openocd_cfg_tpl)
 		cfg_error("openocd.cfg.tpl", 0);
-	if (!openocd_cfg) 
+	if (!openocd_cfg)
 		cfg_error(as_filepath("openocd.cfg"), 1);
 
 	if (nds_v3_ftdi == 0) {
 		interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
 		interface_cfg = fopen(as_filepath("interface/nds32-aice.cfg"), "w");
-		if (!interface_cfg_tpl) 
+		if (!interface_cfg_tpl)
 			cfg_error("interface/nds32-aice.cfg.tpl", 0);
 		if (!interface_cfg)
 			cfg_error(as_filepath("interface/nds32-aice.cfg"), 1);
@@ -844,14 +823,14 @@ static void open_config_files(void) {
 		int coreid;
 		char *target_str = NULL;
 		char line_buffer[LINE_BUFFER_SIZE];
-		for (coreid = 0; coreid < 1; coreid++){
-			if (target_type[coreid] == TARGET_V3) {
+		for (coreid = 0; coreid < 1; coreid++) {
+			if (target_type[coreid] == TARGET_V3)
 				target_str = "target/nds32v3_%d.cfg";
-			} else if (target_type[coreid] == TARGET_V2) {
+			else if (target_type[coreid] == TARGET_V2)
 				target_str = "target/nds32v2_%d.cfg";
-			} else if (target_type[coreid] == TARGET_V3m) {
+			else if (target_type[coreid] == TARGET_V3m)
 				target_str = "target/nds32v3m_%d.cfg";
-			} else {
+			else {
 				fprintf(stderr, "No target specified\n");
 				exit(0);
 			}
@@ -864,7 +843,8 @@ static void open_config_files(void) {
 	}
 }
 
-static void close_config_files(void) {
+static void close_config_files()
+{
 	int coreid;
 
 	if (openocd_cfg_tpl != NULL)
@@ -895,7 +875,8 @@ static void close_config_files(void) {
 
 }
 
-static void parse_mem_operation(const char *mem_operation) {
+static void parse_mem_operation(const char *mem_operation)
+{
 	char *next_data;
 
 	if (strncmp(mem_operation, "stop-seq ", 9) == 0) {
@@ -913,7 +894,7 @@ static void parse_mem_operation(const char *mem_operation) {
 		}
 	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
 		next_data = (char *)mem_operation + 11;
-		while(*next_data != 0x0) {
+		while (*next_data != 0x0) {
 			resume_sequences[resume_sequences_num].address = strtoll(next_data, &next_data, 0);
 			next_data ++;      // ":"
 			if (*next_data == 'r') {
@@ -935,7 +916,8 @@ static void parse_mem_operation(const char *mem_operation) {
 }
 
 /* edm_operation format: write_edm 6:0x1234,7:0x5678; */
-static void parse_edm_operation(const char *edm_operation) {
+static void parse_edm_operation(const char *edm_operation)
+{
 	char *processing_str;
 	char *end_ptr;
 	int reg_no;
@@ -966,42 +948,46 @@ static void parse_edm_operation(const char *edm_operation) {
 	}
 }
 
-char *str_replace ( const char *string, const char *substr, const char *replacement ){
+char *str_replace(const char *string, const char *substr, const char *replacement)
+{
 	char *tok = NULL;
 	char *newstr = NULL;
 	char *oldstr = NULL;
 	char *head = NULL;
 
 	/* if either substr or replacement is NULL, duplicate string a let caller handle it */
-	if ( substr == NULL || replacement == NULL ) return strdup (string);
-	newstr = strdup (string);
+	if (substr == NULL || replacement == NULL)
+		return strdup(string);
+	newstr = strdup(string);
 	head = newstr;
-	while ( (tok = strstr ( head, substr ))){
+	while ((tok = strstr(head, substr))) {
 		oldstr = newstr;
-		newstr = malloc ( strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) + 1 );
+		newstr = malloc(strlen(oldstr) - strlen(substr) + strlen(replacement) + 1);
 		/*failed to alloc mem, free old string and return NULL */
-		if ( newstr == NULL ){
+		if (newstr == NULL) {
 			free (oldstr);
 			return NULL;
 		}
-		memcpy ( newstr, oldstr, tok - oldstr );
-		memcpy ( newstr + (tok - oldstr), replacement, strlen ( replacement ) );
-		memcpy ( newstr + (tok - oldstr) + strlen( replacement ), tok + strlen ( substr ), strlen ( oldstr ) - strlen ( substr ) - ( tok - oldstr ) );
-		memset ( newstr + strlen ( oldstr ) - strlen ( substr ) + strlen ( replacement ) , 0, 1 );
+		memcpy(newstr, oldstr, tok-oldstr);
+		memcpy(newstr + (tok-oldstr), replacement, strlen(replacement));
+		memcpy(newstr + (tok-oldstr) + strlen(replacement),
+			tok + strlen(substr),
+			strlen(oldstr) - strlen(substr) - (tok - oldstr));
+		memset(newstr + strlen(oldstr) - strlen(substr) + strlen(replacement) , 0, 1);
 		/* move back head right after the last replacement */
-		head = newstr + (tok - oldstr) + strlen( replacement );
+		head = newstr + (tok - oldstr) + strlen(replacement);
 		free (oldstr);
 	}
 	return newstr;
 }
 
-static void update_gdb_port_num(void)
+static void update_gdb_port_num()
 {
 	int port_num=AICE_MAX_NUM_PORTS, port_id=PORTNUM_GDB;
 	int port_id_start=0, port_id_end=0, i;
 	char *port_str;
 
-	if(gdb_port_str) {
+	if (gdb_port_str) {
 		port_str = strtok(gdb_port_str, ":");
 		if (port_str != NULL) {
 			port_id_start = strtol(port_str, NULL, 0);
@@ -1018,14 +1004,13 @@ static void update_gdb_port_num(void)
 		}
 	}
 	total_num_of_ports = port_num;
-	for (i=0; i<port_num; i++){
+	for (i = 0; i < port_num; i++) {
 		gdb_port[i] = port_id;
 		port_id++;
 	}
-	//printf("total_num_of_ports %x, gdb_port=%x\n", total_num_of_ports, gdb_port[0]);
 }
 
-static void update_debug_diag_v5(void)
+static void update_debug_diag_v5()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	FILE *debug_diag_tcl = NULL;
@@ -1040,19 +1025,18 @@ static void update_debug_diag_v5(void)
 
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_TEST 0x%x\n", diagnosis_memory);
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
-	if(workspace_folder) {
+	if (workspace_folder) {
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", bin_folder);
 	}
 
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL) {
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL)
 		fputs(line_buffer, debug_diag_tcl_new);
-	}
 	fclose(debug_diag_tcl_new);
 	fclose(debug_diag_tcl);
 }
 
-static void update_openocd_cfg_v5(void)
+static void update_openocd_cfg_v5()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
@@ -1081,24 +1065,26 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 
-	if( (int)(efreq_range/1000) != 0 )
+	if ((int)(efreq_range/1000) != 0)
 		fprintf(openocd_cfg, "adapter_khz %d\n", (int)(efreq_range/1000));
-	else if(efreq_range != 0 )
+	else if (efreq_range != 0)
 		fprintf(openocd_cfg, "adapter_khz 1\n");
 	else
 		fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
-	if( use_smp == 1 ) {
+
+	if (use_smp == 1)
 		fprintf(openocd_cfg, "set _use_smp 1\n");
-	} else {
+	else
 		fprintf(openocd_cfg, "set _use_smp 0\n");
-	}
+
 	if (detect_2wire == 1)
 		fprintf(openocd_cfg, "detect_2wire\n");
 
 	int replace_target_create = 0;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
-		if( strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0 ) {	/// interface
-			if( custom_interface != NULL )
+		if (strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0) {
+			/* replace custom interface */
+			if (custom_interface != NULL)
 				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
@@ -1107,9 +1093,9 @@ static void update_openocd_cfg_v5(void)
 				fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
 			continue;
 		}
-		
-		if ( custom_initial_script ) {
-			if ( strncmp(line_buffer, "##INITIAL_SCRIPT_REPLACE##", 26) == 0 ) {
+
+		if (custom_initial_script) {
+			if (strncmp(line_buffer, "##INITIAL_SCRIPT_REPLACE##", 26) == 0) {
 				fprintf(openocd_cfg, "set once 0\n");
 				fprintf(openocd_cfg, "jtag configure $NDS_TAP -event post-reset {\n");
 				fprintf(openocd_cfg, "\tglobal once\n");
@@ -1122,20 +1108,23 @@ static void update_openocd_cfg_v5(void)
 				continue;
 			}
 		}
+
 		if (custom_target_cfg) {
-			if( strncmp(line_buffer, "##--target-create-start", 23) == 0 ) {	/// replace target-create start
-					fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
-					replace_target_create = 1;
-					fputs(line_buffer, openocd_cfg);
-			} else if( strncmp(line_buffer, "##--target-create-finish", 24) == 0 ) {	/// replace target-create finish
-					custom_target_cfg = NULL;
-					replace_target_create = 0;
-			}
-			if (replace_target_create == 0) {
+			if (strncmp(line_buffer, "##--target-create-start", 23) == 0) {
+				/* replace target-create start */
+				fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
+				replace_target_create = 1;
 				fputs(line_buffer, openocd_cfg);
+			} else if (strncmp(line_buffer, "##--target-create-finish", 24) == 0) {
+				/* replace target-create finish */
+				custom_target_cfg = NULL;
+				replace_target_create = 0;
 			}
+
+			if (replace_target_create == 0)
+				fputs(line_buffer, openocd_cfg);
 		} else {
-			if( strncmp(line_buffer, "source [find board/nds_v5.cfg]", 30) == 0 ) {
+			if (strncmp(line_buffer, "source [find board/nds_v5.cfg]", 30) == 0) {
 				// write to file, please add \"$folder_path\" for path contained space
 				fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds_v5.cfg"));
 			} else
@@ -1149,6 +1138,7 @@ static void update_openocd_cfg_v5(void)
 	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
 	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
 	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
+
 	if (count_to_check_dbger)
 		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
 
@@ -1173,61 +1163,63 @@ static void update_openocd_cfg_v5(void)
 	if (enable_l2c) {
 		if (l2c_base == (unsigned long long)-1)
 			l2c_base = NDSV5_L2C_BASE;
-
 		fprintf(openocd_cfg, "nds configure l2c_base 0x%llx\n", l2c_base);
 	}
 
-	if( aice_no_crst_detect != 0 )
+	if (aice_no_crst_detect != 0)
 		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
 
-  // Handle ACE option
-  // Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
-  //       the path of conf or library and write the path to openocd_cfg
-  if (aceconf_desc_list) {
-    const char *aceconf_desc;
-    unsigned int core_id =0, read_byte = 0;
-    char aceconf[MAX_LEN_ACECONF_NAME + 1];
-    int ret;
+	/*
+	 * Handle ACE option
+	 * Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
+	 * the path of conf or library and write the path to openocd_cfg
+	 */
+	if (aceconf_desc_list) {
+		const char *aceconf_desc;
+		unsigned int core_id = 0, read_byte = 0;
+		char aceconf[MAX_LEN_ACECONF_NAME + 1];
+		int ret;
 
-    aceconf_desc = aceconf_desc_list;
-    while (1) {
-      aceconf[0] = '\0';
+		aceconf_desc = aceconf_desc_list;
+		while (1) {
+			aceconf[0] = '\0';
 			core_id = 0;
 			ret = 0;
 
 			ret = sscanf(aceconf_desc, "core%u=%" XTOSTR(MAX_LEN_ACECONF_NAME) "[^,]%n",
-                   &core_id, aceconf, &read_byte);
-      if (ret != 2) {
-        printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
-        break;
-      }
-          
-      // Output the path of conf or library to V5 conf
-      // e.g.,     nds ace aceconf_path /home/wuiw/openocd/r6/lib/libacedbg.so
-      //       or  nds ace aceconf_path /home/wuiw/openocd/r6/lib/ICEman.conf
-      // OpenOCD will parse this command in V5 conf to load the shared library
-      fprintf(openocd_cfg, "nds ace aceconf_path %s\n", aceconf);
+					&core_id, aceconf, &read_byte);
+			if (ret != 2) {
+				printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
+				break;
+			}
 
-		  /* TODO: support multi core */
+			/*
+			 * Output the path of conf or library to V5 conf
+			 * e.g.,     nds ace aceconf_path /home/wuiw/openocd/r6/lib/libacedbg.so
+			 *       or  nds ace aceconf_path /home/wuiw/openocd/r6/lib/ICEman.conf
+			 * OpenOCD will parse this command in V5 conf to load the shared library
+			 */
+			fprintf(openocd_cfg, "nds ace aceconf_path %s\n", aceconf);
+
+			/* TODO: support multi core */
 			aceconf_desc += read_byte;	/* aceconf points to ',' or '\0' */
-      if (*aceconf_desc == '\0')
-        break;
-      else
-        aceconf_desc += 1;	/* point to the one next to ',' */
-    }
-  }
+			if (*aceconf_desc == '\0')
+				break;
+			else
+				aceconf_desc += 1;	/* point to the one next to ',' */
+		}
+	}
 
-  fprintf(openocd_cfg, "source [find %s]\n", NDS32_USER_CFG);
+	fprintf(openocd_cfg, "source [find %s]\n", NDS32_USER_CFG);
 }
 
-static void update_openocd_cfg_vtarget(void)
+static void update_openocd_cfg_vtarget()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
-	if (vtarget_xlen==32) {
+	if (vtarget_xlen == 32)
 		openocd_cfg_tpl = fopen("openocd.cfg.rv32", "r");
-	} else {
+	else
 		openocd_cfg_tpl = fopen("openocd.cfg.rv64", "r");
-	}
 	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
 	if (!openocd_cfg_tpl)
 		cfg_error("openocd.cfg.rv32 or openocd.cfg.rv64", 0);
@@ -1235,17 +1227,17 @@ static void update_openocd_cfg_vtarget(void)
 		cfg_error(as_filepath("openocd.cfg"), 1);
 
 	/* update openocd.cfg */
-	if(log_folder == NULL)
+	if (!log_folder)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
-		// write to file, please add \"$folder_path\" for path contained space
+		/* write to file, please add \"$folder_path\" for path contained space */
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_folder, strlen(log_folder));
 		strncat(line_buffer, "iceman_debug0.log", 17);
-		// write to file, please add \"$folder_path\" for path contained space
+		/* write to file, please add \"$folder_path\" for path contained space */
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
@@ -1253,22 +1245,23 @@ static void update_openocd_cfg_vtarget(void)
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 
-	if( (int)(efreq_range/1000) != 0 )
+	if ((int)(efreq_range/1000) != 0)
 		fprintf(openocd_cfg, "adapter_khz %d\n", (int)(efreq_range/1000));
-	else if(efreq_range != 0 )
+	else if (efreq_range != 0)
 		fprintf(openocd_cfg, "adapter_khz 1\n");
 	else
 		fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
-	if( use_smp == 1 ) {
+
+	if (use_smp == 1)
 		fprintf(openocd_cfg, "set _use_smp 1\n");
-	} else {
+	else
 		fprintf(openocd_cfg, "set _use_smp 0\n");
-	}
 
 	int replace_target_create = 0;
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
-		if( strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0 ) {	/// interface
-			if( custom_interface != NULL )
+		if (strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0) {
+			/* replace interface */
+			if (custom_interface != NULL)
 				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 			else
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
@@ -1278,19 +1271,20 @@ static void update_openocd_cfg_vtarget(void)
 			continue;
 		}
 		if (custom_target_cfg) {
-			if( strncmp(line_buffer, "##--target-create-start", 23) == 0 ) {	/// replace target-create start
-					fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
-					replace_target_create = 1;
-					fputs(line_buffer, openocd_cfg);
-			} else if( strncmp(line_buffer, "##--target-create-finish", 24) == 0 ) {	/// replace target-create finish
-					custom_target_cfg = NULL;
-					replace_target_create = 0;
-			}
-			if (replace_target_create == 0) {
+			if (strncmp(line_buffer, "##--target-create-start", 23) == 0) {
+				/* replace target-create start */
+				fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
+				replace_target_create = 1;
 				fputs(line_buffer, openocd_cfg);
+			} else if (strncmp(line_buffer, "##--target-create-finish", 24) == 0) {
+				/* replace target-create finish */
+				custom_target_cfg = NULL;
+				replace_target_create = 0;
 			}
+			if (replace_target_create == 0)
+				fputs(line_buffer, openocd_cfg);
 		} else {
-			if( strncmp(line_buffer, "source [find board/nds_vtarget.cfg]", 35) == 0 ) {
+			if (strncmp(line_buffer, "source [find board/nds_vtarget.cfg]", 35) == 0) {
 				// write to file, please add \"$folder_path\" for path contained space
 				fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds_vtarget.cfg"));
 			} else
@@ -1318,76 +1312,77 @@ static void update_openocd_cfg_vtarget(void)
 	if (dmi_busy_delay_count != 0)
 		fprintf(openocd_cfg, "nds dmi_busy_delay_count %d\n", dmi_busy_delay_count);
 
-	if (custom_srst_script) {
+	if (custom_srst_script)
 		fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
-	}
-	if (custom_trst_script) {
-		fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
-	}
-	if (custom_restart_script) {
-		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
-	}
-	if (custom_initial_script) {
-		fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
-	}
 
-	if( aice_no_crst_detect != 0 )
+	if (custom_trst_script)
+		fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
+
+	if (custom_restart_script)
+		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
+
+	if (custom_initial_script)
+		fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
+
+	if (aice_no_crst_detect != 0)
 		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
 
-  // Handle ACE option
-  // Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
-  //       the path of conf or library and write the path to openocd_cfg
-  if (aceconf_desc_list) {
-    const char *aceconf_desc;
-    unsigned int core_id =0, read_byte = 0;
-    char aceconf[MAX_LEN_ACECONF_NAME + 1];
-    int ret;
+	/*
+	 * Handle ACE option
+	 * Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
+	 *       the path of conf or library and write the path to openocd_cfg
+	 */
+	if (aceconf_desc_list) {
+		const char *aceconf_desc;
+		unsigned int core_id = 0, read_byte = 0;
+		char aceconf[MAX_LEN_ACECONF_NAME + 1];
+		int ret;
 
-    aceconf_desc = aceconf_desc_list;
-    while (1) {
-      aceconf[0] = '\0';
+		aceconf_desc = aceconf_desc_list;
+		while (1) {
+			aceconf[0] = '\0';
 			core_id = 0;
 			ret = 0;
 
 			ret = sscanf(aceconf_desc, "core%u=%" XTOSTR(MAX_LEN_ACECONF_NAME) "[^,]%n",
-                   &core_id, aceconf, &read_byte);
-      if (ret != 2) {
-        printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
-        break;
-      }
-          
-      // Output the path of conf or library to V5 conf
-      // e.g.,     nds ace aceconf_path /home/wuiw/openocd/r6/lib/libacedbg.so
-      //       or  nds ace aceconf_path /home/wuiw/openocd/r6/lib/ICEman.conf
-      // OpenOCD will parse this command in V5 conf to load the shared library
-      fprintf(openocd_cfg, "nds ace aceconf_path %s\n", aceconf);
+					&core_id, aceconf, &read_byte);
+			if (ret != 2) {
+				printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
+				break;
+			}
 
-		  /* TODO: support multi core */
+			/*
+			 * Output the path of conf or library to V5 conf
+			 * e.g.,     nds ace aceconf_path /home/wuiw/openocd/r6/lib/libacedbg.so
+			 *       or  nds ace aceconf_path /home/wuiw/openocd/r6/lib/ICEman.conf
+			 * OpenOCD will parse this command in V5 conf to load the shared library
+			 */
+			fprintf(openocd_cfg, "nds ace aceconf_path %s\n", aceconf);
+
+			/* TODO: support multi core */
 			aceconf_desc += read_byte;	/* aceconf points to ',' or '\0' */
-      if (*aceconf_desc == '\0')
-        break;
-      else
-        aceconf_desc += 1;	/* point to the one next to ',' */
-    }
-  }
+			if (*aceconf_desc == '\0')
+				break;
+			else
+				aceconf_desc += 1;	/* point to the one next to ',' */
+		}
+	}
 }
 
-static void update_openocd_cfg(void)
+static void update_openocd_cfg()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 
 	/* update openocd.cfg */
-	if(log_folder == NULL)
+	if (!log_folder)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
-		// write to file, please add \"$folder_path\" for path contained space
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_folder, strlen(log_folder));
 		strncat(line_buffer, "iceman_debug0.log", 17);
-		// write to file, please add \"$folder_path\" for path contained space
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
@@ -1395,21 +1390,23 @@ static void update_openocd_cfg(void)
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 
-	//fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg] \n");
-	//fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg] \n");
+	/*
+	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg]\n");
+	fprintf(openocd_cfg, "source [find board/nds32_xc5.cfg]\n");
+	*/
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl) != NULL) {
 		if (nds_v3_ftdi == 1) {
-			if( strncmp(line_buffer, "source [find interface", 22) == 0 ) {
+			if (strncmp(line_buffer, "source [find interface", 22) == 0) {
 				fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
 				fprintf(openocd_cfg, "adapter_nsrst_delay 500\n");
-				if( custom_interface != NULL )
+				if (custom_interface != NULL)
 					fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 				else {
 					fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 					custom_interface = strdup("jtagkey.cfg");
 				}
 
-				if( strncmp(custom_interface, "jtagkey.cfg", 11) == 0 )
+				if (strncmp(custom_interface, "jtagkey.cfg", 11) == 0)
 					fprintf(openocd_cfg, "ftdi_layout_init 0x0b08 0x0f1b\n");
 
 				if (dev_dnum != (uint8_t)-1)
@@ -1417,7 +1414,7 @@ static void update_openocd_cfg(void)
 
 				fprintf(openocd_cfg, "reset_config trst_only\n");
 			} else {
-				if( strncmp(line_buffer, "source [find board/nds32_xc5.cfg]", 33) == 0 ) {
+				if (strncmp(line_buffer, "source [find board/nds32_xc5.cfg]", 33) == 0) {
 					// write to file, please add \"$folder_path\" for path contained space
 					fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds32_xc5.cfg"));
 				} else
@@ -1434,6 +1431,7 @@ static void update_openocd_cfg(void)
 				fputs(line_buffer, openocd_cfg);
 		}
 	}
+
 	fprintf(openocd_cfg, "nds log_file_size %d\n", log_file_size);
 	if (custom_def_idlm_base)
 		fprintf(openocd_cfg, "nds idlm_base_size %d %d %d %d\n", ilm_base, ilm_size, dlm_base, dlm_size);
@@ -1451,10 +1449,10 @@ static void update_openocd_cfg(void)
 
 	if (word_access_mem)
 		fprintf(openocd_cfg, "nds word_access_mem on\n");
-	fprintf(openocd_cfg, "source [find %s] \n", NDS32_USER_CFG);
+	fprintf(openocd_cfg, "source [find %s]\n", NDS32_USER_CFG);
 }
 
-static void update_interface_cfg(void)
+static void update_interface_cfg()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 
@@ -1465,7 +1463,7 @@ static void update_interface_cfg(void)
 	if (diagnosis)
 		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
 
-	if( efreq_range != 0 ) {
+	if (efreq_range != 0) {
 		fprintf(interface_cfg, "aice efreq_hz %d\n", efreq_range);
 		fprintf(interface_cfg, "adapter_khz 0\n");
 	} else
@@ -1481,50 +1479,50 @@ static void update_interface_cfg(void)
 		fprintf(interface_cfg, "aice count_to_check_dbger 500 %d\n", clock_setting);
 
 	/* custom srst/trst/restart scripts */
-	if (custom_srst_script) {
+	if (custom_srst_script)
 		fprintf(interface_cfg, "aice custom_srst_script %s\n", custom_srst_script);
-	}
-	if (custom_trst_script) {
+
+	if (custom_trst_script)
 		fprintf(interface_cfg, "aice custom_trst_script %s\n", custom_trst_script);
-	}
-	if (custom_restart_script) {
+
+	if (custom_restart_script)
 		fprintf(interface_cfg, "aice custom_restart_script %s\n", custom_restart_script);
-	}
-	if (custom_initial_script) {
+
+	if (custom_initial_script)
 		fprintf(interface_cfg, "aice custom_initial_script %s\n", custom_initial_script);
-	}
+
 	if (startup_reset_halt) {
 		if (soft_reset_halt)
 			fprintf(interface_cfg, "aice reset_halt_as_init %d\n", soft_reset_halt);
 		else
 			fprintf(interface_cfg, "aice reset_halt_as_init 1\n");
 	}
-	if (reset_aice_as_startup) {
+
+	if (reset_aice_as_startup)
 		fprintf(interface_cfg, "aice reset_aice_as_startup\n");
-	}
-	if (edm_dimb != DIMBR_DEFAULT) {
+
+	if (edm_dimb != DIMBR_DEFAULT)
 		fprintf(interface_cfg, "aice edm_dimb 0x%x\n", edm_dimb);
-	}
+
 	if (enable_l2c) {
-		if (l2c_base == (unsigned long long)-1) 
+		if (l2c_base == (unsigned long long)-1)
 			l2c_base = NDSV3_L2C_BASE;
 		fprintf(interface_cfg, "aice l2c_base 0x%08llx\n", l2c_base);
 	}
 	unsigned int i;
 
-	for (i=0; i<4; i++) {
+	for (i = 0; i < 4; i++) {
 		if (cop_reg_nums[i] != 0) {
 			fprintf(interface_cfg, "aice misc_config cop %d %d 1\n", i, cop_reg_nums[i]);
 		}
 	}
-	if (use_sdm == 1) {
+
+	if (use_sdm == 1)
 		fprintf(interface_cfg, "aice sdm use_sdm\n");
-		//fprintf(interface_cfg, "aice misc_config usb_timeout 1000\n");
-	}
 	fputs("\n", interface_cfg);
 }
 
-static void update_ftdi_v3_board_cfg(void)
+static void update_ftdi_v3_board_cfg()
 {
 	if (diagnosis)
 		fprintf(board_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
@@ -1540,38 +1538,33 @@ static void update_ftdi_v3_board_cfg(void)
 
 	fprintf(board_cfg, "nds ftdi_jtag_opt 0\n");
 	fprintf(board_cfg, "nds ftdi_log_detail 0\n");
+
 	/* custom srst/trst/restart scripts */
-	if (custom_srst_script) {
+	if (custom_srst_script)
 		fprintf(board_cfg, "nds custom_srst_script %s\n", custom_srst_script);
-	}
-	if (custom_trst_script) {
+
+	if (custom_trst_script)
 		fprintf(board_cfg, "nds custom_trst_script %s\n", custom_trst_script);
-	}
-	if (custom_restart_script) {
+
+	if (custom_restart_script)
 		fprintf(board_cfg, "nds custom_restart_script %s\n", custom_restart_script);
-	}
-	if (custom_initial_script) {
+
+	if (custom_initial_script)
 		fprintf(board_cfg, "nds custom_initial_script %s\n", custom_initial_script);
-	}
 
 	if (nds_mixed_mode_checking == 0x03) {
-		if (custom_srst_script) {
+		if (custom_srst_script)
 			fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
-		}
-		if (custom_trst_script) {
+		if (custom_trst_script)
 			fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
-		}
-		if (custom_restart_script) {
+		if (custom_restart_script)
 			fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
-		}
-		if (custom_initial_script) {
+		if (custom_initial_script)
 			fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
-		}
 
 		if (enable_l2c) {
 			if (l2c_base == (unsigned long long)-1)
 				l2c_base = NDSV5_L2C_BASE;
-
 			fprintf(openocd_cfg, "nds configure l2c_base 0x%llx\n", l2c_base);
 		}
 
@@ -1587,20 +1580,17 @@ static void update_ftdi_v3_board_cfg(void)
 	//if (reset_aice_as_startup) {
 	//	fprintf(board_cfg, "nds reset_aice_as_startup\n");
 	//}
-	if (edm_dimb != DIMBR_DEFAULT) {
+	if (edm_dimb != DIMBR_DEFAULT)
 		fprintf(board_cfg, "nds edm_dimb 0x%x\n", edm_dimb);
-	}
+
 	if (enable_l2c) {
 		if (l2c_base == (unsigned long long)-1)
 			l2c_base = NDSV3_L2C_BASE;
 		fprintf(board_cfg, "nds l2c_base 0x%08llx\n", l2c_base);
 	}
-	unsigned int i;
-
-	for (i=0; i<4; i++) {
-		if (cop_reg_nums[i] != 0) {
+	for (unsigned int i = 0; i < 4; i++) {
+		if (cop_reg_nums[i] != 0)
 			fprintf(board_cfg, "nds misc_config cop %d %d 1\n", i, cop_reg_nums[i]);
-		}
 	}
 	if (use_sdm == 1) {
 		fprintf(board_cfg, "nds sdm use_sdm\n");
@@ -1613,7 +1603,7 @@ static void update_ftdi_v3_board_cfg(void)
 	fputs("\n", board_cfg);
 }
 
-static void update_target_cfg(void)
+static void update_target_cfg()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	char *line_buffer_tmp;
@@ -1621,10 +1611,10 @@ static void update_target_cfg(void)
 	char *arch_str[3] = {"v2", "v3", "v3m"};
 	char coreid_str[3];
 
-	for (coreid = 0; coreid < 1; coreid ++){
+	for (coreid = 0; coreid < 1; coreid++) {
 		fseek(target_cfg_tpl, 0, SEEK_SET);
 		sprintf(coreid_str, "%d", coreid);
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, target_cfg_tpl) != NULL){
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, target_cfg_tpl) != NULL) {
 			line_buffer_tmp = str_replace(line_buffer, "<_TARGETID>", coreid_str);
 			line_buffer_tmp = str_replace(line_buffer_tmp, "<_TARGET_ARCH>", arch_str[target_type[coreid]]);
 			if (boot_code_debug)
@@ -1635,7 +1625,7 @@ static void update_target_cfg(void)
 	}
 }
 
-static void update_board_cfg(void)
+static void update_board_cfg()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	const char *aceconf_desc;
@@ -1649,20 +1639,20 @@ static void update_board_cfg(void)
 	char target_str[512];
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
 		if ((find_pos = strstr(line_buffer, "--target")) != NULL) {
-			if (custom_target_cfg) {
+			if (custom_target_cfg)
 				sprintf(line_buffer, "source [find %s]\n", custom_target_cfg);
-			} else if (nds_v3_ftdi == 1) {
+			else if (nds_v3_ftdi == 1)
 				strcpy(line_buffer, "source [find target/nds32_target_cfg.tpl]\n");
-			} else {
-				for (coreid = 0; coreid < 1; coreid++){
+			else {
+				for (coreid = 0; coreid < 1; coreid++) {
 					fputs(line_buffer, board_cfg);
-					if (target_type[coreid] == TARGET_V3) {
+					if (target_type[coreid] == TARGET_V3)
 						sprintf(target_str, "target/nds32v3_%d.cfg", coreid);
-					} else if (target_type[coreid] == TARGET_V2) {
+					else if (target_type[coreid] == TARGET_V2)
 						sprintf(target_str, "target/nds32v2_%d.cfg", coreid);
-					} else if (target_type[coreid] == TARGET_V3m) {
+					else if (target_type[coreid] == TARGET_V3m)
 						sprintf(target_str, "target/nds32v3m_%d.cfg", coreid);
-					} else {
+					else {
 						fprintf(stderr, "No target specified\n");
 						exit(0);
 					}
@@ -1671,11 +1661,10 @@ static void update_board_cfg(void)
 				}
 			}
 		} else if ((find_pos = strstr(line_buffer, "--soft-reset-halt")) != NULL) {
-			if (soft_reset_halt) {
+			if (soft_reset_halt)
 				strcpy(line_buffer, "nds soft_reset_halt on\n");
-			} else {
+			else
 				strcpy(line_buffer, "nds soft_reset_halt off\n");
-			}
 		} else if ((find_pos = strstr(line_buffer, "--ace-conf")) != NULL) {
 			strcpy(line_buffer, "set _ACE_CONF \"\"\n");
 			if (aceconf_desc_list) {
@@ -1686,7 +1675,7 @@ static void update_board_cfg(void)
 					ret = 0;
 
 					ret = sscanf(aceconf_desc, "core%u=%" XTOSTR(MAX_LEN_ACECONF_NAME) "[^,]%n",
-									&core_id, aceconf, &read_byte);
+							&core_id, aceconf, &read_byte);
 					if (ret != 2) {
 						printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
 						break;
@@ -1702,9 +1691,8 @@ static void update_board_cfg(void)
 				}
 			}
 		} else if ((find_pos = strstr(line_buffer, "jtag init")) != NULL) {
-			if (nds_v3_ftdi == 1) {
+			if (nds_v3_ftdi == 1)
 				strcpy(line_buffer, "#jtag init\n");
-			}
 		}
 
 		fputs(line_buffer, board_cfg);
@@ -1717,41 +1705,40 @@ static void update_board_cfg(void)
 	if (edm_port_op_file != NULL)
 		edm_operation_fd = fopen(edm_port_op_file, "r");
 	if (edm_operation_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd) != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd) != NULL)
 			parse_edm_operation(line_buffer);
-		}
 		fclose(edm_operation_fd);
-	} else 
+	} else
 		cfg_error(edm_port_op_file, 0);
-	if (edm_port_operations) {
+	if (edm_port_operations)
 		parse_edm_operation(edm_port_operations);
-	}
-/*
+
+	/*
 	if (nds32_edm_ops_num > 0) {
 		for (i = 0 ; i < nds32_edm_ops_num ; i++) {
-			fprintf(board_cfg, "nds32.cpu0 nds login_edm_operation 0x%x 0x%x\n", nds32_edm_ops[i].reg_no, nds32_edm_ops[i].data);
+			fprintf(board_cfg, "nds32.cpu0 nds login_edm_operation 0x%x 0x%x\n",
+					nds32_edm_ops[i].reg_no, nds32_edm_ops[i].data);
 		}
 	}
-*/
+	*/
+
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
 	if (sw_reset_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL)
 			parse_mem_operation(line_buffer);
-		}
 		fclose(sw_reset_fd);
 	}
-	if (memory_stop_sequence) {
-		parse_mem_operation(memory_stop_sequence);
-	}
-	if (memory_resume_sequence) {
-		parse_mem_operation(memory_resume_sequence);
-	}
 
-	for (i = 0 ; i < stop_sequences_num ; i++) {
+	if (memory_stop_sequence)
+		parse_mem_operation(memory_stop_sequence);
+
+	if (memory_resume_sequence)
+		parse_mem_operation(memory_resume_sequence);
+
+	for (i = 0 ; i < stop_sequences_num; i++)
 		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
-	}
 
 	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
@@ -1795,7 +1782,7 @@ static void update_board_cfg(void)
 	}
 }
 
-static void update_board_cfg_v5(void)
+static void update_board_cfg_v5()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	int coreid;
@@ -1810,37 +1797,33 @@ static void update_board_cfg_v5(void)
 
 
 	/* update nds_v5.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL)
 		fputs(line_buffer, board_cfg);
-	}
 	fputs("\n", board_cfg);
 
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
 	if (sw_reset_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL)
 			parse_mem_operation(line_buffer);
-		}
 		fclose(sw_reset_fd);
 	}
-	if (memory_stop_sequence) {
-		parse_mem_operation(memory_stop_sequence);
-	}
-	if (memory_resume_sequence) {
-		parse_mem_operation(memory_resume_sequence);
-	}
 
-	for (i = 0 ; i < stop_sequences_num ; i++) {
+	if (memory_stop_sequence)
+		parse_mem_operation(memory_stop_sequence);
+	if (memory_resume_sequence)
+		parse_mem_operation(memory_resume_sequence);
+
+	for (i = 0 ; i < stop_sequences_num ; i++)
 		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
-	}
 
 	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
 			fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
 			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0 ; i < stop_sequences_num ; i++) {
+			for (i = 0; i < stop_sequences_num; i++) {
 				int stop_addr, stop_mask, stop_data;
 				stop_addr = stop_sequences[i].address;
 				stop_mask = stop_sequences[i].mask;
@@ -1857,7 +1840,7 @@ static void update_board_cfg_v5(void)
 			fprintf(board_cfg, "nds_v5.cpu%d configure -event resume-start {\n", coreid);
 			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0 ; i < resume_sequences_num ; i++) {
+			for (i = 0; i < resume_sequences_num; i++) {
 				int resume_addr, resume_mask, resume_data;
 				resume_addr = resume_sequences[i].address;
 				resume_mask = resume_sequences[i].mask;
@@ -1877,7 +1860,7 @@ static void update_board_cfg_v5(void)
 	}
 }
 
-static void update_board_cfg_vtarget(void)
+static void update_board_cfg_vtarget()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 	int coreid;
@@ -1892,37 +1875,33 @@ static void update_board_cfg_vtarget(void)
 
 
 	/* update nds_v5.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL) {
+	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl) != NULL)
 		fputs(line_buffer, board_cfg);
-	}
 	fputs("\n", board_cfg);
 
 	/* open sw-reset-seq.txt */
 	FILE *sw_reset_fd = NULL;
 	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
 	if (sw_reset_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd) != NULL)
 			parse_mem_operation(line_buffer);
-		}
 		fclose(sw_reset_fd);
 	}
-	if (memory_stop_sequence) {
-		parse_mem_operation(memory_stop_sequence);
-	}
-	if (memory_resume_sequence) {
-		parse_mem_operation(memory_resume_sequence);
-	}
 
-	for (i = 0 ; i < stop_sequences_num ; i++) {
+	if (memory_stop_sequence)
+		parse_mem_operation(memory_stop_sequence);
+	if (memory_resume_sequence)
+		parse_mem_operation(memory_resume_sequence);
+
+	for (i = 0 ; i < stop_sequences_num ; i++)
 		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
-	}
 
 	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
 			fprintf(board_cfg, "nds_vtarget.cpu%d configure -event halted {\n", coreid);
 			fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0 ; i < stop_sequences_num ; i++) {
+			for (i = 0; i < stop_sequences_num; i++) {
 				int stop_addr, stop_mask, stop_data;
 				stop_addr = stop_sequences[i].address;
 				stop_mask = stop_sequences[i].mask;
@@ -1939,7 +1918,7 @@ static void update_board_cfg_vtarget(void)
 			fprintf(board_cfg, "nds_vtarget.cpu%d configure -event resume-start {\n", coreid);
 			fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
 			fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0 ; i < resume_sequences_num ; i++) {
+			for (i = 0; i < resume_sequences_num; i++) {
 				int resume_addr, resume_mask, resume_data;
 				resume_addr = resume_sequences[i].address;
 				resume_mask = resume_sequences[i].mask;
@@ -1959,11 +1938,12 @@ static void update_board_cfg_vtarget(void)
 	}
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	int i;
 	char *openocd_argv[6] = {0, 0, 0, 0, 0, 0};
 
-	for(i = 0; i < AICE_MAX_NUM_CORE; i++)
+	for (i = 0; i < AICE_MAX_NUM_CORE; i++)
 		target_type[i] = TARGET_V3;
 	if (parse_param(argc, argv) != ERROR_OK)
 		return 0;
@@ -1971,29 +1951,24 @@ int main(int argc, char **argv) {
 	/* prepare all valid port num */
 	update_gdb_port_num();
 
-	for(i = 0; i < total_num_of_ports; i++)
-	{
-	  nds32_registry_portnum_without_bind(gdb_port[i]);
-	}
+	for (i = 0; i < total_num_of_ports; i++)
+		nds32_registry_portnum_without_bind(gdb_port[i]);
 
 	burner_port = nds32_registry_portnum(burner_port);
-	if(burner_port < 0)
-	{
+	if (burner_port < 0) {
 		printf("burner port num error\n");
-		return 0;
+		return -1;
 	}
 
 	telnet_port = nds32_registry_portnum(telnet_port);
-	if(telnet_port < 0)
-	{
+	if (telnet_port < 0) {
 		printf("telnet port num error\n");
-		return 0;
+		return -1;
 	}
 	tcl_port = nds32_registry_portnum(tcl_port);
-	if(tcl_port < 0)
-	{
+	if (tcl_port < 0) {
 		printf("tcl port num error\n");
-		return 0;
+		return -1;
 	}
 	printf("%s\n", ICEMAN_VERSION);
 	printf("Burner listens on %d\n", burner_port);
@@ -2001,14 +1976,14 @@ int main(int argc, char **argv) {
 	printf("TCL port: %d\n", tcl_port);
 
 	if (custom_target_cfg) {
-		if ( (nds_target_cfg_checkif_transfer(custom_target_cfg) == 0) &&
-			   (nds_target_cfg_transfer(custom_target_cfg) == 0) ) {
+		if ((nds_target_cfg_checkif_transfer(custom_target_cfg) == 0) &&
+		     (nds_target_cfg_transfer(custom_target_cfg) == 0)) {
 			nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
 			custom_target_cfg = FILENAME_TARGET_CFG_OUT;
 		}
 	}
 
-	if (vtarget_enable==1) {
+	if (vtarget_enable == 1) {
 		update_openocd_cfg_vtarget();
 		update_board_cfg_vtarget();
 	} else if (target_type[0] == TARGET_V5) {
@@ -2027,12 +2002,13 @@ int main(int argc, char **argv) {
 		update_target_cfg();
 		update_board_cfg();
 	}
+
 	/* close config files */
 	close_config_files();
 
 	openocd_argv[0] = "openocd";
 	openocd_argv[1] = "-d-3";
-	if(workspace_folder) {
+	if (workspace_folder) {
 		char line_buffer[LINE_BUFFER_SIZE];
 		memset(line_buffer, 0, sizeof(char)*LINE_BUFFER_SIZE);
 		strncpy(line_buffer, workspace_folder, strlen(workspace_folder));
@@ -2054,11 +2030,10 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	if(log_folder)
+	if (log_folder)
 		openocd_main(4, openocd_argv);
 	else
 		openocd_main(2, openocd_argv);
-	//printf("return from openocd_main WOW!\n");
 	return 0;
 }
 
@@ -2103,7 +2078,8 @@ char *gpCheckInfo[CHECK_INFO_NUMS] = {
 	CHECK_GROUP,
 };
 
-int nds_target_cfg_checkif_transfer(const char *p_user) {
+int nds_target_cfg_checkif_transfer(const char *p_user)
+{
 	FILE *fp_user = NULL;
 	char line_buf[LINEBUF_SIZE];
 	char *pline_buf = (char *)&line_buf[0];
@@ -2116,9 +2092,9 @@ int nds_target_cfg_checkif_transfer(const char *p_user) {
 
 	// parsing the first line of the file
 	for (i = 0; i < 5; i++) {
-		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL)
 			break;
-		}
+
 		// parsing the keyword "_target_"
 		cur_str = strstr(pline_buf, CHECK_TARGET);
 		if (cur_str != NULL) {
@@ -2130,7 +2106,8 @@ int nds_target_cfg_checkif_transfer(const char *p_user) {
 	return -1;
 }
 
-int nds_target_cfg_transfer(const char *p_user) {
+int nds_target_cfg_transfer(const char *p_user)
+{
 	FILE *fp_user = NULL;
 	char line_buf[LINEBUF_SIZE], tmp_buf[256];
 	char *pline_buf = (char *)&line_buf[0];
@@ -2159,11 +2136,10 @@ int nds_target_cfg_transfer(const char *p_user) {
 		target_smp_core_nums[i] = 0;
 	}
 
-	while(1) {
-		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL) {
+	while (1) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_user) == NULL)
 			break;
-		}
-		//printf("%s \n", pline_buf);
+
 		for (i = 0; i < CHECK_INFO_NUMS; i++) {
 			cur_str = strstr(pline_buf, gpCheckInfo[i]);
 			if (cur_str != NULL) {
@@ -2203,10 +2179,8 @@ int nds_target_cfg_transfer(const char *p_user) {
 				// tap2_target_0   v5  1
 				sscanf(cur_str, "tap%d_target_%d %s %d", &tap_id, &target_id, &tmp_buf[0], &core_nums);
 
-				if( group_id != 0 ) {
+				if (group_id != 0)
 					target_core_group[tap_id][target_id] = group_id;
-				}
-
 
 				arch_id = TAP_ARCH_UNKNOWN;
 				do {
@@ -2288,7 +2262,7 @@ int nds_target_cfg_transfer(const char *p_user) {
 			target_core_id[number_of_target] = core_nums;
 			core_nums += target_core_nums[i][j];
 
-			target_group[number_of_target] = target_core_group[i][j]; 
+			target_group[number_of_target] = target_core_group[i][j];
 
 			number_of_target++;
 		}
@@ -2311,35 +2285,35 @@ int nds_target_cfg_transfer(const char *p_user) {
 		}
 	}
 
-/*
-	printf("number_of_tap: %d\n", number_of_tap);
-	printf("number_of_target: %d\n", number_of_target);
+	/*
+		printf("number_of_tap: %d\n", number_of_tap);
+		printf("number_of_target: %d\n", number_of_target);
 
-	printf("\n target_arch_id:");
-	for (i = 0; i < MAX_NUMS_TARGET; i++) {
-		printf(" %d", target_arch_id[i]);
-	}
-	printf("\n target_core_id:");
-	for (i = 0; i < MAX_NUMS_TARGET; i++) {
-		printf(" %d", target_core_id[i]);
-	}
-	printf("\n target_tap_position:");
-	for (i = 0; i < MAX_NUMS_TARGET; i++) {
-		printf(" %d", target_tap_position[i]);
-	}
-	printf("\n target_smp_list:");
-	for (i = 0; i < MAX_NUMS_TARGET; i++) {
-		printf(" %d", target_smp_list[i]);
-	}
-	printf("\n target_smp_core_nums:");
-	for (i = 0; i < MAX_NUMS_TARGET; i++) {
-		printf(" %d", target_smp_core_nums[i]);
-	}
-	printf("\n target_group:");
-	for (i = 0; i < MAX_NUMS_TARGET; i++) {
-		printf(" %d", target_group[i]);
-	}
-*/
+		printf("\n target_arch_id:");
+		for (i = 0; i < MAX_NUMS_TARGET; i++) {
+			printf(" %d", target_arch_id[i]);
+		}
+		printf("\n target_core_id:");
+		for (i = 0; i < MAX_NUMS_TARGET; i++) {
+			printf(" %d", target_core_id[i]);
+		}
+		printf("\n target_tap_position:");
+		for (i = 0; i < MAX_NUMS_TARGET; i++) {
+			printf(" %d", target_tap_position[i]);
+		}
+		printf("\n target_smp_list:");
+		for (i = 0; i < MAX_NUMS_TARGET; i++) {
+			printf(" %d", target_smp_list[i]);
+		}
+		printf("\n target_smp_core_nums:");
+		for (i = 0; i < MAX_NUMS_TARGET; i++) {
+			printf(" %d", target_smp_core_nums[i]);
+		}
+		printf("\n target_group:");
+		for (i = 0; i < MAX_NUMS_TARGET; i++) {
+			printf(" %d", target_group[i]);
+		}
+	*/
 
 	fclose(fp_user);
 	return 0;
@@ -2395,7 +2369,8 @@ unsigned int *gpUpdateNewTblInfo[CHECK_TPL_INFO_NUMS] = {
 	&target_group[0],
 };
 
-int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
+int nds_target_cfg_merge(const char *p_tpl, const char *p_out)
+{
 	FILE *fp_tpl = NULL;
 	FILE *fp_output = NULL;
 	char line_buf[LINEBUF_SIZE], tmp_buf[512];
@@ -2413,9 +2388,9 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
 
 
 	while(1) {
-		if (fgets(pline_buf, LINEBUF_SIZE, fp_tpl) == NULL) {
+		if (fgets(pline_buf, LINEBUF_SIZE, fp_tpl) == NULL)
 			break;
-		}
+
 		for (i = 0; i < CHECK_TPL_INFO_NUMS; i++) {
 			cur_str = strstr(pline_buf, gpCheckTplFileInfo[i]);
 			if (cur_str != NULL) {
@@ -2488,8 +2463,8 @@ static uint8_t list_devices(uint8_t devnum)
 
 		/* Check whitelist for Andes  */
 		for (j = 0; j < MAX_WHITELIST; j++) {
-			if(desc.idVendor  == device_whitelist[j].vid &&
-			   desc.idProduct == device_whitelist[j].pid ) {
+			if (desc.idVendor  == device_whitelist[j].vid &&
+			    desc.idProduct == device_whitelist[j].pid) {
 				break;
 			}
 		}
@@ -2507,9 +2482,9 @@ static uint8_t list_devices(uint8_t devnum)
 				printf("\nList of Devices:\n");
 
 			printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s\n",
-					list_dev, bnum, pnum, dnum,
-					desc.idVendor, desc.idProduct,
-					device_whitelist[j].description);
+			       list_dev, bnum, pnum, dnum,
+			       desc.idVendor, desc.idProduct,
+			       device_whitelist[j].description);
 		} else if (devnum == list_dev)
 			return dnum;
 

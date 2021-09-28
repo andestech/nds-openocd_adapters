@@ -33,19 +33,15 @@
 #define jtag_libusb_reset_device(dev)		libusb_reset_device(dev)
 #define jtag_libusb_get_device(devh)		libusb_get_device(devh)
 
-static inline int jtag_libusb_claim_interface(jtag_libusb_device_handle *devh,
-		int iface)
+static inline int jtag_libusb_claim_interface(jtag_libusb_device_handle *devh, int iface)
 {
 	return libusb_claim_interface(devh, iface);
-};
+}
 
-static inline int jtag_libusb_release_interface(jtag_libusb_device_handle *devh,
-		int iface)
+static inline int jtag_libusb_release_interface(jtag_libusb_device_handle *devh, int iface)
 {
 	return libusb_release_interface(devh, iface);
 }
-
-//struct jtag_libusb_device* jtag_libusb_get_device(struct jtag_libusb_device_handle *dev_handle);
 
 int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 		const char *serial,
@@ -53,13 +49,14 @@ int jtag_libusb_open(const uint16_t vids[], const uint16_t pids[],
 void jtag_libusb_close(jtag_libusb_device_handle *dev);
 int jtag_libusb_control_transfer(jtag_libusb_device_handle *dev,
 		uint8_t requestType, uint8_t request, uint16_t wValue,
-		uint16_t wIndex, char *bytes,	uint16_t size, unsigned int timeout);
+		uint16_t wIndex, char *bytes, uint16_t size, unsigned int timeout);
 int jtag_libusb_bulk_write(struct jtag_libusb_device_handle *dev, int ep,
-		char *bytes,	int size, int timeout);
+		char *bytes, int size, int timeout);
 int jtag_libusb_bulk_read(struct jtag_libusb_device_handle *dev, int ep,
 		char *bytes, int size, int timeout);
 int jtag_libusb_set_configuration(jtag_libusb_device_handle *devh,
 		int configuration);
+
 /**
  * Find the first interface optionally matching class, subclass and
  * protocol and claim it.
@@ -94,3 +91,4 @@ int jtag_libusb_get_descriptor_string(jtag_libusb_device_handle *dev_handle,
 		unsigned int *pdescp_bcdDevice);
 
 #endif /* OPENOCD_JTAG_DRIVERS_LIBUSB10_COMMON_H */
+
