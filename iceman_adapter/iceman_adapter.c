@@ -27,8 +27,7 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
-#define NDS32_USER_CFG     "nds32_user.cfg"
-//#define FILENAME_USER_TARGET_CFG  "./target/user_target_cfg_table.txt"
+#define NDS32_USER_CFG              "nds32_user.cfg"
 #define FILENAME_TARGET_CFG_TPL     "./target/nds32_target_cfg.tpl"
 #define FILENAME_TARGET_CFG_OUT     "./target/nds32_target_cfg.out"
 #define ICEMAN_VERSION \
@@ -38,6 +37,7 @@
 #define TOSTR(x)	#x
 #define XTOSTR(x)	TOSTR(x)
 
+/*
 #ifdef __GNUC__
 #  define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
 #else
@@ -49,6 +49,7 @@
 #else
 #  define UNUSED_FUNCTION(x) UNUSED_ ## x
 #endif
+*/
 
 #define LONGOPT_CP0                     7
 #define LONGOPT_CP1                     8
@@ -67,7 +68,7 @@
 #define LONGOPT_RV32                    21
 #define LONGOPT_RV64                    22
 #define LONGOPT_DETECT_2WIRE            23
-int long_opt_flag = 0;
+int long_opt_flag;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
 struct option long_option[] = {
@@ -98,7 +99,6 @@ struct option long_option[] = {
 	{"debug", required_argument, 0, 'd'},
 	{"larger-logfile", no_argument, 0, 'D'},
 	{"unlimited-log", no_argument, 0, 'e'},
-	//{"edmv2", no_argument, 0, 'E'},
 	{"log-output", required_argument, 0, 'f'},
 	{"edm-port-file", required_argument, 0, 'F'},
 	{"force-debug", no_argument, 0, 'g'},
@@ -106,8 +106,6 @@ struct option long_option[] = {
 	{"help", no_argument, 0, 'h'},
 	{"reset-hold", no_argument, 0, 'H'},
 	{"interface", required_argument, 0, 'I'},
-	//{"enable-virtual-hosting", no_argument, 0, 'j'},
-	//{"disable-virtual-hosting", no_argument, 0, 'J'},
 	{"word-access-mem", no_argument, 0, 'k'},
 	{"soft-reset-hold", optional_argument, 0, 'K'},
 	{"custom-srst", required_argument, 0, 'l'},
@@ -132,29 +130,9 @@ struct option long_option[] = {
 	{"target", required_argument, 0, 'Z'},
 	{0, 0, 0, 0}
 };
-extern const char *aice_clk_string[];
-/*
-const char *aice_clk_string[] = {
-	"30 MHz",
-	"15 MHz",
-	"7.5 MHz",
-	"3.75 MHz",
-	"1.875 MHz",
-	"937.5 KHz",
-	"468.75 KHz",
-	"234.375 KHz",
-	"48 MHz",
-	"24 MHz",
-	"12 MHz",
-	"6 MHz",
-	"3 MHz",
-	"1.5 MHz",
-	"750 KHz",
-	"375 KHz",
-	""
-};
-*/
-const char *v5_clk_string[] = { 
+
+extern const char *aice_clk_string[];	/* for openocd/src/jtag/aice/aice_usb.c */
+const char *v5_clk_string[] = {
 	"30 MHz",
 	"15 MHz",
 	"7.5 MHz",
@@ -211,75 +189,74 @@ const struct device_info device_whitelist[] = {
 
 #define MAX_MEM_OPERATIONS_NUM 32
 
-struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
-struct MEM_OPERATIONS resume_sequences[MAX_MEM_OPERATIONS_NUM];
-int stop_sequences_num = 0;
-int resume_sequences_num = 0;
+static struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
+static struct MEM_OPERATIONS resume_sequences[MAX_MEM_OPERATIONS_NUM];
+static int stop_sequences_num;
+static int resume_sequences_num;
 
 extern struct EDM_OPERATIONS nds32_edm_ops[];
 extern uint32_t nds32_edm_ops_num;
 extern uint32_t nds_skip_dmi;
 
-static char *memory_stop_sequence = NULL;
-static char *memory_resume_sequence = NULL;
-static char *edm_port_operations = NULL;
-static const char *edm_port_op_file = NULL;
+static char *memory_stop_sequence;
+static char *memory_resume_sequence;
+static char *edm_port_operations;
+static const char *edm_port_op_file;
 static int aice_retry_time = 2;//50;
-static int aice_no_crst_detect = 0;
+static int aice_no_crst_detect;
 static int clock_setting = 16;
 static int debug_level = 2;
 static int boot_code_debug;
 static int gdb_port[AICE_MAX_NUM_PORTS];
-static char *gdb_port_str = NULL;
+static char *gdb_port_str;
 static int burner_port = PORTNUM_BURNER;
 static int telnet_port = PORTNUM_TELNET;
 static int tcl_port = PORTNUM_TCL;
-static int startup_reset_halt = 0;
-static int soft_reset_halt = 0;
+static int startup_reset_halt;
+static int soft_reset_halt;
 static int force_debug;
 static unsigned int log_file_size = 0xA00000; // default: 10MB
 static int boot_time = 5000;
 static int reset_time = 1000;
-static int reset_aice_as_startup = 0;
-static int count_to_check_dbger = 0;
+static int reset_aice_as_startup;
+static int count_to_check_dbger;
 static int global_stop;
 static int word_access_mem;
 static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_V3};
-static const char *custom_srst_script = NULL;
-static const char *custom_trst_script = NULL;
-static const char *custom_restart_script = NULL;
-static const char *custom_initial_script = NULL;
-static const char *aceconf_desc_list = NULL;
-static int diagnosis = 0;
-static int diagnosis_memory = 0;
-static unsigned int diagnosis_address = 0;
+static const char *custom_srst_script;
+static const char *custom_trst_script;
+static const char *custom_restart_script;
+static const char *custom_initial_script;
+static const char *aceconf_desc_list;
+static int diagnosis;
+static int diagnosis_memory;
+static unsigned int diagnosis_address;
 static uint8_t total_num_of_ports = 1;
-static unsigned int custom_def_idlm_base=0, ilm_base=0, ilm_size=0, dlm_base=0, dlm_size=0;
+static unsigned int custom_def_idlm_base, ilm_base, ilm_size, dlm_base, dlm_size;
 extern int nds32_registry_portnum_without_bind(int port_num);
 extern int nds32_registry_portnum(int port_num);
 static void parse_edm_operation(const char *edm_operation);
-//extern int force_turnon_V3_EDM;
 extern int openocd_main(int argc, char *argv[]);
 extern char *nds32_edm_passcode_init;
-static const char *workspace_folder = NULL;
-static const char *log_folder = NULL;
-static const char *bin_folder = NULL;
-static const char *custom_interface = NULL;
-static const char *custom_target_cfg = NULL;
-static unsigned int efreq_range = 0;
+static const char *workspace_folder;
+static const char *log_folder;
+static const char *bin_folder;
+static const char *custom_interface;
+static const char *custom_target_cfg;
+static unsigned int efreq_range;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 #define NDSV3_L2C_BASE (0x90F00000u)
 #define NDSV5_L2C_BASE (0xE0500000u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
-static unsigned int use_sdm = 0;
-static unsigned int use_smp = 0;
-static unsigned int usd_halt_on_reset = 0;
-static unsigned int detect_2wire = 0;
-static unsigned int enable_l2c = 0;
+static unsigned int use_sdm;
+static unsigned int use_smp;
+static unsigned int usd_halt_on_reset;
+static unsigned int detect_2wire;
+static unsigned int enable_l2c;
 static unsigned long long l2c_base = (unsigned long long)-1;
-static unsigned int dmi_busy_delay_count = 0;
-static unsigned int nds_v3_ftdi = 0;
+static unsigned int dmi_busy_delay_count;
+static unsigned int nds_v3_ftdi;
 extern unsigned int nds_mixed_mode_checking;
 
 int nds_target_cfg_checkif_transfer(const char *p_user);
@@ -289,11 +266,10 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out);
 static uint8_t list_devices(uint8_t devnum);
 static uint8_t dev_dnum = -1;
 static int vtarget_xlen;
-static int vtarget_enable = 0;
+static int vtarget_enable;
 
 extern char *OPENOCD_VERSION_STR; ///< define in openocd.c
 static void show_version(void) {
-	/* printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", VERSION, PKGBLDDATE); */
 	printf("%s\n", ICEMAN_VERSION);
 	printf("Copyright (C) 2007-2021 Andes Technology Corporation\n");
 	printf("%s\n", OPENOCD_VERSION_STR);
@@ -306,13 +282,12 @@ static void show_usage(void) {
 	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
-	//printf("-B, --boot:\t\tReset-and-hold while connecting to target\n");
 
 	// V3
 	printf("-c, --clock (For V3):\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
-	for (i=0; i<=15; i++)
+	for (i = 0; i <= 15; i++)
 		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
 	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
 	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
@@ -323,10 +298,9 @@ static void show_usage(void) {
 	printf("-c, --clock (For V5):\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
-	for (i=0; i<=15; i++) {
-		if( (i==8) || (i==9) )
+	for (i = 0; i <= 15; i++) {
+		if ((i==8) || (i==9))
 			continue;
-
 		printf("\t\t\t%d: %s\n", i, v5_clk_string[i]);
 	}
 	printf("\n");
@@ -345,9 +319,7 @@ static void show_usage(void) {
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 millisecond\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
-	//printf("-D, --unlimited-log:\tDo not limit log file size to 512 KB\n");
 	printf("-D, --larger-logfile:\tThe maximum size of the log file is 1MBx2. The size is increased to 512MBx2 with this option.\n");
-	//printf("-e, --edm-retry:\tRetry count of getting EDM version as ICEman startup\n");
 	printf("-f, --log-output:\toutput path for config and log files\n");
 	printf("\t\t\tFor multi-user:\n");
 	printf("\t\t\t\tUse --log-output/-f to specify other workspace\n");
@@ -357,12 +329,9 @@ static void show_usage(void) {
 	printf("\t\t\twrite_edm 6:0x1234,7:0x1234;\n");
 	printf("\t\t\twrite_edm 6:0x1111;\n");
 	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
-	//printf("-g, --force-debug: \n");
 	printf("-G, --enable-global-stop (Only for V3): Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
 	printf("-h, --help:\t\tThe usage is for ICEman\n");
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
-	//printf("-j, --enable-virtual-hosting:\tEnable virtual hosting\n");
-	//printf("-J, --disable-virtual-hosting:\tDisable virtual hosting\n");
 	printf("-I, --interface:\tSpecify an interface config file in ice/interface.\n");
 	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
 	printf("-K, --soft-reset-hold (Only for V3):\tUse soft reset-and-hold\n");
@@ -371,7 +340,6 @@ static void show_usage(void) {
 	printf("-M, --edm-dimb (Only for V3):\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
 	printf("\t\t\t(default: 0xFFFF0000)\n");
 	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
-	//printf("-M, --Mode:\t\tSMP\\AMP Mode(Default: AMP Mode)\n");
 	printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
 	printf("\t\t\t(default: 1000 milliseconds)\n");
 	printf("-O, --edm-port-operation (Only for Secure MPU): EDM port0/1 operations\n");
@@ -393,11 +361,7 @@ static void show_usage(void) {
 	printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
 	printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
 	printf("\t\t\t(default: 5000 milliseconds)\n");
-	//printf("-u, --update-fw:\tUpdate AICE F/W\n");
-	//printf("-U, --update-fpga:\tUpdate AICE FPGA\n");
 	printf("-v, --version:\t\tVersion of ICEman\n");
-	//printf("-w, --backup-fw:\tBackup AICE F/W\n");
-	//printf("-W, --backup-fpga:\tBackup AICE FPGA\n");
 	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
@@ -431,10 +395,6 @@ static char* as_filepath(const char* cfg_name)
 	} else {
 		strncpy(output_path, cfg_name, strlen(cfg_name));
 	}
-
-#if _DEBUG_
-	printf("as_filepath: %s\n", output_path);
-#endif
 	return output_path;
 }
 
@@ -501,7 +461,6 @@ static int parse_param(int a_argc, char **a_argv) {
 		int long_opt = 0;
 		uint32_t cop_nums = 0;
 		char tmpstr[10] = {0};
-		//uint32_t ms_check_dbger = 0;
 		unsigned int i;
 
 		c = getopt_long(a_argc, a_argv, opt_string, long_option, &option_index);
@@ -511,7 +470,6 @@ static int parse_param(int a_argc, char **a_argv) {
 		switch (c) {
 			case 0:
 				long_opt = *long_option[option_index].flag;
-				//printf("option %s,", long_option[option_index].name);
 				if ((long_opt >= LONGOPT_CP0) &&
 					(long_opt <= LONGOPT_CP3)) {
 						cop_nums = strtol(optarg, NULL, 0);
@@ -615,10 +573,6 @@ static int parse_param(int a_argc, char **a_argv) {
 				log_file_size = 0x20000000;
 				debug_level = 3;
 				break;
-			/*case 'E':
-				printf("force_turnon_V3_EDM off \n");
-				force_turnon_V3_EDM = 0;
-				break;*/
 			case 'F':
 				edm_port_op_file = optarg;
 				break;
@@ -665,13 +619,6 @@ static int parse_param(int a_argc, char **a_argv) {
 				if (c) {
 					*c = '\0';
 				}
-
-			#if _DEBUG_
-				printf("[DEBUG] log_folder:%s\n", log_folder);
-				printf("[DEBUG] workspace_folder:%s\n", workspace_folder);
-				printf("[DEBUG] bin_folder:%s\n", bin_folder);
-			#endif
-
 				mkdir( as_filepath("board"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
 				mkdir( as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
 				mkdir( as_filepath("target"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
@@ -842,13 +789,13 @@ static char *clock_v5_hz[] = {
 	"10000",	// Default
 };
 
-static FILE *openocd_cfg_tpl = NULL;
-static FILE *openocd_cfg = NULL;
-static FILE *interface_cfg_tpl = NULL;
-static FILE *interface_cfg = NULL;
-static FILE *board_cfg_tpl = NULL;
-static FILE *board_cfg = NULL;
-static FILE *target_cfg_tpl = NULL;
+static FILE *openocd_cfg_tpl;
+static FILE *openocd_cfg;
+static FILE *interface_cfg_tpl;
+static FILE *interface_cfg;
+static FILE *board_cfg_tpl;
+static FILE *board_cfg;
+static FILE *target_cfg_tpl;
 static FILE *target_cfg[AICE_MAX_NUM_CORE];
 char target_cfg_name[64];
 char *target_cfg_name_str = (char *)&target_cfg_name[0];
@@ -1351,14 +1298,17 @@ static void update_openocd_cfg_vtarget(void)
 		}
 	}
 
-	// fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
-	// fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
-	// fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
-	// fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
-	// fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
-	// fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
-	//if (diagnosis)
-	//	fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+	/*
+	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
+	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
+	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
+	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
+	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
+	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
+	if (diagnosis)
+		fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+	*/
+
 	if (count_to_check_dbger)
 		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
 
@@ -1514,7 +1464,7 @@ static void update_interface_cfg(void)
 	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
 	if (diagnosis)
 		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
-	
+
 	if( efreq_range != 0 ) {
 		fprintf(interface_cfg, "aice efreq_hz %d\n", efreq_range);
 		fprintf(interface_cfg, "adapter_khz 0\n");
@@ -2017,15 +1967,6 @@ int main(int argc, char **argv) {
 		target_type[i] = TARGET_V3;
 	if (parse_param(argc, argv) != ERROR_OK)
 		return 0;
-#if 0
-	if(diagnosis){
-		do_diagnosis(diagnosis_memory, diagnosis_address);
-		return 0;
-		//printf("do_diagnosis %x, %x\n", diagnosis_memory, diagnosis_address);
-	}
-	if (target_probe() != ERROR_OK)
-		return 0;
-#endif
 
 	/* prepare all valid port num */
 	update_gdb_port_num();
@@ -2054,7 +1995,6 @@ int main(int argc, char **argv) {
 		printf("tcl port num error\n");
 		return 0;
 	}
-	/* printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", VERSION, PKGBLDDATE); */
 	printf("%s\n", ICEMAN_VERSION);
 	printf("Burner listens on %d\n", burner_port);
 	printf("Telnet port: %d\n", telnet_port);
@@ -2068,7 +2008,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	//printf("gdb_port[0]=%d, burner_port=%d, telnet_port=%d, tcl_port=%d .\n", gdb_port[0], burner_port, telnet_port, tcl_port);
 	if (vtarget_enable==1) {
 		update_openocd_cfg_vtarget();
 		update_board_cfg_vtarget();
@@ -2076,12 +2015,9 @@ int main(int argc, char **argv) {
 		update_openocd_cfg_v5();
 		update_board_cfg_v5();
 	} else if ((custom_interface != NULL) || (nds_mixed_mode_checking == 0x03)) {
-		// && (target_type[0] != TARGET_V5)
 		nds_v3_ftdi = 1;
 		open_config_files();
 		update_openocd_cfg();       // source [find interface/
-		//update_interface_cfg();   // move aice monitor-cmd to target monitor-cmd (update_ftdi_v3_board_cfg)
-		//update_target_cfg();      // must be user-define
 		update_board_cfg();
 		update_ftdi_v3_board_cfg();
 	} else {
@@ -2105,8 +2041,6 @@ int main(int argc, char **argv) {
 		openocd_argv[2] = "-f";
 		openocd_argv[3] = line_buffer;
 	}
-	//openocd_argv[2] = "-l";
-	//openocd_argv[3] = "iceman_debug.log";
 
 	/* reset "optind", for the next getopt_long() usage */
 	optind = 1;
@@ -2243,7 +2177,6 @@ int nds_target_cfg_transfer(const char *p_user) {
 				if (i == 1) {
 					// tap0_irlen 4
 					sscanf(cur_str, "tap%d_irlen %d", &tap_id, &irlen);
-					//printf("tap_id:%d, irlen:%d\n", tap_id, irlen);
 					if (tap_id >= MAX_NUMS_TAP) {
 						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
 						fclose(fp_user);
@@ -2254,7 +2187,6 @@ int nds_target_cfg_transfer(const char *p_user) {
 				} else if (i == 2) {
 					// tap0_expect_id 0x1000063D
 					sscanf(cur_str, "tap%d_expect_id 0x%x", &tap_id, &exp_id);
-					//printf("tap_id:%d, exp_id:0x%x\n", tap_id, exp_id);
 					if (tap_id >= MAX_NUMS_TAP) {
 						printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
 						fclose(fp_user);
@@ -2272,7 +2204,6 @@ int nds_target_cfg_transfer(const char *p_user) {
 				sscanf(cur_str, "tap%d_target_%d %s %d", &tap_id, &target_id, &tmp_buf[0], &core_nums);
 
 				if( group_id != 0 ) {
-					//printf("DEBUG!!! tap %d, target %d, group %d\n", tap_id, target_id, group_id);
 					target_core_group[tap_id][target_id] = group_id;
 				}
 
@@ -2323,7 +2254,6 @@ int nds_target_cfg_transfer(const char *p_user) {
 				}
 
 				tap_arch_list[tap_id] = arch_id;
-				//printf("tap_id:%d, target_id:%d arch:%d core_nums:%d\n", tap_id, target_id, arch_id, core_nums);
 				target_arch_list[tap_id][target_id] = arch_id;
 				target_core_nums[tap_id][target_id] = core_nums;
 				break;
@@ -2344,8 +2274,6 @@ int nds_target_cfg_transfer(const char *p_user) {
 				fclose(fp_user);
 				return -1;
 			}
-			//printf("target_arch_list: %d\n", target_arch_list[i][j]);
-			//printf("target_core_nums: %d\n", target_core_nums[i][j]);
 			if ( target_core_nums[i][j] > 1 ) {
 				if (j != 0) {
 					printf("ERROR!! smp must be target_0 !!\n");
@@ -2523,16 +2451,6 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out) {
 	fclose(fp_output);
 	return 0;
 }
-/*
-int nds_target_cfg_transfer_main(void) {
-	if (nds_target_cfg_checkif_transfer(FILENAME_USER_TARGET_CFG) != 0)
-		return -1;
-	if (nds_target_cfg_transfer(FILENAME_USER_TARGET_CFG) != 0)
-		return -1;
-	nds_target_cfg_merge(FILENAME_TARGET_CFG_TPL, FILENAME_TARGET_CFG_OUT);
-	return 0;
-}
-*/
 
 static uint8_t list_devices(uint8_t devnum)
 {
