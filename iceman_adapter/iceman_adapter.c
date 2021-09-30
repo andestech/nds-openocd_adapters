@@ -1039,10 +1039,20 @@ static void update_debug_diag_v5()
 static void update_openocd_cfg_v5()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
-	openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
+	if (vtarget_enable == 1) {
+		if (vtarget_xlen == 32)
+			openocd_cfg_tpl = fopen("openocd.cfg.rv32", "r");
+		else
+			openocd_cfg_tpl = fopen("openocd.cfg.rv64", "r");
+		if (!openocd_cfg_tpl)
+			cfg_error("openocd.cfg.rv32 or openocd.cfg.rv64", 0);
+	} else {
+		openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
+		if (!openocd_cfg_tpl)
+			cfg_error("openocd.cfg.v5", 0);
+	}
+
 	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
-	if (!openocd_cfg_tpl)
-		cfg_error("openocd.cfg.v5", 0);
 	if (!openocd_cfg)
 		cfg_error(as_filepath("openocd.cfg"), 1);
 
@@ -1050,14 +1060,12 @@ static void update_openocd_cfg_v5()
 	if (!log_folder)
 		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
 	else {
-		// write to file, please add \"$folder_path\" for path contained space
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_folder, strlen(log_folder));
 		strncat(line_buffer, "iceman_debug0.log", 17);
-		// write to file, please add \"$folder_path\" for path contained space
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
@@ -1132,12 +1140,14 @@ static void update_openocd_cfg_v5()
 		}
 	}
 
-	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
-	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
-	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
-	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
-	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
-	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
+	if (vtarget_enable == 0) {
+		fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
+		fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
+		fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
+		fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
+		fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
+		fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
+	}
 
 	if (count_to_check_dbger)
 		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
@@ -1148,18 +1158,15 @@ static void update_openocd_cfg_v5()
 	if (dmi_busy_delay_count != 0)
 		fprintf(openocd_cfg, "nds dmi_busy_delay_count %d\n", dmi_busy_delay_count);
 
-	if (custom_srst_script) {
+	if (custom_srst_script)
 		fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
-	}
-	if (custom_trst_script) {
+
+	if (custom_trst_script)
 		fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
-	}
-	if (custom_restart_script) {
+
+	if (custom_restart_script)
 		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
-	}
-	//if (custom_initial_script) {
-	//	fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
-	//}
+
 	if (enable_l2c) {
 		if (l2c_base == (unsigned long long)-1)
 			l2c_base = NDSV5_L2C_BASE;
@@ -1211,162 +1218,6 @@ static void update_openocd_cfg_v5()
 	}
 
 	fprintf(openocd_cfg, "source [find %s]\n", NDS32_USER_CFG);
-}
-
-static void update_openocd_cfg_vtarget()
-{
-	char line_buffer[LINE_BUFFER_SIZE];
-	if (vtarget_xlen == 32)
-		openocd_cfg_tpl = fopen("openocd.cfg.rv32", "r");
-	else
-		openocd_cfg_tpl = fopen("openocd.cfg.rv64", "r");
-	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
-	if (!openocd_cfg_tpl)
-		cfg_error("openocd.cfg.rv32 or openocd.cfg.rv64", 0);
-	if (!openocd_cfg)
-		cfg_error(as_filepath("openocd.cfg"), 1);
-
-	/* update openocd.cfg */
-	if (!log_folder)
-		fprintf(openocd_cfg, "log_output iceman_debug0.log\n");
-	else {
-		/* write to file, please add \"$folder_path\" for path contained space */
-		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", workspace_folder);
-		fprintf(openocd_cfg, "add_script_search_dir \"%s\"\n", bin_folder);
-
-		memset(line_buffer, 0, LINE_BUFFER_SIZE);
-		strncpy(line_buffer, log_folder, strlen(log_folder));
-		strncat(line_buffer, "iceman_debug0.log", 17);
-		/* write to file, please add \"$folder_path\" for path contained space */
-		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
-	}
-	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
-	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
-	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
-	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
-
-	if ((int)(efreq_range/1000) != 0)
-		fprintf(openocd_cfg, "adapter_khz %d\n", (int)(efreq_range/1000));
-	else if (efreq_range != 0)
-		fprintf(openocd_cfg, "adapter_khz 1\n");
-	else
-		fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
-
-	if (use_smp == 1)
-		fprintf(openocd_cfg, "set _use_smp 1\n");
-	else
-		fprintf(openocd_cfg, "set _use_smp 0\n");
-
-	int replace_target_create = 0;
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl)) {
-		if (strncmp(line_buffer, "##INTERFACE_REPLACE##", 21) == 0) {
-			/* replace interface */
-			if (custom_interface)
-				fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
-			else
-				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
-
-			if (dev_dnum != (uint8_t)-1)
-				fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
-			continue;
-		}
-		if (custom_target_cfg) {
-			if (strncmp(line_buffer, "##--target-create-start", 23) == 0) {
-				/* replace target-create start */
-				fprintf(openocd_cfg, "source [find %s]\n", custom_target_cfg);
-				replace_target_create = 1;
-				fputs(line_buffer, openocd_cfg);
-			} else if (strncmp(line_buffer, "##--target-create-finish", 24) == 0) {
-				/* replace target-create finish */
-				custom_target_cfg = NULL;
-				replace_target_create = 0;
-			}
-			if (replace_target_create == 0)
-				fputs(line_buffer, openocd_cfg);
-		} else {
-			if (strncmp(line_buffer, "source [find board/nds_vtarget.cfg]", 35) == 0) {
-				// write to file, please add \"$folder_path\" for path contained space
-				fprintf(openocd_cfg, "source [find \"%s\"]\n", as_filepath("board/nds_vtarget.cfg"));
-			} else
-				fputs(line_buffer, openocd_cfg);
-		}
-	}
-
-	/*
-	fprintf(openocd_cfg, "nds configure log_file_size %d\n", log_file_size);
-	fprintf(openocd_cfg, "nds configure desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
-	fprintf(openocd_cfg, "nds configure burn_port %d\n", burner_port);
-	fprintf(openocd_cfg, "nds configure halt_on_reset %d\n", usd_halt_on_reset);
-	fprintf(openocd_cfg, "nds boot_time %d\n", boot_time);
-	fprintf(openocd_cfg, "nds reset_time %d\n", reset_time);
-	if (diagnosis)
-		fprintf(openocd_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
-	*/
-
-	if (count_to_check_dbger)
-		fprintf(openocd_cfg, "nds count_to_check_dm %d\n", count_to_check_dbger);
-
-	if (startup_reset_halt == 1)
-		fprintf(openocd_cfg, "nds reset_halt_as_init on\n");
-
-	if (dmi_busy_delay_count != 0)
-		fprintf(openocd_cfg, "nds dmi_busy_delay_count %d\n", dmi_busy_delay_count);
-
-	if (custom_srst_script)
-		fprintf(openocd_cfg, "nds configure custom_srst_script %s\n", custom_srst_script);
-
-	if (custom_trst_script)
-		fprintf(openocd_cfg, "nds configure custom_trst_script %s\n", custom_trst_script);
-
-	if (custom_restart_script)
-		fprintf(openocd_cfg, "nds configure custom_restart_script %s\n", custom_restart_script);
-
-	if (custom_initial_script)
-		fprintf(openocd_cfg, "nds configure custom_initial_script %s\n", custom_initial_script);
-
-	if (aice_no_crst_detect != 0)
-		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
-
-	/*
-	 * Handle ACE option
-	 * Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
-	 *       the path of conf or library and write the path to openocd_cfg
-	 */
-	if (aceconf_desc_list) {
-		const char *aceconf_desc;
-		unsigned int core_id = 0, read_byte = 0;
-		char aceconf[MAX_LEN_ACECONF_NAME + 1];
-		int ret;
-
-		aceconf_desc = aceconf_desc_list;
-		while (1) {
-			aceconf[0] = '\0';
-			core_id = 0;
-			ret = 0;
-
-			ret = sscanf(aceconf_desc, "core%u=%" XTOSTR(MAX_LEN_ACECONF_NAME) "[^,]%n",
-					&core_id, aceconf, &read_byte);
-			if (ret != 2) {
-				printf("<-- Can not parse --ace-conf argument '%s'\n. -->", aceconf_desc);
-				break;
-			}
-
-			/*
-			 * Output the path of conf or library to V5 conf
-			 * e.g.,     nds ace aceconf_path /home/wuiw/openocd/r6/lib/libacedbg.so
-			 *       or  nds ace aceconf_path /home/wuiw/openocd/r6/lib/ICEman.conf
-			 * OpenOCD will parse this command in V5 conf to load the shared library
-			 */
-			fprintf(openocd_cfg, "nds ace aceconf_path %s\n", aceconf);
-
-			/* TODO: support multi core */
-			aceconf_desc += read_byte;	/* aceconf points to ',' or '\0' */
-			if (*aceconf_desc == '\0')
-				break;
-			else
-				aceconf_desc += 1;	/* point to the one next to ',' */
-		}
-	}
 }
 
 static void update_openocd_cfg()
@@ -1787,10 +1638,17 @@ static void update_board_cfg_v5()
 	int coreid;
 	int i;
 
-	board_cfg_tpl = fopen("board/nds_v5.cfg.tpl", "r");
+	if (vtarget_enable == 1) {
+		board_cfg_tpl = fopen("board/nds_vtarget.cfg.tpl", "r");
+		if (!board_cfg_tpl)
+			cfg_error("board/nds_vtarget.cfg.tpl", 0);
+	} else {
+		board_cfg_tpl = fopen("board/nds_v5.cfg.tpl", "r");
+		if (!board_cfg_tpl)
+			cfg_error("board/nds_v5.cfg.tpl", 0);
+	}
+
 	board_cfg = fopen(as_filepath("board/nds_v5.cfg"), "w");
-	if (!board_cfg_tpl)
-		cfg_error("board/nds_v5.cfg.tpl", 0);
 	if (!board_cfg)
 		cfg_error(as_filepath("board/nds_v5.cfg"), 1);
 
@@ -1819,9 +1677,16 @@ static void update_board_cfg_v5()
 
 	for (coreid = 0; coreid < 1; coreid++) {
 		if (stop_sequences_num > 0) {
-			fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
-			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
-			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			if (vtarget_enable == 1) {
+				fprintf(board_cfg, "nds_vtarget.cpu%d configure -event halted {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
+			} else {
+				fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			}
+
 			for (i = 0; i < stop_sequences_num; i++) {
 				int stop_addr, stop_mask, stop_data;
 				stop_addr = stop_sequences[i].address;
@@ -1832,13 +1697,24 @@ static void update_board_cfg_v5()
 				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
 				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
 			}
-			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
+
+			if (vtarget_enable == 1)
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access cpu\n", coreid);
+			else
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
 			fputs("}\n", board_cfg);
 		}
 		if (resume_sequences_num > 0) {
-			fprintf(board_cfg, "nds_v5.cpu%d configure -event resume-start {\n", coreid);
-			fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
-			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			if (vtarget_enable == 1) {
+				fprintf(board_cfg, "nds_vtarget.cpu%d configure -event resume-start {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
+			} else {
+				fprintf(board_cfg, "nds_v5.cpu%d configure -event resume-start {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			}
+
 			for (i = 0; i < resume_sequences_num; i++) {
 				int resume_addr, resume_mask, resume_data;
 				resume_addr = resume_sequences[i].address;
@@ -1853,85 +1729,11 @@ static void update_board_cfg_v5()
 					fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
 				}
 			}
-			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
-			fputs("}\n", board_cfg);
-		}
-	}
-}
 
-static void update_board_cfg_vtarget()
-{
-	char line_buffer[LINE_BUFFER_SIZE];
-	int coreid;
-	int i;
-
-	board_cfg_tpl = fopen("board/nds_vtarget.cfg.tpl", "r");
-	board_cfg = fopen(as_filepath("board/nds_vtarget.cfg"), "w");
-	if (!board_cfg_tpl)
-		cfg_error("board/nds_vtarget.cfg.tpl", 0);
-	if (!board_cfg)
-		cfg_error(as_filepath("board/nds_vtarget.cfg"), 1);
-
-
-	/* update nds_v5.cfg */
-	while (fgets(line_buffer, LINE_BUFFER_SIZE, board_cfg_tpl))
-		fputs(line_buffer, board_cfg);
-	fputs("\n", board_cfg);
-
-	/* open sw-reset-seq.txt */
-	FILE *sw_reset_fd = NULL;
-	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
-	if (sw_reset_fd) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd))
-			parse_mem_operation(line_buffer);
-		fclose(sw_reset_fd);
-	}
-
-	if (memory_stop_sequence)
-		parse_mem_operation(memory_stop_sequence);
-	if (memory_resume_sequence)
-		parse_mem_operation(memory_resume_sequence);
-
-	for (i = 0 ; i < stop_sequences_num ; i++)
-		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
-
-	for (coreid = 0; coreid < 1; coreid++) {
-		if (stop_sequences_num > 0) {
-			fprintf(board_cfg, "nds_vtarget.cpu%d configure -event halted {\n", coreid);
-			fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
-			fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0; i < stop_sequences_num; i++) {
-				int stop_addr, stop_mask, stop_data;
-				stop_addr = stop_sequences[i].address;
-				stop_mask = stop_sequences[i].mask;
-				stop_data = stop_sequences[i].data;
-				fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_addr);
-				fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_addr, stop_addr);
-				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
-				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
-			}
-			fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
-			fputs("}\n", board_cfg);
-		}
-		if (resume_sequences_num > 0) {
-			fprintf(board_cfg, "nds_vtarget.cpu%d configure -event resume-start {\n", coreid);
-			fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
-			fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0; i < resume_sequences_num; i++) {
-				int resume_addr, resume_mask, resume_data;
-				resume_addr = resume_sequences[i].address;
-				resume_mask = resume_sequences[i].mask;
-				resume_data = resume_sequences[i].data;
-				if (resume_sequences[i].restore) {
-					fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_addr);
-					fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_addr, resume_addr);
-				} else {
-					fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", resume_addr, resume_addr);
-					fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
-					fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
-				}
-			}
-			fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access cpu\n", coreid);
+			if (vtarget_enable == 1)
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access cpu\n", coreid);
+			else
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
 			fputs("}\n", board_cfg);
 		}
 	}
@@ -1982,16 +1784,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (vtarget_enable == 1) {
-		update_openocd_cfg_vtarget();
-		update_board_cfg_vtarget();
-	} else if (target_type[0] == TARGET_V5) {
+	if (target_type[0] == TARGET_V5 || vtarget_enable == 1) {
 		update_openocd_cfg_v5();
 		update_board_cfg_v5();
 	} else if (custom_interface || (nds_mixed_mode_checking == 0x03)) {
 		nds_v3_ftdi = 1;
 		open_config_files();
-		update_openocd_cfg();       // source [find interface/
+		update_openocd_cfg();
 		update_board_cfg();
 		update_ftdi_v3_board_cfg();
 	} else {
