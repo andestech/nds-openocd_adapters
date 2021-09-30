@@ -519,7 +519,7 @@ static int parse_param(int a_argc, char **a_argv)
 				boot_code_debug = 1;
 				break;
 			case 'c':
-				sscanf(optarg, "%u%s", &efreq_range, (char *)&tmpstr[0]);
+				sscanf(optarg, "%u%s", &efreq_range, tmpstr);
 				if (strlen(tmpstr) != 0) {
 					for (i = 0; i < strlen(tmpstr); i++)
 						tmpstr[i] = tolower(tmpstr[i]);
