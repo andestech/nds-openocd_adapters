@@ -116,6 +116,10 @@
 <field name="" start="0" end="63" type="mideleg_flags"/>
 </struct>
 
+<struct id="reg_sideleg" size="8">
+<field name="" start="0" end="63" type="mideleg_flags"/>
+</struct>
+
 <flags id="medeleg_flags" size="8">
 <field name="IAM" start="0" end="0"/>
 <field name="IAF" start="1" end="1"/>
@@ -132,6 +136,10 @@
 <field name="SPF" start="15" end="15"/>
 </flags>
 <struct id="reg_medeleg" size="8">
+<field name="" start="0" end="63" type="medeleg_flags"/>
+</struct>
+
+<struct id="reg_sedeleg" size="8">
 <field name="" start="0" end="63" type="medeleg_flags"/>
 </struct>
 
@@ -523,6 +531,7 @@
 <field name="l2cmp_cfg" start="45" end="45"/>
 <field name="l2c" start="46" end="46"/>
 <field name="io_cohp" start="47" end="47"/>
+<field name="rvarch" start="52" end="52"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -570,12 +579,27 @@
 <flags id="mcrash_statesave_flags" size="8">
 <field name="mie" start="0" end="0"/>
 <field name="ppft_en" start="3" end="3"/>
+<field name="pime" start="4" end="4"/>
 <field name="pdme" start="5" end="5"/>
 </flags>
 <struct id="reg_mcrash_statesave" size="8">
 <field name="" start="0" end="63" type="mcrash_statesave_flags"/>
 <field name="cp" start="1" end="2" type="mdcause_pm"/>
 <field name="ptype" start="6" end="7" type="mxstatus_typ"/>
+</struct>
+
+<flags id="mrvarch_cfg_flags" size="8">
+<field name="zba" start="0" end="0"/>
+<field name="zbb" start="1" end="1"/>
+<field name="zbc" start="2" end="2"/>
+<field name="zbs" start="3" end="3"/>
+</flags>
+<struct id="reg_mrvarch_cfg_flags" size="8">
+<field name="" start="0" end="63" type="mrvarch_cfg_flags"/>
+</struct>
+
+<struct id="reg_ml2c_ctl_base" size="8">
+<field name="l2c_ctl_base" start="0" end="63" type="uint64"/>
 </struct>
 
 <enum id="milmb_eccen" size="8">
@@ -693,6 +717,8 @@
 <flags id="mxstatus_flags" size="8">
 <field name="pft_en" start="0" end="0"/>
 <field name="ppft_en" start="1" end="1"/>
+<field name="ime" start="2" end="2"/>
+<field name="pime" start="3" end="3"/>
 <field name="dme" start="4" end="4"/>
 <field name="pdme" start="5" end="5"/>
 </flags>
@@ -1132,9 +1158,11 @@
 <flags id="msavestatus_flags" size="8">
 <field name="mpie1" start="0" end="0"/>
 <field name="ppft_en1" start="3" end="3"/>
+<field name="pime1" start="4" end="4"/>
 <field name="pdme1" start="5" end="5"/>
 <field name="mpie2" start="8" end="8"/>
 <field name="ppft_en2" start="11" end="11"/>
+<field name="pime2" start="12" end="12"/>
 <field name="pdme2" start="13" end="13"/>
 </flags>
 <struct id="reg_msavestatus" size="8">
@@ -1336,6 +1364,10 @@
 <reg name="mcrash_statesave" bitsize="64" type="reg_mcrash_statesave"/>
 <reg name="csr4041" bitsize="64" type="reg_mstatus"/>
 <reg name="mstatus_crashsave" bitsize="64" type="reg_mstatus"/>
+<reg name="csr4042" bitsize="64" type="reg_mrvarch_cfg"/>
+<reg name="mrvarch_cfg" bitsize="64" type="reg_mrvarch_cfg"/>
+<reg name="csr4047" bitsize="64" type="reg_ml2c_ctl_base"/>
+<reg name="ml2c_ctl_base" bitsize="64" type="reg_ml2c_ctl_base"/>
 <reg name="csr1984" bitsize="64" type="reg_milmb"/>
 <reg name="milmb" bitsize="64" type="reg_milmb"/>
 <reg name="csr1985" bitsize="64" type="reg_mdlmb"/>
@@ -1360,6 +1392,10 @@
 <reg name="ddcause" bitsize="64" type="reg_ddcause"/>
 <reg name="csr256" bitsize="64" type="reg_sstatus"/>
 <reg name="sstatus" bitsize="64" type="reg_sstatus"/>
+<reg name="csr258" bitsize="64" type="reg_sedeleg"/>
+<reg name="sedeleg" bitsize="64" type="reg_sedeleg"/>
+<reg name="csr259" bitsize="64" type="reg_sideleg"/>
+<reg name="sideleg" bitsize="64" type="reg_sideleg"/>
 <reg name="csr260" bitsize="64" type="reg_sie"/>
 <reg name="sie" bitsize="64" type="reg_sie"/>
 <reg name="csr324" bitsize="64" type="reg_sip"/>
