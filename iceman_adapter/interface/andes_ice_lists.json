@@ -1,0 +1,57 @@
+{
+	"version":"3.0",
+	"options":[
+		{
+			"vid":"0x1CFC",
+			"pid":"0x0001",
+			"name":"AICE-MINI+",
+			"argument":[
+				{
+					"key":"sdp",
+					"value":"-I aice_sdp.cfg"
+				},
+				{
+					"key":"default",
+					"value":"-I aice-mini-plus.cfg"
+				}
+			]
+		},
+		{
+			"vid":"0x1CFC",
+			"pid":"0x0000",
+			"name":"AICE-MINI",
+			"argument":[
+				{
+					"key":"default",
+					"value":""
+				}
+			]
+		},
+		{
+			"vid":"0x0403",
+			"pid":"0x6010",
+			"name":"AICE-MICRO",
+			"argument":[
+				{
+					"key":"sdp",
+					"value":"-I aice_micro_sdp.cfg"
+				},
+				{
+					"key":"default",
+					"value":""
+				}
+			]
+		},
+		{
+			"vid":"0x15ba",
+			"pid":"0x002a",
+			"name":"Olimex ARM",
+			"argument":[
+				{
+					"key":"default",
+					"value":"olimex-arm-usb-tiny-h.cfg"
+				}
+			]
+		}
+	]
+}
