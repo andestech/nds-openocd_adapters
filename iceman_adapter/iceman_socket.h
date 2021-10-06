@@ -26,5 +26,7 @@
 #define EBIND 	-3
 #define ELISTEN -4
 
+extern int nds32_registry_portnum_without_bind(int port_num);
+extern int nds32_registry_portnum(int port_num);
 
 #endif /* __ICEMAN_SOCKET_H__ */

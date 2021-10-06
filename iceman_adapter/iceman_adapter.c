@@ -9,9 +9,25 @@
 #include <signal.h>
 #include <ctype.h>
 #include "libusb10_common.h"
+#include "iceman_socket.h"
 #include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+/* extern variable from openocd src */
+struct EDM_OPERATIONS {
+	int reg_no;
+	int data;
+};
+extern const char *aice_clk_string[];
+extern struct EDM_OPERATIONS nds32_edm_ops[];
+extern uint32_t nds32_edm_ops_num;
+extern uint32_t nds_skip_dmi;
+extern int openocd_main(int argc, char *argv[]);
+extern char *nds32_edm_passcode_init;
+extern unsigned int nds_mixed_mode_checking;
+extern char *OPENOCD_VERSION_STR;
+
 
 #ifndef ERROR_OK
 #define ERROR_OK           (0)
@@ -117,7 +133,6 @@ struct option long_option[] = {
 	{0, 0, 0, 0}
 };
 
-extern const char *aice_clk_string[];	/* for openocd/src/jtag/aice/aice_usb.c */
 const char *v5_clk_string[] = {
 	"30 MHz",
 	"15 MHz",
@@ -153,11 +168,6 @@ struct MEM_OPERATIONS {
 	int restore;
 };
 
-struct EDM_OPERATIONS {
-	int reg_no;
-	int data;
-};
-
 struct device_info {
 	int vid;
 	int pid;
@@ -179,11 +189,6 @@ static struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
 static struct MEM_OPERATIONS resume_sequences[MAX_MEM_OPERATIONS_NUM];
 static int stop_sequences_num;
 static int resume_sequences_num;
-
-extern struct EDM_OPERATIONS nds32_edm_ops[];
-extern uint32_t nds32_edm_ops_num;
-extern uint32_t nds_skip_dmi;
-
 static char *memory_stop_sequence;
 static char *memory_resume_sequence;
 static char *edm_port_operations;
@@ -219,11 +224,7 @@ static int diagnosis_memory;
 static unsigned int diagnosis_address;
 static uint8_t total_num_of_ports = 1;
 static unsigned int custom_def_idlm_base, ilm_base, ilm_size, dlm_base, dlm_size;
-extern int nds32_registry_portnum_without_bind(int port_num);
-extern int nds32_registry_portnum(int port_num);
 static void parse_edm_operation(const char *edm_operation);
-extern int openocd_main(int argc, char *argv[]);
-extern char *nds32_edm_passcode_init;
 static const char *workspace_folder;
 static const char *log_folder;
 static const char *bin_folder;
@@ -243,7 +244,6 @@ static unsigned int enable_l2c;
 static unsigned long long l2c_base = (unsigned long long)-1;
 static unsigned int dmi_busy_delay_count;
 static unsigned int nds_v3_ftdi;
-extern unsigned int nds_mixed_mode_checking;
 
 int nds_target_cfg_checkif_transfer(const char *p_user);
 int nds_target_cfg_transfer(const char *p_user);
@@ -254,7 +254,6 @@ static uint8_t dev_dnum = -1;
 static int vtarget_xlen;
 static int vtarget_enable;
 
-extern char *OPENOCD_VERSION_STR; ///< define in openocd.c
 static void show_version()
 {
 	printf("%s\n", ICEMAN_VERSION);
