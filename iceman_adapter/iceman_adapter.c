@@ -409,14 +409,15 @@ static void show_usage(void) {
 	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
 	//printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
 	printf("--use-sdm (Only for V3):Use System Debug Module\n");
-	printf("--l2c=<Optional L2C Base Address>:\tIndicate the base address of L2C\n");
+	printf("--l2c[=Base Address]:	Specify the base address of L2C\n");
 	printf("--target-cfg:\t\tSpecify the CPU configuration file for a complex multicore system\n");
 	printf("--smp:\t\t\tEnable SMP mode for multi-cores\n");
 	printf("--halt-on-reset (Only for V5):\t\tEnable/Disable halt-on-reset functionality\n");
 	printf("--list-device: \t\tList all connected device\n");
 	printf("--device <device-id>:\tConnect selected device directly\n");
-	printf("--custom-aice-init:\t\tUse custom script to do initialization process\n");
-	printf("--detect-2wire:\t\tif JTAG scan chain interrogation failed, use 2wire mode to retry\n");
+	printf("--rv32-bus-only/--rv64-bus-only (Only for V5): Read memory from system bus wihout checking CPU status\n");
+	printf("--custom-aice-init:\tUse custom script to do initialization process\n");
+	printf("--detect-2wire:\t\tIf JTAG scan chain interrogation (the 5-wire mode) fails, retry the connection with the SDP (2-wire) mode.\n");
 }
 
 char output_path[LINE_BUFFER_SIZE];
