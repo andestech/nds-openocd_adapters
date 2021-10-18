@@ -528,8 +528,8 @@
 <field name="vsih" start="40" end="40"/>
 <field name="vdot" start="43" end="43"/>
 <field name="vpfh" start="44" end="44"/>
-<field name="l2cmp_cfg" start="45" end="45"/>
-<field name="l2c" start="46" end="46"/>
+<field name="ccachemp_cfg" start="45" end="45"/>
+<field name="ccache" start="46" end="46"/>
 <field name="io_cohp" start="47" end="47"/>
 <field name="rvarch" start="52" end="52"/>
 </flags>
@@ -598,8 +598,8 @@
 <field name="" start="0" end="63" type="mrvarch_cfg_flags"/>
 </struct>
 
-<struct id="reg_ml2c_ctl_base" size="8">
-<field name="l2c_ctl_base" start="0" end="63" type="uint64"/>
+<struct id="reg_mccache_ctl_base" size="8">
+<field name="ccache_ctl_base" start="0" end="63" type="uint64"/>
 </struct>
 
 <enum id="milmb_eccen" size="8">
@@ -1294,8 +1294,8 @@
 <reg name="mstatus_crashsave" bitsize="64" type="reg_mstatus"/>
 <reg name="csr4042" bitsize="64" type="reg_mrvarch_cfg"/>
 <reg name="mrvarch_cfg" bitsize="64" type="reg_mrvarch_cfg"/>
-<reg name="csr4047" bitsize="64" type="reg_ml2c_ctl_base"/>
-<reg name="ml2c_ctl_base" bitsize="64" type="reg_ml2c_ctl_base"/>
+<reg name="csr4047" bitsize="64" type="reg_mccache_ctl_base"/>
+<reg name="mccache_ctl_base" bitsize="64" type="reg_mccache_ctl_base"/>
 <reg name="csr1984" bitsize="64" type="reg_milmb"/>
 <reg name="milmb" bitsize="64" type="reg_milmb"/>
 <reg name="csr1985" bitsize="64" type="reg_mdlmb"/>
