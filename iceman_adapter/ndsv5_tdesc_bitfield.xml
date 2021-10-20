@@ -592,6 +592,8 @@
 <field name="zbb" start="1" end="1"/>
 <field name="zbc" start="2" end="2"/>
 <field name="zbs" start="3" end="3"/>
+<field name="smepmp" start="4" end="4"/>
+<field name="svinval" start="5" end="5"/>
 </flags>
 <struct id="reg_mrvarch_cfg" size="4">
 <field name="" start="0" end="31" type="mrvarch_cfg_flags"/>
