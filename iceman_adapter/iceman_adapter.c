@@ -1766,15 +1766,13 @@ static void update_board_cfg(void)
 	if (edm_port_op_file != NULL)
 		edm_operation_fd = fopen(edm_port_op_file, "r");
 	if (edm_operation_fd != NULL) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd) != NULL) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, edm_operation_fd) != NULL)
 			parse_edm_operation(line_buffer);
-		}
 		fclose(edm_operation_fd);
-	} else 
+	} else if (edm_port_op_file != NULL)
 		cfg_error(edm_port_op_file, 0);
-	if (edm_port_operations) {
+	if (edm_port_operations)
 		parse_edm_operation(edm_port_operations);
-	}
 /*
 	if (nds32_edm_ops_num > 0) {
 		for (i = 0 ; i < nds32_edm_ops_num ; i++) {
