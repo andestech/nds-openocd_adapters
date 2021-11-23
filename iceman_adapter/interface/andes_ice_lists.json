@@ -49,7 +49,7 @@
 			"argument":[
 				{
 					"key":"default",
-					"value":"olimex-arm-usb-tiny-h.cfg"
+					"value":"-I olimex-arm-usb-tiny-h.cfg"
 				}
 			]
 		}
