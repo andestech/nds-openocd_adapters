@@ -42,7 +42,7 @@ extern char *OPENOCD_VERSION_STR;
 #define PORTNUM_TCL        6666
 #define PORTNUM_GDB        1111
 
-#define LINE_BUFFER_SIZE   2048
+#define LINE_BUFFER_SIZE   2080
 #define NDS32_USER_CFG              "nds32_user.cfg"
 #define FILENAME_TARGET_CFG_TPL     "./target/nds32_target_cfg.tpl"
 #define FILENAME_TARGET_CFG_OUT     "./target/nds32_target_cfg.out"
@@ -1064,7 +1064,8 @@ static void update_openocd_cfg_v5()
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_folder, strlen(log_folder));
-		strncat(line_buffer, "iceman_debug0.log", 17);
+		//strncat(line_buffer, "iceman_debug0.log", 17);
+		strcat(line_buffer,"iceman_debug0.log");
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
@@ -1232,7 +1233,8 @@ static void update_openocd_cfg()
 
 		memset(line_buffer, 0, LINE_BUFFER_SIZE);
 		strncpy(line_buffer, log_folder, strlen(log_folder));
-		strncat(line_buffer, "iceman_debug0.log", 17);
+		//strncat(line_buffer, "iceman_debug0.log", 17);
+		strcat(line_buffer, "iceman_debug0.log");
 		fprintf(openocd_cfg, "log_output \"%s\"\n", line_buffer);
 	}
 	fprintf(openocd_cfg, "debug_level %d\n", debug_level);
@@ -2261,7 +2263,7 @@ static uint8_t list_devices(uint8_t devnum)
 			if (list_dev == 0)
 				printf("\nList of Devices:\n");
 
-			printf("\t#%d Bus %03u Port %03u Device %03u: ID %04x:%04x %s\n",
+			printf("\t#%zd Bus %03u Port %03u Device %03u: ID %04x:%04x %s\n",
 			       list_dev, bnum, pnum, dnum,
 			       desc.idVendor, desc.idProduct,
 			       device_whitelist[j].description);
