@@ -148,8 +148,8 @@ INICEman_LDADD += -ldl
 endif
 
 
-ICEman_CFLAGS = -Wall -Wextra $(DRIVERCFLAGS)
-INICEman_CFLAGS = -Wall -Wextra $(DRIVERCFLAGS)
+ICEman_CFLAGS = -Wall -Wextra -fcommon $(DRIVERCFLAGS)
+INICEman_CFLAGS = -Wall -Wextra -fcommon $(DRIVERCFLAGS)
 # ICEman_CFLAGS += -I$(srcdir)/../../openocd-0.8.0/src -I$(srcdir)/../../openocd-0.8.0/src/target
 if BUILD_MINGW_BINARY
 ICEman_CFLAGS += -DCYG
