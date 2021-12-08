@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <libgen.h>
 
 int main(int argc, char *argv[])
 {
 	int i, ret, offset = 0;
 	char cmd[512];
 
-	offset += sprintf(cmd + offset, "./INICEman ");
+	offset += sprintf(cmd + offset, "%s/INICEman ", dirname(argv[0]));
 	for (i = 1; i < argc; i++)
 		offset += sprintf(cmd + offset, "%s ", argv[i]);
 	ret = system(cmd);
