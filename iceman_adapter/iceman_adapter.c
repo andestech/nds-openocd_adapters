@@ -244,7 +244,7 @@ static int reset_aice_as_startup = 0;
 static int count_to_check_dbger = 0;
 static int global_stop;
 static int word_access_mem;
-static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_V3};
+static enum TARGET_TYPE target_type[AICE_MAX_NUM_CORE] = {TARGET_V5};
 static const char *custom_srst_script = NULL;
 static const char *custom_trst_script = NULL;
 static const char *custom_restart_script = NULL;
@@ -784,6 +784,7 @@ static int parse_param(int a_argc, char **a_argv) {
 					target_type[0] = TARGET_V3m;
 				} else if (strncmp(optarg, "v5", optarg_len) == 0) {
 					target_type[0] = TARGET_V5;
+					printf("`-Z v5` is deprecated! The setting of default target is V5.\n");
 				} else {
 					target_type[0] = TARGET_INVALID;
 				}
@@ -2011,7 +2012,7 @@ int main(int argc, char **argv) {
 	char *openocd_argv[6] = {0, 0, 0, 0, 0, 0};
 
 	for(i = 0; i < AICE_MAX_NUM_CORE; i++)
-		target_type[i] = TARGET_V3;
+		target_type[i] = TARGET_V5;
 	if (parse_param(argc, argv) != ERROR_OK)
 		return 0;
 #if 0
