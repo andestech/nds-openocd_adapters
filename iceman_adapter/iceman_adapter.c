@@ -708,10 +708,8 @@ static int parse_param(int a_argc, char **a_argv)
 					target_type[0] = TARGET_V3;
 				else if (strncmp(optarg, "v3m", optarg_len) == 0)
 					target_type[0] = TARGET_V3m;
-				else if (strncmp(optarg, "v5", optarg_len) == 0) {
+				else if (strncmp(optarg, "v5", optarg_len) == 0)
 					target_type[0] = TARGET_V5;
-					printf("`-Z v5` is deprecated! The setting of default target is V5.\n");
-				}
 				else
 					target_type[0] = TARGET_INVALID;
 				break;
