@@ -1,11 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = $(LIBUSB1_CFLAGS)
 
-bin_PROGRAMS = ICEman INICEman
-ICEman_SOURCES = iceman_start.c
-INICEman_SOURCES = iceman_adapter.c \
-                   iceman_socket.c \
-                   iceman_socket.h
+bin_PROGRAMS = ICEman
+ICEman_SOURCES = iceman_adapter.c \
+                 iceman_socket.c \
+                 iceman_socket.h
 
 openocd_cfgdir = $(bindir)
 dist_openocd_cfg_DATA = openocd.cfg.v5 \
@@ -138,25 +137,19 @@ DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
 endif
 
 ICEman_LDADD = $(DRIVERLIBS)
-INICEman_LDADD = $(DRIVERLIBS)
 if BUILD_MINGW_BINARY
 ICEman_LDADD += -lwsock32
-INICEman_LDADD += -lwsock32
 else
 ICEman_LDADD += -ldl
-INICEman_LDADD += -ldl
 endif
 
 
 ICEman_CFLAGS = -Wall -Wextra -fcommon $(DRIVERCFLAGS)
-INICEman_CFLAGS = -Wall -Wextra -fcommon $(DRIVERCFLAGS)
 # ICEman_CFLAGS += -I$(srcdir)/../../openocd-0.8.0/src -I$(srcdir)/../../openocd-0.8.0/src/target
 if BUILD_MINGW_BINARY
 ICEman_CFLAGS += -DCYG
-INICEman_CFLAGS += -DCYG
 else
 ICEman_CFLAGS +=
-INICEman_CFLAGS +=
 endif
 
 #ICEman_CFLAGS += -DBUILD_ID=\"$(BUILD_ID)\" \
@@ -164,9 +157,7 @@ endif
 #	-DCOMMIT_ID=\"$(COMMIT_ID)\"
 
 ICEman_CFLAGS += -DRELSTR=\"`$(top_srcdir)/guess-rev.sh $(top_srcdir)`\"
-INICEman_CFLAGS += -DRELSTR=\"`$(top_srcdir)/guess-rev.sh $(top_srcdir)`\"
 ICEman_CFLAGS += -DPKGBLDDATE=\"`date +%F-%R`\"
-INICEman_CFLAGS += -DPKGBLDDATE=\"`date +%F-%R`\"
 
 
 #ICEman_LDFLAGS = -all-static
@@ -178,4 +169,3 @@ else
 PKGLIBS = libusb-1.0
 endif
 ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a `pkg-config --libs $(PKGLIBS)`
-INICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a `pkg-config --libs $(PKGLIBS)`
