@@ -586,7 +586,7 @@ static int parse_param(int a_argc, char **a_argv) {
 					if( efreq_range < 1 ||
 					    efreq_range > (48*1000*1000) ) {
 
-						printf("Unsupport efreq range!!\n");
+						printf("<-- Unsupport efreq range!!\n");
 						return ERROR_FAIL;
 					}
 
@@ -597,7 +597,7 @@ static int parse_param(int a_argc, char **a_argv) {
 				clock_setting = strtol(optarg, NULL, 0);
 				if ((clock_setting < 0) ||
 				    (clock_setting > 15)   ) {
-					printf("-c %d is an invalid option, the valid range for '-c' is 0-15.\n", clock_setting);
+					printf("<-- -c %d is an invalid option, the valid range for '-c' is 0-15. -->\n", clock_setting);
 					return ERROR_FAIL;
 				}
 
@@ -636,7 +636,7 @@ static int parse_param(int a_argc, char **a_argv) {
 				// check directory exist or not, must use log_folder(remove \" and \\ )
 				// if path error, show original path:optarg for user
 				if (isDirectoryExist(log_folder) == 0) {
-					printf("%s is not exist or not a directory!!\n", optarg);
+					printf("<-- %s is not exist or not a directory!! -->\n", optarg);
 					return ERROR_FAIL;
 				}
 
@@ -855,7 +855,7 @@ char *target_cfg_name_str = (char *)&target_cfg_name[0];
 
 static void cfg_error(const char *cfg_name, int w)
 {
-	fprintf(stderr, "ERROR: No config file, unable to %s %s\n", (w)?"write":"read", cfg_name);	
+	fprintf(stderr, "<-- ERROR: No config file, unable to %s %s -->\n", (w)?"write":"read", cfg_name);	
 	if (w) {
 		fprintf(stderr, "For Multi-User:\n");
 		fprintf(stderr, "Try to use --log-output/-f to specify other workspace\n"
