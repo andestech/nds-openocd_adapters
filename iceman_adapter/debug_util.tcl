@@ -414,17 +414,16 @@ proc reset_and_halt_one_hart {tap hartsel} {
 proc reset_and_halt_all_harts {tap hartstart hartcount} {
 	set HARTSEL_MASK 0x3F0000
 	for {set hartsel $hartstart} {$hartsel < $hartcount} {incr $hartsel} {
-		# Assert ndmreset and haltreq
+		# Assert haltonreset and haltreq
 		set bf_haltonreset [expr 1<<3]
 		set bf_haltreq [expr 1<<31]
 		set bf_hartsel [expr $hartsel<<16]
 		set bf_dmactive 0x1
-		set bf_ndmreset [expr 1<<1]
 		set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive | $bf_haltonreset]
 		write_dmi_dmcontrol $tap $dmcontrol
 
 		set dmcontrol [read_dmi_dmcontrol $tap]
-		set cur_hart [expr ($dmcontrol & $HARTSEL_MASK) >> 16] 
+		set cur_hart [expr ($dmcontrol & $HARTSEL_MASK) >> 16]
 		if {$cur_hart != $hartsel} {
 			puts [format "expected selected harts:%d is diffrent with now selected hart:%d" $hartsel $cur_hart]
 			continue
@@ -435,8 +434,9 @@ proc reset_and_halt_all_harts {tap hartstart hartcount} {
 			continue
 		}
 	}
-	#set bf_ndmreset [expr 1<<1]
-	#write_dmi_dmcontrol $tap $dmcontrol
+	set bf_ndmreset [expr 1<<1]
+	set dmcontrol [expr $bf_ndmreset | $dmcontrol]
+	write_dmi_dmcontrol $tap $dmcontrol
 
 	for {set hartsel $hartstart} {$hartsel < $hartcount} {incr $hartsel} {
 		# De-assert ndmreset
