@@ -1096,6 +1096,7 @@ static void update_debug_diag_v5(void)
 	if(workspace_folder) {
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", bin_folder);
+		fprintf(debug_diag_tcl_new, "set AS_PATH \"%s\"\n", workspace_folder);
 	}
 
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, debug_diag_tcl) != NULL) {

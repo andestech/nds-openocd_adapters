@@ -1,6 +1,11 @@
 
+# Set working space
+if {![info exists AS_PATH]} {
+	set AS_PATH ""
+}
+
 # Main
-source [find openocd.cfg]
+source [find "$AS_PATH"openocd.cfg]
 source [find debug_util.tcl]
 set verbosity 100
 set time_target_sec 1
