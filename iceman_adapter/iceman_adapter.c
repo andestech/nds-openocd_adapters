@@ -573,10 +573,8 @@ static int parse_param(int a_argc, char **a_argv)
 
 				// check directory exist or not, must use log_folder(remove \" and \\ )
 				// if path error, show original path:optarg for user
-				if (isDirectoryExist(log_folder) == 0) {
-					printf("<-- %s is not exist or not a directory!! -->\n", optarg);
-					return ERROR_FAIL;
-				}
+				if (isDirectoryExist(log_folder) == 0)
+					printf("WARNING: %s is not exist or not a directory!!\n", optarg);
 
 				// log_folder: iceman log folder(for IDE, contain folder: _ICEman_)
 				// workspace_folder: for config file(ex:openocd.cfg, for IDE, need remove _ICEman_)
