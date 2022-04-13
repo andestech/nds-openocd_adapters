@@ -610,7 +610,7 @@
 <field name="svnapot" start="24" end="24"/>
 <field name="zihintpause" start="25" end="25"/>
 </flags>
-<struct id="reg_mrvarch_cfg_flags" size="8">
+<struct id="reg_mrvarch_cfg" size="8">
 <field name="" start="0" end="63" type="mrvarch_cfg_flags"/>
 <field name="sm_version" start="17" end="19" type="uint64"/>
 <field name="ss_version" start="20" end="22" type="uint64"/>
