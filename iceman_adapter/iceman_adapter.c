@@ -222,7 +222,7 @@ static const char *custom_initial_script;
 static const char *aceconf_desc_list;
 static int diagnosis;
 static int diagnosis_memory;
-static unsigned int diagnosis_address;
+static unsigned long long diagnosis_address;
 static uint8_t total_num_of_ports = 1;
 static unsigned int custom_def_idlm_base, ilm_base, ilm_size, dlm_base, dlm_size;
 static void parse_edm_operation(const char *edm_operation);
@@ -710,7 +710,7 @@ static int parse_param(int a_argc, char **a_argv)
 				diagnosis = 1;
 				if (optarg) {
 					diagnosis_memory = 1;
-					sscanf(optarg, "0x%x", &diagnosis_address);
+					sscanf(optarg, "0x%llx", &diagnosis_address);
 				} else
 					diagnosis_memory = 0;
 				break;
@@ -1047,7 +1047,7 @@ static void update_debug_diag_v5()
 		cfg_error(as_filepath("debug_diag_new.tcl"), 1);
 
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_TEST 0x%x\n", diagnosis_memory);
-	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%x\n", diagnosis_address);
+	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%llx\n", diagnosis_address);
 	if (workspace_folder) {
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", workspace_folder);
 		fprintf(debug_diag_tcl_new, "add_script_search_dir \"%s\"\n", bin_folder);
