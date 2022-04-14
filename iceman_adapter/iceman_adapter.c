@@ -13,6 +13,7 @@
 #include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 /* extern variable from openocd src */
 struct EDM_OPERATIONS {
@@ -471,8 +472,13 @@ static int parse_param(int a_argc, char **a_argv)
 					}
 				} else if (long_opt == LONGOPT_USE_SDM)
 					use_sdm = 1;
-				else if (long_opt == LONGOPT_AICE_INIT)
+				else if (long_opt == LONGOPT_AICE_INIT){
 					custom_initial_script = optarg;
+					if (access(custom_initial_script, F_OK)){
+                                        	printf("<-- ERROR: customer initial script (path: %s) not exist! -->\n", custom_initial_script);
+						return ERROR_FAIL;
+					}
+				}
 				else if (long_opt == LONGOPT_L2C) {
 					enable_l2c = 1;
 					if (optarg)
@@ -615,6 +621,14 @@ static int parse_param(int a_argc, char **a_argv)
 				break;
 			case 'I':
 				custom_interface = optarg;
+
+				char interface_file[32];
+				sprintf(interface_file, "interface/%s", custom_interface);
+				if ( access( interface_file, F_OK) ){
+					printf("<-- ERROR: customer interface file (path: %s) not exist! -->\n", interface_file);
+					return ERROR_FAIL;
+				}
+				
 				break;
 			case 'k':
 				word_access_mem = 1;
@@ -627,15 +641,27 @@ static int parse_param(int a_argc, char **a_argv)
 				break;
 			case 'l': /* customer-srst */
 				custom_srst_script = optarg;
+				if ( access(custom_srst_script, F_OK) ){
+					printf("<-- ERROR: customer srst script (path: %s) not exist! -->\n", custom_srst_script);
+					return ERROR_FAIL;	
+				}
 				break;
 			case 'L': /* customer-trst */
 				custom_trst_script = optarg;
+				if ( access(custom_trst_script, F_OK) ){
+					printf("<-- ERROR: customer trst script (path: %s) not exist! -->\n", custom_trst_script);
+					return ERROR_FAIL;
+				}
 				break;
 			case 'M':
 				sscanf(optarg, "0x%x", &edm_dimb);
 				break;
 			case 'N': /* customer-restart */
 				custom_restart_script = optarg;
+				if ( access(custom_restart_script, F_OK) ){
+					printf("<-- ERROR: customer restart script (path: %s) not exist! -->\n", custom_restart_script);
+					return ERROR_FAIL;
+				}
 				break;
 			case 'o': /* reset-time */
 				reset_time = strtol(optarg, NULL, 0);
