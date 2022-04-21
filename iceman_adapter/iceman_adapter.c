@@ -163,9 +163,9 @@ enum TARGET_TYPE {
 };
 
 struct MEM_OPERATIONS {
-	int address;
-	int data;
-	int mask;
+	unsigned long long int address;
+	unsigned int data;
+	unsigned int mask;
 	int restore;
 };
 
@@ -186,6 +186,17 @@ const struct device_info device_whitelist[] = {
 
 #define MAX_MEM_OPERATIONS_NUM 32
 
+/* Functions */
+static void parse_mem_operation(const char *mem_operation);
+int nds_target_cfg_checkif_transfer(const char *p_user);
+int nds_target_cfg_transfer(const char *p_user);
+int nds_target_cfg_merge(const char *p_tpl, const char *p_out);
+static uint8_t list_devices(uint8_t devnum);
+static void parse_edm_operation(const char *edm_operation);
+
+
+
+/* Local variable */
 static struct MEM_OPERATIONS stop_sequences[MAX_MEM_OPERATIONS_NUM];
 static struct MEM_OPERATIONS resume_sequences[MAX_MEM_OPERATIONS_NUM];
 static int stop_sequences_num;
@@ -225,7 +236,6 @@ static int diagnosis_memory;
 static unsigned long long diagnosis_address;
 static uint8_t total_num_of_ports = 1;
 static unsigned int custom_def_idlm_base, ilm_base, ilm_size, dlm_base, dlm_size;
-static void parse_edm_operation(const char *edm_operation);
 static const char *workspace_folder;
 static const char *log_folder;
 static const char *bin_folder;
@@ -245,12 +255,6 @@ static unsigned int enable_l2c;
 static unsigned long long l2c_base = (unsigned long long)-1;
 static unsigned int dmi_busy_delay_count;
 static unsigned int nds_v3_ftdi;
-
-int nds_target_cfg_checkif_transfer(const char *p_user);
-int nds_target_cfg_transfer(const char *p_user);
-int nds_target_cfg_merge(const char *p_tpl, const char *p_out);
-
-static uint8_t list_devices(uint8_t devnum);
 static uint8_t dev_dnum = -1;
 static int vtarget_xlen;
 static int vtarget_enable;
@@ -689,12 +693,14 @@ static int parse_param(int a_argc, char **a_argv)
 				memory_resume_sequence = malloc(optarg_len + 1 + 11); /* +11 for resume-seq */
 				memcpy(memory_resume_sequence, "resume-seq ", 11);
 				memcpy(memory_resume_sequence + 11, optarg, optarg_len + 1);
+				parse_mem_operation(memory_resume_sequence);
 				break;
 			case 'S':
 				optarg_len = strlen(optarg);
 				memory_stop_sequence = malloc(optarg_len + 1 + 9);  /* +9 for stop-seq */
 				memcpy(memory_stop_sequence, "stop-seq ", 9);
 				memcpy(memory_stop_sequence + 9, optarg, optarg_len + 1);
+				parse_mem_operation(memory_stop_sequence);
 				break;
 			case 't':
 				telnet_port = strtol(optarg, NULL, 0);
@@ -905,7 +911,7 @@ static void parse_mem_operation(const char *mem_operation)
 	if (strncmp(mem_operation, "stop-seq ", 9) == 0) {
 		next_data = (char *)mem_operation + 9;
 		while(*next_data != 0x0) {
-			stop_sequences[stop_sequences_num].address = strtoll(next_data, &next_data, 0);
+			stop_sequences[stop_sequences_num].address = strtoull(next_data, &next_data, 0);
 			stop_sequences[stop_sequences_num].data = strtoll(next_data+1, &next_data, 0);
 			if (*next_data == ':')
 				stop_sequences[stop_sequences_num].mask = strtoll(next_data+1, &next_data, 0);
@@ -918,7 +924,7 @@ static void parse_mem_operation(const char *mem_operation)
 	} else if (strncmp(mem_operation, "resume-seq ", 11) == 0) {
 		next_data = (char *)mem_operation + 11;
 		while (*next_data != 0x0) {
-			resume_sequences[resume_sequences_num].address = strtoll(next_data, &next_data, 0);
+			resume_sequences[resume_sequences_num].address = strtoull(next_data, &next_data, 0);
 			next_data ++;      // ":"
 			if (*next_data == 'r') {
 				next_data += 3;  // "rst"
@@ -1502,6 +1508,103 @@ static void update_target_cfg()
 	}
 }
 
+static void update_stop_resume_sequences(FILE *board_cfg, bool isV3)
+{
+	int coreid, i;
+	char line_buffer[LINE_BUFFER_SIZE];
+
+	/* open sw-reset-seq.txt */
+	FILE *sw_reset_fd = NULL;
+	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
+	if (sw_reset_fd) {
+		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd))
+			parse_mem_operation(line_buffer);
+		fclose(sw_reset_fd);
+	}
+
+	for (i = 0 ; i < stop_sequences_num; i++)
+		fprintf(board_cfg, "set backup_value_%llx \"\"\n", stop_sequences[i].address);
+
+	for (coreid = 0; coreid < 1; coreid++) {
+		if (stop_sequences_num > 0) {
+			if (isV3) {
+				fprintf(board_cfg, "nds32.cpu%d configure -event halted {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
+			} else if (vtarget_enable == 1) {
+				fprintf(board_cfg, "nds_vtarget.cpu%d configure -event halted {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
+			} else {
+				fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			}
+
+			for (i = 0; i < stop_sequences_num; i++) {
+				unsigned long long int stop_addr;
+				unsigned int stop_mask, stop_data;
+				stop_addr = stop_sequences[i].address;
+				stop_mask = stop_sequences[i].mask;
+				stop_data = stop_sequences[i].data;
+				fprintf(board_cfg, "\tglobal backup_value_%llx\n", stop_addr);
+				fprintf(board_cfg, "\tmem2array backup_value_%llx 32 0x%llx 1\n", stop_addr, stop_addr);
+				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%llx(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
+				fprintf(board_cfg, "\tmww 0x%llx $masked_value\n", stop_addr);
+			}
+
+			if (isV3)
+				fprintf(board_cfg, "\tnds32.cpu%d nds mem_access cpu\n", coreid);
+			else if (vtarget_enable == 1)
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access cpu\n", coreid);
+			else
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
+		}
+
+
+		if (resume_sequences_num > 0) {
+			if (isV3) {
+				fprintf(board_cfg, "nds32.cpu%d configure -event resumed {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
+			} else if (vtarget_enable == 1) {
+				fprintf(board_cfg, "nds_vtarget.cpu%d configure -event resume-start {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
+			} else {
+				fprintf(board_cfg, "nds_v5.cpu%d configure -event resume-start {\n", coreid);
+				fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
+			}
+
+			for (i = 0 ; i < resume_sequences_num ; i++) {
+				unsigned long long int resume_addr;
+				unsigned int resume_mask, resume_data;
+				resume_addr = resume_sequences[i].address;
+				resume_mask = resume_sequences[i].mask;
+				resume_data = resume_sequences[i].data;
+				if (resume_sequences[i].restore) {
+					fprintf(board_cfg, "\tglobal backup_value_%llx\n", resume_addr);
+					fprintf(board_cfg, "\tmww 0x%llx $backup_value_%llx(0)\n", resume_addr, resume_addr);
+				} else {
+					fprintf(board_cfg, "\tmem2array backup_value_%llx 32 0x%llx 1\n", resume_addr, resume_addr);
+					fprintf(board_cfg, "\tset masked_value [expr $backup_value_%llx(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
+					fprintf(board_cfg, "\tmww 0x%llx $masked_value\n", resume_addr);
+				}
+			}
+
+			if (isV3)
+				fprintf(board_cfg, "\tnds32.cpu%d nds mem_access cpu\n", coreid);
+			else if (vtarget_enable == 1)
+				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access cpu\n", coreid);
+			else
+				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
+			fputs("}\n", board_cfg);
+		}
+	}
+}
+
 static void update_board_cfg()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
@@ -1577,7 +1680,6 @@ static void update_board_cfg()
 
 	/* login edm operations */
 	FILE *edm_operation_fd = NULL;
-	int i;
 	if (edm_port_op_file)
 		edm_operation_fd = fopen(edm_port_op_file, "r");
 	if (edm_operation_fd != NULL) {
@@ -1598,71 +1700,12 @@ static void update_board_cfg()
 	}
 	*/
 
-	/* open sw-reset-seq.txt */
-	FILE *sw_reset_fd = NULL;
-	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
-	if (sw_reset_fd) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd))
-			parse_mem_operation(line_buffer);
-		fclose(sw_reset_fd);
-	}
-
-	if (memory_stop_sequence)
-		parse_mem_operation(memory_stop_sequence);
-
-	if (memory_resume_sequence)
-		parse_mem_operation(memory_resume_sequence);
-
-	for (i = 0 ; i < stop_sequences_num; i++)
-		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
-
-	for (coreid = 0; coreid < 1; coreid++) {
-		if (stop_sequences_num > 0) {
-			fprintf(board_cfg, "nds32.cpu%d configure -event halted {\n", coreid);
-			fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
-			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0 ; i < stop_sequences_num ; i++) {
-				int stop_addr, stop_mask, stop_data;
-				stop_addr = stop_sequences[i].address;
-				stop_mask = stop_sequences[i].mask;
-				stop_data = stop_sequences[i].data;
-				fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_addr);
-				fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_addr, stop_addr);
-				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
-				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
-			}
-			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access cpu\n", coreid);
-			fputs("}\n", board_cfg);
-		}
-		if (resume_sequences_num > 0) {
-			fprintf(board_cfg, "nds32.cpu%d configure -event resumed {\n", coreid);
-			fprintf(board_cfg, "\ttargets nds32.cpu%d\n", coreid);
-			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access bus\n", coreid);
-			for (i = 0 ; i < resume_sequences_num ; i++) {
-				int resume_addr, resume_mask, resume_data;
-				resume_addr = resume_sequences[i].address;
-				resume_mask = resume_sequences[i].mask;
-				resume_data = resume_sequences[i].data;
-				if (resume_sequences[i].restore) {
-					fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_addr);
-					fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_addr, resume_addr);
-				} else {
-					fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", resume_addr, resume_addr);
-					fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
-					fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
-				}
-			}
-			fprintf(board_cfg, "\tnds32.cpu%d nds mem_access cpu\n", coreid);
-			fputs("}\n", board_cfg);
-		}
-	}
+	update_stop_resume_sequences(board_cfg, 1);
 }
 
 static void update_board_cfg_v5()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
-	int coreid;
-	int i;
 
 	if (vtarget_enable == 1) {
 		board_cfg_tpl = fopen("board/nds_vtarget.cfg.tpl", "r");
@@ -1684,85 +1727,7 @@ static void update_board_cfg_v5()
 		fputs(line_buffer, board_cfg);
 	fputs("\n", board_cfg);
 
-	/* open sw-reset-seq.txt */
-	FILE *sw_reset_fd = NULL;
-	sw_reset_fd = fopen("sw-reset-seq.txt", "r");
-	if (sw_reset_fd) {
-		while (fgets(line_buffer, LINE_BUFFER_SIZE, sw_reset_fd))
-			parse_mem_operation(line_buffer);
-		fclose(sw_reset_fd);
-	}
-
-	if (memory_stop_sequence)
-		parse_mem_operation(memory_stop_sequence);
-	if (memory_resume_sequence)
-		parse_mem_operation(memory_resume_sequence);
-
-	for (i = 0 ; i < stop_sequences_num ; i++)
-		fprintf(board_cfg, "set backup_value_%x \"\"\n", stop_sequences[i].address);
-
-	for (coreid = 0; coreid < 1; coreid++) {
-		if (stop_sequences_num > 0) {
-			if (vtarget_enable == 1) {
-				fprintf(board_cfg, "nds_vtarget.cpu%d configure -event halted {\n", coreid);
-				fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
-				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
-			} else {
-				fprintf(board_cfg, "nds_v5.cpu%d configure -event halted {\n", coreid);
-				fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
-				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
-			}
-
-			for (i = 0; i < stop_sequences_num; i++) {
-				int stop_addr, stop_mask, stop_data;
-				stop_addr = stop_sequences[i].address;
-				stop_mask = stop_sequences[i].mask;
-				stop_data = stop_sequences[i].data;
-				fprintf(board_cfg, "\tglobal backup_value_%x\n", stop_addr);
-				fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", stop_addr, stop_addr);
-				fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", stop_addr, stop_mask, (stop_data & ~stop_mask));
-				fprintf(board_cfg, "\tmww 0x%x $masked_value\n", stop_addr);
-			}
-
-			if (vtarget_enable == 1)
-				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access cpu\n", coreid);
-			else
-				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
-			fputs("}\n", board_cfg);
-		}
-		if (resume_sequences_num > 0) {
-			if (vtarget_enable == 1) {
-				fprintf(board_cfg, "nds_vtarget.cpu%d configure -event resume-start {\n", coreid);
-				fprintf(board_cfg, "\ttargets nds_vtarget.cpu%d\n", coreid);
-				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access bus\n", coreid);
-			} else {
-				fprintf(board_cfg, "nds_v5.cpu%d configure -event resume-start {\n", coreid);
-				fprintf(board_cfg, "\ttargets nds_v5.cpu%d\n", coreid);
-				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access bus\n", coreid);
-			}
-
-			for (i = 0; i < resume_sequences_num; i++) {
-				int resume_addr, resume_mask, resume_data;
-				resume_addr = resume_sequences[i].address;
-				resume_mask = resume_sequences[i].mask;
-				resume_data = resume_sequences[i].data;
-				if (resume_sequences[i].restore) {
-					fprintf(board_cfg, "\tglobal backup_value_%x\n", resume_addr);
-					fprintf(board_cfg, "\tmww 0x%x $backup_value_%x(0)\n", resume_addr, resume_addr);
-				} else {
-					fprintf(board_cfg, "\tmem2array backup_value_%x 32 0x%x 1\n", resume_addr, resume_addr);
-					fprintf(board_cfg, "\tset masked_value [expr $backup_value_%x(0) & 0x%x | 0x%x]\n", resume_addr, resume_mask, (resume_data & ~resume_mask));
-					fprintf(board_cfg, "\tmww 0x%x $masked_value\n", resume_addr);
-				}
-			}
-
-			if (vtarget_enable == 1)
-				fprintf(board_cfg, "\tnds_vtarget.cpu%d nds mem_access cpu\n", coreid);
-			else
-				fprintf(board_cfg, "\tnds_v5.cpu%d nds mem_access cpu\n", coreid);
-			fputs("}\n", board_cfg);
-		}
-	}
+	update_stop_resume_sequences(board_cfg, 0);
 }
 
 int main(int argc, char **argv)
