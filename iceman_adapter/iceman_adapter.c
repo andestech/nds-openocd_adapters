@@ -628,7 +628,7 @@ static int parse_param(int a_argc, char **a_argv)
 					printf("<-- ERROR: customer interface file (path: %s) not exist! -->\n", interface_file);
 					return ERROR_FAIL;
 				}
-				
+
 				break;
 			case 'k':
 				word_access_mem = 1;
@@ -1338,7 +1338,7 @@ static void update_interface_cfg()
 		fputs(line_buffer, interface_cfg);
 	fprintf(interface_cfg, "aice desc Andes_%s_BUILD_ID_%s\n", VERSION, PKGBLDDATE);
 	if (diagnosis)
-		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+		fprintf(interface_cfg, "aice diagnosis 0x%x 0x%x\n", diagnosis_memory, (unsigned int)diagnosis_address);
 
 	if (efreq_range != 0) {
 		fprintf(interface_cfg, "aice efreq_hz %d\n", efreq_range);
@@ -1402,7 +1402,7 @@ static void update_interface_cfg()
 static void update_ftdi_v3_board_cfg()
 {
 	if (diagnosis)
-		fprintf(board_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, diagnosis_address);
+		fprintf(board_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, (unsigned int)diagnosis_address);
 
 	//fprintf(board_cfg, "nds retry_times %d\n", aice_retry_time);
 	fprintf(board_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
