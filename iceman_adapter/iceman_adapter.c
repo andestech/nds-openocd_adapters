@@ -26,7 +26,7 @@
 #define PORTNUM_GDB        1111
 
 #define LINE_BUFFER_SIZE   2048
-#define ICEMAN_VERSION     "v4.6.4"
+#define ICEMAN_VERSION     "v4.6.5"
 #define NDS32_USER_CFG     "nds32_user.cfg"
 //#define FILENAME_USER_TARGET_CFG  "./target/user_target_cfg_table.txt"
 #define FILENAME_TARGET_CFG_TPL     "./target/nds32_target_cfg.tpl"
@@ -288,7 +288,7 @@ static int vtarget_enable = 0;
 
 static void show_version(void) {
 	printf("Andes ICEman %s (OpenOCD) BUILD_ID: %s\n", ICEMAN_VERSION, BUILD_ID);
-	printf("Copyright (C) 2007-2020 Andes Technology Corporation\n");
+	printf("Copyright (C) 2007-2022 Andes Technology Corporation\n");
 }
 
 static void show_srccode_ver(void) {
