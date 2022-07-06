@@ -168,4 +168,4 @@ PKGLIBS = hidapi-libusb libusb-1.0
 else
 PKGLIBS = libusb-1.0
 endif
-ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a `pkg-config --libs $(PKGLIBS)`
+ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a -lutil `pkg-config --libs $(PKGLIBS)`

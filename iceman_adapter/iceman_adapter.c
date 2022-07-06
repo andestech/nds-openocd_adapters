@@ -2228,10 +2228,12 @@ static uint8_t list_devices(uint8_t devnum)
 			continue;
 
 		struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
+#if 0
 		jtag_libusb_get_descriptor_string(devh, udev,
 				&pdescp_Manufacturer,
 				&pdescp_Product,
 				&descp_bcdDevice);
+#endif
 
 		/* Check whitelist for Andes  */
 		for (j = 0; j < MAX_WHITELIST; j++) {
