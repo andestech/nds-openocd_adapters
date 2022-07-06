@@ -22,6 +22,8 @@ jtag newtap $TAP_BASE $TAP_TYPE -irlen 5 -expected-id 0x1000563D
 
 if {$_use_smp == 0} {
 	target create $CUR_TARGET nds_v5 -chain-position $NDS_TAP -coreid 0
+} else {
+	target create $CUR_TARGET nds_v5 -chain-position $NDS_TAP -coreid 0 -rtos hwthread
 }
 #$CUR_TARGET configure -event examine-end {
 #	global CUR_TARGET
@@ -31,10 +33,6 @@ if {$_use_smp == 0} {
 #}
 
 nds_auto_create_multi_targets $NDS_TARGETNAME $NDS_TAP
-if {$_use_smp == 1} {
-	target create $CUR_TARGET nds_v5 -endian little -chain-position $NDS_TAP
-	$CUR_TARGET configure -rtos riscv -corenums $_number_of_core
-}
 ##--target-create-finish
 
 $CUR_TARGET configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
