@@ -29,17 +29,17 @@ proc reg_read_abstract {tap reg_num} {
 	set GDB_REGNO_CSR4095  4160
 	set regdata 0
 
-	if [ expr $reg_num <= $GDB_REGNO_XPR31 ] {
+	if [ expr {$reg_num <= $GDB_REGNO_XPR31} ] {
 		#puts [format "XPR_number = 0x%x" $reg_num]
-		set reg_num [expr $reg_num - $GDB_REGNO_XPR0]
-		set reg_num [expr $reg_num + 0x1000]
-	} elseif [ expr $reg_num <= $GDB_REGNO_FPR31 ] {
+		set reg_num [expr {$reg_num - $GDB_REGNO_XPR0}]
+		set reg_num [expr {$reg_num + 0x1000}]
+	} elseif [ expr {$reg_num <= $GDB_REGNO_FPR31} ] {
 		#puts [format "FPR_number = 0x%x" $reg_num]
-		set reg_num [expr $reg_num - $GDB_REGNO_FPR0]
-		set reg_num [expr $reg_num + 0x1020]
-	} elseif [ expr $reg_num <= $GDB_REGNO_CSR4095 ] {
+		set reg_num [expr {$reg_num - $GDB_REGNO_FPR0}]
+		set reg_num [expr {$reg_num + 0x1020}]
+	} elseif [ expr {$reg_num <= $GDB_REGNO_CSR4095} ] {
 		#puts [format "CSR_number = 0x%x" $reg_num]
-		set reg_num [expr $reg_num - $GDB_REGNO_CSR0]
+		set reg_num [expr {$reg_num - $GDB_REGNO_CSR0}]
 	} else {
 		puts [format "err_reg_num = 0x%x" $reg_num]
 		nds script_status 1
@@ -60,22 +60,22 @@ proc reg_read_abstract {tap reg_num} {
 	set DMI_COMMAND              0x17
 	set DMI_ABSTRACTCS_CMDERR    0x0700
 
-	if [ expr $NDS_TARGET_XLEN == 32 ] {
+	if [ expr {$NDS_TARGET_XLEN == 32} ] {
 		set command	    $AC_ACCESS_REGISTER_SIZE_32
 	} else {
 		set command	    $AC_ACCESS_REGISTER_SIZE_64
 	}
 
-	set command [expr $command | $reg_num | $AC_ACCESS_REGISTER_TRANSFER]
+	set command [expr {$command | $reg_num | $AC_ACCESS_REGISTER_TRANSFER}]
 	dmi_write $tap $DMI_COMMAND $command
 	set dmi_stat [dmi_read $tap $DMI_ABSTRACTCS]
-	set dmi_error [expr $dmi_stat & $DMI_ABSTRACTCS_CMDERR]
+	set dmi_error [expr {$dmi_stat & $DMI_ABSTRACTCS_CMDERR}]
 
 	set regdata [dmi_read $tap $DMI_DATA0]
-	if [ expr $NDS_TARGET_XLEN == 64 ] {
-		set reg_value_h [dmi_read $tap [expr $DMI_DATA0 + 1]]
-		set reg_value_h [expr $reg_value_h << 32]
-		set regdata [expr $regdata | $reg_value_h]
+	if [ expr {$NDS_TARGET_XLEN == 64} ] {
+		set reg_value_h [dmi_read $tap [expr {$DMI_DATA0 + 1}]]
+		set reg_value_h [expr {$reg_value_h << 32}]
+		set regdata [expr {$regdata | $reg_value_h}]
 	}
 	return $regdata
 }
@@ -90,17 +90,17 @@ proc reg_write_abstract {tap reg_num reg_value} {
 	set GDB_REGNO_CSR4095  4160
 	set regdata 0
 
-	if [ expr $reg_num <= $GDB_REGNO_XPR31 ] {
+	if [ expr {$reg_num <= $GDB_REGNO_XPR31} ] {
 		#puts [format "XPR_number = 0x%x" $reg_num]
-		set reg_num [expr $reg_num - $GDB_REGNO_XPR0]
-		set reg_num [expr $reg_num + 0x1000]
-	} elseif [ expr $reg_num <= $GDB_REGNO_FPR31 ] {
+		set reg_num [expr {$reg_num - $GDB_REGNO_XPR0}]
+		set reg_num [expr {$reg_num + 0x1000}]
+	} elseif [ expr {$reg_num <= $GDB_REGNO_FPR31} ] {
 		#puts [format "FPR_number = 0x%x" $reg_num]
-		set reg_num [expr $reg_num - $GDB_REGNO_FPR0]
-		set reg_num [expr $reg_num + 0x1020]
-	} elseif [ expr $reg_num <= $GDB_REGNO_CSR4095 ] {
+		set reg_num [expr {$reg_num - $GDB_REGNO_FPR0}]
+		set reg_num [expr {$reg_num + 0x1020}]
+	} elseif [ expr {$reg_num <= $GDB_REGNO_CSR4095} ] {
 		#puts [format "CSR_number = 0x%x" $reg_num]
-		set reg_num [expr $reg_num - $GDB_REGNO_CSR0]
+		set reg_num [expr {$reg_num - $GDB_REGNO_CSR0}]
 	} else {
 		puts [format "err_reg_num = 0x%x" $reg_num]
 		nds script_status 1
@@ -122,21 +122,21 @@ proc reg_write_abstract {tap reg_num reg_value} {
 	set DMI_COMMAND              0x17
 	set DMI_ABSTRACTCS_CMDERR    0x0700
 
-	if [ expr $NDS_TARGET_XLEN == 32 ] {
+	if [ expr {$NDS_TARGET_XLEN == 32} ] {
 		dmi_write $tap $DMI_DATA0 $reg_value
 		set command	    $AC_ACCESS_REGISTER_SIZE_32
 	} else {
-		set reg_value_h [expr $reg_value >> 32]
-		set reg_value [expr $reg_value & 0xFFFFFFFF]
+		set reg_value_h [expr {$reg_value >> 32}]
+		set reg_value [expr {$reg_value & 0xFFFFFFFF}]
 		dmi_write $tap $DMI_DATA0 $reg_value
 		dmi_write $tap $DMI_DATA1 $reg_value_h
 		set command	    $AC_ACCESS_REGISTER_SIZE_64
 	}
 
-	set command [expr $command | $reg_num | $AC_ACCESS_REGISTER_TRANSFER | $AC_ACCESS_REGISTER_WRITE]
+	set command [expr {$command | $reg_num | $AC_ACCESS_REGISTER_TRANSFER | $AC_ACCESS_REGISTER_WRITE}]
 	dmi_write $tap $DMI_COMMAND $command
 	set dmi_stat [dmi_read $tap $DMI_ABSTRACTCS]
-	set dmi_error [expr $dmi_stat & $DMI_ABSTRACTCS_CMDERR]
+	set dmi_error [expr {$dmi_stat & $DMI_ABSTRACTCS_CMDERR}]
 
 	return $regdata
 }
@@ -148,18 +148,18 @@ proc nds_select_current_hart {tap hartid} {
 	#puts [format "nds_select_current_hart %d" $hartid]
 
 	set test_dmcontrol [dmi_read $tap $DMI_DMCONTROL]
-	set test_dmcontrol [expr $test_dmcontrol & ~$DMI_DMCONTROL_HARTSEL]
-	set hartid [expr $hartid << $DMI_DMCONTROL_HARTSEL_SHIFT]
-	set test_dmcontrol [expr $test_dmcontrol | $hartid]
+	set test_dmcontrol [expr {$test_dmcontrol & ~$DMI_DMCONTROL_HARTSEL}]
+	set hartid [expr {$hartid << $DMI_DMCONTROL_HARTSEL_SHIFT}]
+	set test_dmcontrol [expr {$test_dmcontrol | $hartid}]
 
 	# Force active DM
-	set test_dmcontrol [expr $test_dmcontrol | 0x1]
+	set test_dmcontrol [expr {$test_dmcontrol | 0x1}]
 	echo [format "set_dmcontrol: 0x%x" $test_dmcontrol]
 	dmi_write $tap $DMI_DMCONTROL $test_dmcontrol
 
 	set test_dmcontrol2 [dmi_read $tap $DMI_DMCONTROL]
 	echo [format "read_dmcontrol2: 0x%x" $test_dmcontrol2]
-	if [ expr $test_dmcontrol2 == $test_dmcontrol ] {
+	if [ expr {$test_dmcontrol2 == $test_dmcontrol} ] {
 		#puts [format "success"]
 		return 0
 	}
@@ -171,7 +171,7 @@ proc nds_auto_create_multi_targets {target_name tap} {
 	global _number_of_core
 
 	nds_auto_detect_targets $tap
-	if [ expr $_number_of_core == 0x01 ] {
+	if [ expr {$_number_of_core == 0x01} ] {
 		puts [format "There is %d core in tap" $_number_of_core]
 		echo [format "There is %d core in tap" $_number_of_core]
 		return
@@ -181,7 +181,7 @@ proc nds_auto_create_multi_targets {target_name tap} {
 	}
 
 	global _create_multi_targets
-	if [ expr $_create_multi_targets == 0x00 ] {
+	if [ expr {$_create_multi_targets == 0x00} ] {
 		return
 	}
 
@@ -210,17 +210,18 @@ proc nds_auto_detect_targets {tap} {
 	transport init
 	for {set i 0} {$i < $RISCV_MAX_HARTS} {incr i} {
 		set retvalue [nds_select_current_hart $tap $i]
-		if ![ expr $retvalue == 0 ] {
+		if ![ expr {$retvalue == 0} ] {
 			echo [format "select_current_hart NG"]
 			continue
 		}
 		set nds_dmstatus [dmi_read $tap $DMI_DMSTATUS]
 		echo [format "dmstatus:  0x%08x" $nds_dmstatus]
-		if ![ expr $nds_dmstatus & $DMI_DMSTATUS_ANYNONEXISTENT ] {
-			set count_cores [expr $count_cores + 1]
+		if ![ expr {$nds_dmstatus & $DMI_DMSTATUS_ANYNONEXISTENT} ] {
+			set count_cores [expr {$count_cores + 1}]
 			#puts [format "count_cores:  0x%08x" $count_cores]
 		}
 	}
 	echo [format "count_cores:  0x%08x" $count_cores]
 	set _number_of_core $count_cores
 }
+

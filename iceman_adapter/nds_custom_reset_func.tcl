@@ -38,31 +38,31 @@ proc reset_and_halt_one_hart {tap hartsel} {
 	set HARTSEL_MASK 0x3F0000
 
 	# Assert ndmreset and haltreq
-	set bf_haltreq [expr 1<<31]
-	set bf_hartsel [expr $hartsel<<16]
-	set bf_ndmreset [expr 1<<1]
+	set bf_haltreq [expr {1<<31}]
+	set bf_hartsel [expr {$hartsel<<16}]
+	set bf_ndmreset [expr {1<<1}]
 	set bf_dmactive 0x1
-	set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_ndmreset | $bf_dmactive]
+	set dmcontrol [expr {$bf_haltreq | $bf_hartsel | $bf_ndmreset | $bf_dmactive}]
 	write_dmi_dmcontrol $tap $dmcontrol
 
 	# delay
 	sleep 300
 
 	set dmcontrol [read_dmi_dmcontrol $tap]
-	if {[expr ($dmcontrol & $HARTSEL_MASK) != ($hartsel << 16)]} {
+	if {[expr {($dmcontrol & $HARTSEL_MASK) != ($hartsel << 16)}]} {
 		break;
 	}
 
 	set dmstatus [read_dmi_dmstatus $tap]
-	set dmstatus_anynonexistent [expr ($dmstatus>>14)&0x1]
+	set dmstatus_anynonexistent [expr {($dmstatus>>14)&0x1}]
 
 	if {$dmstatus_anynonexistent} {
 		break;
 	}
 	# De-assert ndmreset
-	set bf_haltreq [expr 1<<31]
+	set bf_haltreq [expr {1<<31}]
 	set bf_dmactive 0x1
-	set dmcontrol [expr $bf_haltreq | $bf_hartsel | $bf_dmactive]
+	set dmcontrol [expr {$bf_haltreq | $bf_hartsel | $bf_dmactive}]
 	write_dmi_dmcontrol $tap $dmcontrol
 }
 

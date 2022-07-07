@@ -1105,11 +1105,11 @@ static void update_openocd_cfg_v5()
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 
 	if ((int)(efreq_range/1000) != 0)
-		fprintf(openocd_cfg, "adapter_khz %d\n", (int)(efreq_range/1000));
+		fprintf(openocd_cfg, "adapter speed %d\n", (int)(efreq_range/1000));
 	else if (efreq_range != 0)
-		fprintf(openocd_cfg, "adapter_khz 1\n");
+		fprintf(openocd_cfg, "adapter speed 1\n");
 	else
-		fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
+		fprintf(openocd_cfg, "adapter speed %s\n", clock_v5_hz[clock_setting]);
 
 	if (use_smp == 1)
 		fprintf(openocd_cfg, "set _use_smp 1\n");
@@ -1280,8 +1280,8 @@ static void update_openocd_cfg()
 	while (fgets(line_buffer, LINE_BUFFER_SIZE, openocd_cfg_tpl)) {
 		if (nds_v3_ftdi == 1) {
 			if (strncmp(line_buffer, "source [find interface", 22) == 0) {
-				fprintf(openocd_cfg, "adapter_khz %s\n", clock_v5_hz[clock_setting]);
-				fprintf(openocd_cfg, "adapter_nsrst_delay 500\n");
+				fprintf(openocd_cfg, "adapter speed %s\n", clock_v5_hz[clock_setting]);
+				fprintf(openocd_cfg, "adapter srst delay 500\n");
 				if (custom_interface)
 					fprintf(openocd_cfg, "source [find interface/%s]\n", custom_interface);
 				else {
@@ -1348,9 +1348,9 @@ static void update_interface_cfg()
 
 	if (efreq_range != 0) {
 		fprintf(interface_cfg, "aice efreq_hz %d\n", efreq_range);
-		fprintf(interface_cfg, "adapter_khz 0\n");
+		fprintf(interface_cfg, "adapter speed 0\n");
 	} else
-		fprintf(interface_cfg, "adapter_khz %s\n", clock_hz[clock_setting]);
+		fprintf(interface_cfg, "adapter speed %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
 	// write to file, please add \"$folder_path\" for path contained space

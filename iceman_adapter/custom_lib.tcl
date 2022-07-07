@@ -23,7 +23,7 @@ proc set_dbgi {delay_ms} {
 
 	scan [nds jtag_tap_name] "%s" NDS_TAP
 	set test_dmcontrol [dmi_read $NDS_TAP $DMI_DMCONTROL]
-	set test_dmcontrol [expr $test_dmcontrol | $DMI_DMCONTROL_HALTREQ]
+	set test_dmcontrol [expr {$test_dmcontrol | $DMI_DMCONTROL_HALTREQ}]
 	dmi_write $NDS_TAP $DMI_DMCONTROL $test_dmcontrol
 	sleep $delay_ms
 }
@@ -35,7 +35,7 @@ proc clear_dbgi {delay_ms} {
 
 	scan [nds jtag_tap_name] "%s" NDS_TAP
 	set test_dmcontrol [dmi_read $NDS_TAP $DMI_DMCONTROL]
-	set test_dmcontrol [expr $test_dmcontrol & ~$DMI_DMCONTROL_HALTREQ]
+	set test_dmcontrol [expr {$test_dmcontrol & ~$DMI_DMCONTROL_HALTREQ}]
 	dmi_write $NDS_TAP $DMI_DMCONTROL $test_dmcontrol
 	sleep $delay_ms
 }
