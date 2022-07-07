@@ -139,7 +139,7 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 	interface/um232h.cfg \
 	interface/vpaclink.cfg \
 	interface/xds100v2.cfg \
-	interface/xds100v3.cfg \
+	interface/xds100v3.cfg
 
 openocd_targetcfgdir = $(bindir)/target
 dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl \
