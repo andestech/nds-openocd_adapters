@@ -2210,8 +2210,8 @@ static uint8_t list_devices(uint8_t devnum)
 	err = libusb_init(&ctx);
 	num_devs = libusb_get_device_list(ctx, &list);
 	for (i = 0; i < num_devs; i++) {
-		char NullName[] = {""};
 #if 0
+		char NullName[] = {""};
 		char *pdescp_Manufacturer = (char *)&NullName[0];
 		char *pdescp_Product = (char *)&NullName[0];
 		unsigned int descp_bcdDevice = 0x0;
