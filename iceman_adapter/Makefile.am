@@ -131,7 +131,6 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 	interface/stm32-stick.cfg \
 	interface/swd-resistor-hack.cfg \
 	interface/ti-icdi.cfg \
-	interface/tmp.txt \
 	interface/tumpa.cfg \
 	interface/tumpa-lite.cfg \
 	interface/turtelizer2-revB.cfg \
