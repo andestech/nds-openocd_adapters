@@ -2211,9 +2211,11 @@ static uint8_t list_devices(uint8_t devnum)
 	num_devs = libusb_get_device_list(ctx, &list);
 	for (i = 0; i < num_devs; i++) {
 		char NullName[] = {""};
+#if 0
 		char *pdescp_Manufacturer = (char *)&NullName[0];
 		char *pdescp_Product = (char *)&NullName[0];
 		unsigned int descp_bcdDevice = 0x0;
+#endif
 
 		libusb_device *dev = list[i];
 		libusb_get_device_descriptor(dev, &desc);
@@ -2227,8 +2229,8 @@ static uint8_t list_devices(uint8_t devnum)
 		if (err)
 			continue;
 
-		struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
 #if 0
+		struct jtag_libusb_device *udev = jtag_libusb_get_device(devh);
 		jtag_libusb_get_descriptor_string(devh, udev,
 				&pdescp_Manufacturer,
 				&pdescp_Product,
