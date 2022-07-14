@@ -1129,7 +1129,7 @@ static void update_openocd_cfg_v5()
 				fprintf(openocd_cfg, "source [find interface/jtagkey.cfg]\n");
 
 			if (dev_dnum != (uint8_t)-1)
-				fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
+				fprintf(openocd_cfg, "ftdi ftdi_device_address %u\n", dev_dnum);
 			continue;
 		}
 
@@ -1290,10 +1290,10 @@ static void update_openocd_cfg()
 				}
 
 				if (strncmp(custom_interface, "jtagkey.cfg", 11) == 0)
-					fprintf(openocd_cfg, "ftdi_layout_init 0x0b08 0x0f1b\n");
+					fprintf(openocd_cfg, "ftdi ftdi_layout_init 0x0b08 0x0f1b\n");
 
 				if (dev_dnum != (uint8_t)-1)
-					fprintf(openocd_cfg, "ftdi_device_address %u\n", dev_dnum);
+					fprintf(openocd_cfg, "ftdi ftdi_device_address %u\n", dev_dnum);
 
 				fprintf(openocd_cfg, "reset_config trst_only\n");
 			} else {
