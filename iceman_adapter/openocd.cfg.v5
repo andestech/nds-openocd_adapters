@@ -1,7 +1,7 @@
 adapter srst delay 500
 
 ##INTERFACE_REPLACE##
-reset_config srst_only
+reset_config none
 source [find dmi.tcl]
 source [find custom_lib.tcl]
 
