@@ -532,6 +532,9 @@
 <field name="ccache" start="46" end="46"/>
 <field name="io_cohp" start="47" end="47"/>
 <field name="rvarch" start="52" end="52"/>
+<field name="tlb_ram_cmd" start="53" end="53"/>
+<field name="cctl_fl_ul" start="54" end="54"/>
+<field name="hspo" start="55" end="55"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
