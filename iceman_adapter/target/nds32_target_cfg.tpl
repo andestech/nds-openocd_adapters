@@ -132,7 +132,19 @@ for {set i 0} {$i < $number_of_target} {incr i} {
 	target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
 	if [ expr $IF_SMP($i) == 0x1 ] {
 		set CORE_NUMS($i) [lindex $target_smp_core_nums $i]
-		$TARGET_NAME($i) configure -rtos riscv -corenums $CORE_NUMS($i)
+		$TARGET_NAME($i) configure -rtos hwthread -corenums $CORE_NUMS($i)
+
+                set _TARGETS {}
+                for {set j 0} {$j < $number_of_target} {incr j} {
+                        if [expr $j == 0x0] {
+                                lappend _TARGETS $TARGET_NAME($i)
+                                continue
+                        }
+
+			target create $TARGET_NAME($i)_$j $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid [expr $CORE_ID($i)+$j] -group [lindex $target_group $i]
+			lappend _TARGETS $TARGET_NAME($i)_$j
+                }
+                target smp {*}$_TARGETS
 	}
 }
 
