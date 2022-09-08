@@ -1646,6 +1646,16 @@
 <field name="int32" type="v16i32"/>
 <field name="int64" type="v8i64"/>
 </union>
+<union id="vec1024">
+<field name="bfloat16" type="v64bh"/>
+<field name="float16" type="v64h"/>
+<field name="float" type="v32f"/>
+<field name="double" type="v16d"/>
+<field name="int8" type="v128i8"/>
+<field name="int16" type="v64i16"/>
+<field name="int32" type="v32i32"/>
+<field name="int64" type="v16i64"/>
+</union>
 </feature>
 
 </target>
