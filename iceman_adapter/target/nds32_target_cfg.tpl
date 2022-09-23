@@ -135,7 +135,7 @@ for {set i 0} {$i < $number_of_target} {incr i} {
 		$TARGET_NAME($i) configure -rtos hwthread -corenums $CORE_NUMS($i)
 
                 set _TARGETS {}
-                for {set j 0} {$j < $number_of_target} {incr j} {
+                for {set j 0} {$j < $CORE_NUMS($i)} {incr j} {
                         if [expr $j == 0x0] {
                                 lappend _TARGETS $TARGET_NAME($i)
                                 continue
