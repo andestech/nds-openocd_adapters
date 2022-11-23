@@ -94,7 +94,7 @@ struct option long_option[] = {
 	{"detect-2wire", no_argument, &long_opt_flag, LONGOPT_DETECT_2WIRE},
 
 	{"reset-aice", no_argument, 0, 'a'},
-	{"no-crst-detect", no_argument, 0, 'A'},
+	{"no-reset-detect", no_argument, 0, 'A'},
 	{"bport", required_argument, 0, 'b'},
 	{"boot", no_argument, 0, 'B'},
 	{"clock", required_argument, 0, 'c'},
@@ -206,7 +206,7 @@ static char *memory_resume_sequence;
 static char *edm_port_operations;
 static const char *edm_port_op_file;
 static int aice_retry_time = 2;//50;
-static int aice_no_crst_detect;
+static int aice_no_reset_detect;
 static int clock_setting = 16;
 static int debug_level = 2;
 static int boot_code_debug;
@@ -271,7 +271,7 @@ static void show_usage()
 	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
 	printf("-a, --reset-aice (For AICE only):\tReset AICE as ICEman startup\n");
-	printf("-A, --no-crst-detect:\tNo CRST detection in debug session\n");
+	printf("-A, --no-reset-detect:\tNo reset detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
 
@@ -518,8 +518,8 @@ static int parse_param(int a_argc, char **a_argv)
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
 				break;
-			case 'A': /* no-crst-detect */
-				aice_no_crst_detect = 1;
+			case 'A': /* no-reset-detect */
+				aice_no_reset_detect = 1;
 				break;
 			case 'b':
 				burner_port = strtol(optarg, NULL, 0);
@@ -1204,8 +1204,8 @@ static void update_openocd_cfg_v5()
 		fprintf(openocd_cfg, "nds configure l2c_base 0x%llx\n", l2c_base);
 	}
 
-	if (aice_no_crst_detect != 0)
-		fprintf(openocd_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
+	if (aice_no_reset_detect != 0)
+		fprintf(openocd_cfg, "nds no_reset_detect %d\n", aice_no_reset_detect);
 
 	/*
 	 * Handle ACE option
@@ -1290,7 +1290,7 @@ static void update_openocd_cfg()
 				}
 
 				if (strncmp(custom_interface, "jtagkey.cfg", 11) == 0)
-					fprintf(openocd_cfg, "ftdi ftdi_layout_init 0x0b08 0x0f1b\n");
+					fprintf(openocd_cfg, "ftdi layout_init 0x0b08 0x0f1b\n");
 
 				if (dev_dnum != (uint8_t)-1)
 					fprintf(openocd_cfg, "ftdi ftdi_device_address %u\n", dev_dnum);
@@ -1352,7 +1352,7 @@ static void update_interface_cfg()
 	} else
 		fprintf(interface_cfg, "adapter speed %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
-	fprintf(interface_cfg, "aice no_crst_detect %d\n", aice_no_crst_detect);
+	fprintf(interface_cfg, "aice no_reset_detect %d\n", aice_no_reset_detect);
 	// write to file, please add \"$folder_path\" for path contained space
 	fprintf(interface_cfg, "aice port_config %d %d \"%s\"\n", burner_port, total_num_of_ports, as_filepath(target_cfg_name_str));
 
@@ -1411,7 +1411,7 @@ static void update_ftdi_v3_board_cfg()
 		fprintf(board_cfg, "nds diagnosis 0x%x 0x%x\n", diagnosis_memory, (unsigned int)diagnosis_address);
 
 	//fprintf(board_cfg, "nds retry_times %d\n", aice_retry_time);
-	fprintf(board_cfg, "nds no_crst_detect %d\n", aice_no_crst_detect);
+	fprintf(board_cfg, "nds no_reset_detect %d\n", aice_no_reset_detect);
 	fprintf(openocd_cfg, "nds burn_port %d\n", burner_port);
 
 	if (count_to_check_dbger)
