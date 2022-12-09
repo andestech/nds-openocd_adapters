@@ -440,7 +440,7 @@ proc reset_and_halt_all_harts {tap hartstart hartcount} {
 
 	for {set hartsel $hartstart} {$hartsel < $hartcount} {incr $hartsel} {
 		# De-assert ndmreset
-		set bf_clr_haltonreset [expr {1<<4}]
+		set bf_clr_haltonreset [expr {1<<2}]
 		set bf_ackhavereset [expr {1<<28}]
 		set bf_haltreq [expr {1<<31}]
 		set bf_hartsel [expr {$hartsel<<16}]
