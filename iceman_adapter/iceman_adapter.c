@@ -71,6 +71,7 @@ extern char *OPENOCD_VERSION_STR;
 #define LONGOPT_RV32                    21
 #define LONGOPT_RV64                    22
 #define LONGOPT_DETECT_2WIRE            23
+#define LONGOPT_NO_HALT_DETECT          24
 int long_opt_flag;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -92,6 +93,7 @@ struct option long_option[] = {
 	{"rv32-bus-only", no_argument, &long_opt_flag, LONGOPT_RV32},
 	{"rv64-bus-only", no_argument, &long_opt_flag, LONGOPT_RV64},
 	{"detect-2wire", no_argument, &long_opt_flag, LONGOPT_DETECT_2WIRE},
+	{"no-halt-detect", no_argument, &long_opt_flag, LONGOPT_NO_HALT_DETECT},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-reset-detect", no_argument, 0, 'A'},
@@ -207,6 +209,7 @@ static char *edm_port_operations;
 static const char *edm_port_op_file;
 static int aice_retry_time = 2;//50;
 static int aice_no_reset_detect;
+static int aice_no_halt_detect;
 static int clock_setting = 16;
 static int debug_level = 2;
 static int boot_code_debug;
@@ -374,6 +377,7 @@ static void show_usage()
 	printf("--rv32-bus-only/--rv64-bus-only (Only for V5): Read memory from system bus wihout checking CPU status\n");
 	printf("--custom-aice-init:\tUse custom script to do initialization process\n");
 	printf("--detect-2wire:\t\tIf JTAG scan chain interrogation (the 5-wire mode) fails, retry the connection with the SDP (2-wire) mode.\n");
+	printf("--no-halt-detect:\tNo halt detection in debug session\n");
 }
 
 char output_path[LINE_BUFFER_SIZE];
@@ -512,8 +516,11 @@ static int parse_param(int a_argc, char **a_argv)
 				} else if (long_opt == LONGOPT_RV64) {
 					vtarget_xlen = 64;
 					vtarget_enable = 1;
-				} else if (long_opt == LONGOPT_DETECT_2WIRE)
+				} else if (long_opt == LONGOPT_DETECT_2WIRE) {
 					detect_2wire = 1;
+				} else if (long_opt == LONGOPT_NO_HALT_DETECT) {
+					aice_no_halt_detect = 1;
+				}
 				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
@@ -1207,6 +1214,9 @@ static void update_openocd_cfg_v5()
 	if (aice_no_reset_detect != 0)
 		fprintf(openocd_cfg, "nds no_reset_detect %d\n", aice_no_reset_detect);
 
+	if (aice_no_halt_detect != 0)
+		fprintf(openocd_cfg, "nds no_halt_detect %d\n", aice_no_halt_detect);
+
 	/*
 	 * Handle ACE option
 	 * Task: parse "--ace-conf coreN=../../../r6/lib/ICEman.conf" to extract
@@ -1353,6 +1363,7 @@ static void update_interface_cfg()
 		fprintf(interface_cfg, "adapter speed %s\n", clock_hz[clock_setting]);
 	fprintf(interface_cfg, "aice retry_times %d\n", aice_retry_time);
 	fprintf(interface_cfg, "aice no_reset_detect %d\n", aice_no_reset_detect);
+	fprintf(interface_cfg, "aice no_halt_detect %d\n", aice_no_halt_detect);
 	// write to file, please add \"$folder_path\" for path contained space
 	fprintf(interface_cfg, "aice port_config %d %d \"%s\"\n", burner_port, total_num_of_ports, as_filepath(target_cfg_name_str));
 
@@ -1412,6 +1423,7 @@ static void update_ftdi_v3_board_cfg()
 
 	//fprintf(board_cfg, "nds retry_times %d\n", aice_retry_time);
 	fprintf(board_cfg, "nds no_reset_detect %d\n", aice_no_reset_detect);
+	fprintf(board_cfg, "nds no_halt_detect %d\n", aice_no_halt_detect);
 	fprintf(openocd_cfg, "nds burn_port %d\n", burner_port);
 
 	if (count_to_check_dbger)
