@@ -136,6 +136,7 @@ dist_openocd_interfacecfg_DATA = interface/100ask-openjtag.cfg \
 	interface/turtelizer2-revB.cfg \
 	interface/turtelizer2-revC.cfg \
 	interface/um232h.cfg \
+	interface/virtual_dmi.cfg \
 	interface/vpaclink.cfg \
 	interface/xds100v2.cfg \
 	interface/xds100v3.cfg
