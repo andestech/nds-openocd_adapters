@@ -1,9 +1,9 @@
 AC_INIT([openocd_adapter], [5.2.0])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall])
-AC_LANG_C
 AC_PROG_CC
-AC_PROG_CC_C99
+# autoconf 2.70 obsoletes AC_PROG_CC_C99 and includes it in AC_PROG_CC
+m4_version_prereq([2.70],[],[AC_PROG_CC_C99])
 AM_PROG_CC_C_O
 AM_PROG_AR
 AC_PROG_RANLIB
