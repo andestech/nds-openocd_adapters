@@ -72,6 +72,10 @@ extern char *OPENOCD_VERSION_STR;
 #define LONGOPT_RV64                    22
 #define LONGOPT_DETECT_2WIRE            23
 #define LONGOPT_NO_HALT_DETECT          24
+#define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST 25
+#define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV  26
+
+
 int long_opt_flag;
 uint32_t cop_reg_nums[4] = {0,0,0,0};
 const char *opt_string = "aAb:Bc:C:d:DeF:f:gGhHI:kK::l:L:M:N:o:O:p:P:r:R:sS:t:T:vx::Xy:z:Z:";
@@ -94,6 +98,8 @@ struct option long_option[] = {
 	{"rv64-bus-only", no_argument, &long_opt_flag, LONGOPT_RV64},
 	{"detect-2wire", no_argument, &long_opt_flag, LONGOPT_DETECT_2WIRE},
 	{"no-halt-detect", no_argument, &long_opt_flag, LONGOPT_NO_HALT_DETECT},
+	{"no-n22-workaround-imprecise-ldst", no_argument, &long_opt_flag, LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST},
+	{"no-n22-workaround-imprecise-div", no_argument, &long_opt_flag, LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-reset-detect", no_argument, 0, 'A'},
@@ -261,6 +267,8 @@ static unsigned int nds_v3_ftdi;
 static uint8_t dev_dnum = -1;
 static int vtarget_xlen;
 static int vtarget_enable;
+static unsigned int no_n22_workaround_imprecise_ldst;
+static unsigned int no_n22_workaround_imprecise_div;
 
 static void show_version()
 {
@@ -450,6 +458,107 @@ int isDirectoryExist(const char *path)
 	return 0;
 }
 
+static int handle_long_option(int long_opt)
+{
+	uint32_t cop_nums = 0;
+	uint8_t num = 0;
+	uint8_t bnum = 0, pnum = 0, dnum = 0;
+
+	switch (long_opt) {
+		case LONGOPT_CP0:
+		case LONGOPT_CP1:
+		case LONGOPT_CP2:
+		case LONGOPT_CP3:
+			cop_nums = strtol(optarg, NULL, 0);
+			if (cop_nums > 4096)
+				printf("cop_nums max is 4096\n");
+			else {
+				cop_reg_nums[long_opt - LONGOPT_CP0] = cop_nums;
+				printf("cop_reg_nums[%d]=%d\n", long_opt - LONGOPT_CP0, cop_reg_nums[long_opt - LONGOPT_CP0]);
+			}
+			break;
+
+		case LONGOPT_USE_SDM:
+			use_sdm = 1;
+			break;
+
+		case LONGOPT_AICE_INIT:
+			custom_initial_script = optarg;
+			if (access(custom_initial_script, F_OK)){
+				printf("<-- ERROR: customer initial script (path: %s) not exist! -->\n", custom_initial_script);
+				return ERROR_FAIL;
+			}
+			break;
+
+		case LONGOPT_L2C:
+			enable_l2c = 1;
+			if (optarg)
+				sscanf(optarg, "%llx", &l2c_base);
+			break;
+
+		case LONGOPT_DMI_DELAY:
+			sscanf(optarg, "%d", &dmi_busy_delay_count);
+			break;
+
+		case LONGOPT_USER_TARGET_CFG:
+			custom_target_cfg = optarg;
+			break;
+
+		case LONGOPT_SMP:
+			use_smp = 1;
+			break;
+
+		case LONGOPT_HALT_ON_RESET:
+			usd_halt_on_reset = strtol(optarg, NULL, 0);
+			break;
+
+		case LONGOPT_LIST_DEVICE:
+			list_devices(-1);
+			return ERROR_FAIL; /* Force ICEman exits*/
+			break;
+
+		case LONGOPT_DEVICE:
+			sscanf(optarg, "%"SCNu8, &num);
+			dev_dnum = list_devices(num);
+			break;
+
+		case LONGOPT_DEVICE_USB_COMBO:
+			sscanf(optarg, "%"SCNu8 ":%"SCNu8 ":%"SCNu8, &bnum, &pnum, &dnum);
+			dev_dnum = dnum;
+			break;
+
+		case LONGOPT_RV32:
+			vtarget_xlen = 32;
+			vtarget_enable = 1;
+			break;
+
+		case LONGOPT_RV64:
+			vtarget_xlen = 64;
+			vtarget_enable = 1;
+			break;
+
+		case LONGOPT_DETECT_2WIRE:
+			detect_2wire = 1;
+			break;
+
+		case LONGOPT_NO_HALT_DETECT:
+			aice_no_halt_detect = 1;
+			break;
+
+		case LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST:
+			no_n22_workaround_imprecise_ldst = 1;
+			break;
+
+		case LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV:
+			no_n22_workaround_imprecise_div = 1;
+			break;
+		default:
+			return ERROR_FAIL;
+	}
+
+	return ERROR_OK;
+}
+
 static int parse_param(int a_argc, char **a_argv)
 {
 	while(1) {
@@ -469,58 +578,8 @@ static int parse_param(int a_argc, char **a_argv)
 		switch (c) {
 			case 0:
 				long_opt = *long_option[option_index].flag;
-				if ((long_opt >= LONGOPT_CP0) &&
-				    (long_opt <= LONGOPT_CP3)) {
-					cop_nums = strtol(optarg, NULL, 0);
-					if (cop_nums > 4096)
-						printf("cop_nums max is 4096\n");
-					else {
-						cop_reg_nums[long_opt - LONGOPT_CP0] = cop_nums;
-						printf("cop_reg_nums[%d]=%d\n", long_opt - LONGOPT_CP0, cop_reg_nums[long_opt - LONGOPT_CP0]);
-					}
-				} else if (long_opt == LONGOPT_USE_SDM)
-					use_sdm = 1;
-				else if (long_opt == LONGOPT_AICE_INIT){
-					custom_initial_script = optarg;
-					if (access(custom_initial_script, F_OK)){
-                                        	printf("<-- ERROR: customer initial script (path: %s) not exist! -->\n", custom_initial_script);
-						return ERROR_FAIL;
-					}
-				}
-				else if (long_opt == LONGOPT_L2C) {
-					enable_l2c = 1;
-					if (optarg)
-						sscanf(optarg, "%llx", &l2c_base);
-				} else if (long_opt == LONGOPT_DMI_DELAY)
-					sscanf(optarg, "%d", &dmi_busy_delay_count);
-				else if (long_opt == LONGOPT_USER_TARGET_CFG)
-					custom_target_cfg = optarg;
-				else if (long_opt == LONGOPT_SMP)
-					use_smp = 1;
-				else if (long_opt == LONGOPT_HALT_ON_RESET)
-					usd_halt_on_reset = strtol(optarg, NULL, 0);
-				else if (long_opt == LONGOPT_LIST_DEVICE) {
-					list_devices(-1);
-					return ERROR_FAIL; /* Force ICEman exits*/
-				} else if (long_opt == LONGOPT_DEVICE) {
-					uint8_t num;
-					sscanf(optarg, "%"SCNu8, &num);
-					dev_dnum = list_devices(num);
-				} else if (long_opt == LONGOPT_DEVICE_USB_COMBO) {
-					uint8_t bnum = 0, pnum = 0, dnum = 0;
-					sscanf(optarg, "%"SCNu8 ":%"SCNu8 ":%"SCNu8, &bnum, &pnum, &dnum);
-					dev_dnum = dnum;
-				} else if (long_opt == LONGOPT_RV32) {
-					vtarget_xlen = 32;
-					vtarget_enable = 1;
-				} else if (long_opt == LONGOPT_RV64) {
-					vtarget_xlen = 64;
-					vtarget_enable = 1;
-				} else if (long_opt == LONGOPT_DETECT_2WIRE) {
-					detect_2wire = 1;
-				} else if (long_opt == LONGOPT_NO_HALT_DETECT) {
-					aice_no_halt_detect = 1;
-				}
+				if (handle_long_option(long_opt))
+					return ERROR_FAIL;
 				break;
 			case 'a': /* reset-aice */
 				reset_aice_as_startup = 1;
@@ -1209,6 +1268,14 @@ static void update_openocd_cfg_v5()
 		if (l2c_base == (unsigned long long)-1)
 			l2c_base = NDSV5_L2C_BASE;
 		fprintf(openocd_cfg, "nds configure l2c_base 0x%llx\n", l2c_base);
+	}
+
+	if (no_n22_workaround_imprecise_ldst) {
+		fprintf(openocd_cfg, "nds configure no-n22-workaround-imprecise-ldst on\n");
+	}
+
+	if (no_n22_workaround_imprecise_div) {
+		fprintf(openocd_cfg, "nds configure no-n22-workaround-imprecise-div on\n");
 	}
 
 	if (aice_no_reset_detect != 0)
