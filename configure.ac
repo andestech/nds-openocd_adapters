@@ -1,4 +1,4 @@
-AC_INIT([openocd_adapter], [5.2.0])
+AC_INIT([openocd_adapter], [5.3.0])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall])
 AC_LANG_C
