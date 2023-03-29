@@ -1,22 +1,52 @@
 
+set _dmi_init_once 1
+set _abits 7
+proc dmi_init_once {tap} {
+	global _dmi_init_once
+	global _abits
+
+	set DTM_IR_DTMCS	0x10
+
+	irscan $tap $DTM_IR_DTMCS
+	scan [drscan $tap 32 0x30000] "%x" dtmcs
+	echo [format "dtmcs=0x%x" $dtmcs]
+
+	set _abits [expr {$dtmcs >> 4 & 0x3F}]
+	echo [format "abits=0x%x" $_abits]
+
+	set _dmi_init_once 0
+}
+
 proc dmi_read {tap addr} {
+	global _abits
+	global _dmi_init_once
+	if { $_dmi_init_once != 0 } {
+		dmi_init_once $tap
+	}
+
 	set DTM_IR_DMI 0x11
 	irscan $tap $DTM_IR_DMI
 
-	scan [drscan $tap 2 0x1 32 0x0 7 $addr] "%x %x %x" op rdata addr_out
-	runtest 5
-	scan [drscan $tap 2 0x0 32 0x0 7 $addr] "%x %x %x" op rdata addr_out
+	scan [drscan $tap 2 0x1 32 0x0 $_abits $addr] "%x %x %x" op rdata addr_out
+	runtest 7
+	scan [drscan $tap 2 0x0 32 0x0 $_abits $addr] "%x %x %x" op rdata addr_out
 
 	return $rdata
 }
 
 proc dmi_write {tap addr wdata} {
+	global _abits
+	global _dmi_init_once
+	if { $_dmi_init_once != 0 } {
+		dmi_init_once $tap
+	}
+
 	set DTM_IR_DMI 0x11
 	irscan $tap $DTM_IR_DMI
 
-	scan [drscan $tap 2 0x2 32 $wdata 7 $addr] "%x %x %x" op rdata addr_out
-	runtest 5
-	scan [drscan $tap 2 0x1 32 $wdata 7 $addr] "%x %x %x" op rdata addr_out
+	scan [drscan $tap 2 0x2 32 $wdata $_abits $addr] "%x %x %x" op rdata addr_out
+	runtest 7
+	scan [drscan $tap 2 0x1 32 $wdata $_abits $addr] "%x %x %x" op rdata addr_out
 }
 
 proc reg_read_abstract {tap reg_num} {
