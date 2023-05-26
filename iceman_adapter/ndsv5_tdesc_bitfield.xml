@@ -538,6 +538,11 @@
 <field name="tlb_ram_cmd" start="21" end="21"/>
 <field name="cctl_fl_ul" start="22" end="22"/>
 <field name="hspo" start="23" end="23"/>
+<field name="XCSR" start="24" end="24"/>
+<field name="ALT_FP_FMT" start="25" end="25"/>
+<field name="D_LMSLVP" start="26" end="26"/>
+<field name="I_LMSLVP" start="27" end="27"/>
+<field name="RVARCH2" start="28" end="28"/>
 </flags>
 <struct id="reg_mmsc_cfg2" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg2_flags"/>
@@ -611,6 +616,12 @@
 <field name="svpbmt" start="23" end="23"/>
 <field name="svnapot" start="24" end="24"/>
 <field name="zihintpause" start="25" end="25"/>
+<field name="Zca" start="26" end="26"/>
+<field name="Zcb" start="27" end="27"/>
+<field name="Zcd" start="28" end="28"/>
+<field name="Zcf" start="29" end="29"/>
+<field name="Zcmp" start="30" end="30"/>
+<field name="Zcmt" start="31" end="31"/>
 </flags>
 <struct id="reg_mrvarch_cfg" size="4">
 <field name="" start="0" end="31" type="mrvarch_cfg_flags"/>
