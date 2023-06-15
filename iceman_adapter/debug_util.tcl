@@ -22,7 +22,10 @@ proc assert {cond {msg "assertion failed"}} {
 	if {![uplevel 1 expr $cond]} {error $msg}
 }
 
+set _abits 7
 proc init_dmi {tap} {
+	global _abits
+
 	set DTM_IR_DTMCS	0x10
 	set DTM_IR_IDCODE	0x1
 	set ANDES_JDTM_IDCODE	0x1000563d
@@ -35,17 +38,21 @@ proc init_dmi {tap} {
 	scan [drscan $tap 32 0x30000] "%x" dtmcs
 	print_debug_msg [format "dtmcs=0x%x" $dtmcs]
 
+	set _abits [expr {$dtmcs >> 4 & 0x3F}]
+	echo [format "abits=0x%x" $_abits]
 }
 
 proc read_dmi {tap addr} {
+	global _abits
+
 	set DTM_IR_DMI 0x11
 	irscan $tap $DTM_IR_DMI
 
-	scan [drscan $tap 2 0x1 32 0x0 7 $addr] "%x %x %x" op rdata addr_out
+	scan [drscan $tap 2 0x1 32 0x0 $_abits $addr] "%x %x %x" op rdata addr_out
 	print_debug_msg [format "read_dmi %02x_00000000_1 -> %02x_%08x_%x" $addr $addr_out $rdata $op]
 
 	runtest 10
-	scan [drscan $tap 2 0x0 32 0x0 7 $addr] "%x %x %x" op rdata addr_out
+	scan [drscan $tap 2 0x0 32 0x0 $_abits $addr] "%x %x %x" op rdata addr_out
 	print_debug_msg [format "read_dmi %02x_00000000_0 -> %02x_%08x_%x" $addr $addr_out $rdata $op]
 	runtest 10
 
@@ -53,13 +60,15 @@ proc read_dmi {tap addr} {
 }
 
 proc write_dmi {tap addr wdata} {
+	global _abits
+
 	set DTM_IR_DMI 0x11
 	irscan $tap $DTM_IR_DMI
 
-	scan [drscan $tap 2 0x2 32 $wdata 7 $addr] "%x %x %x" op rdata addr_out
+	scan [drscan $tap 2 0x2 32 $wdata $_abits $addr] "%x %x %x" op rdata addr_out
 	print_debug_msg [format "write_dmi %02x_%08x_2 -> %02x_%08x" $addr $wdata $addr_out $rdata $op]
 	runtest 10
-	scan [drscan $tap 2 0x0 32 $wdata 7 $addr] "%x %x %x" op rdata addr_out
+	scan [drscan $tap 2 0x0 32 $wdata $_abits $addr] "%x %x %x" op rdata addr_out
 	print_debug_msg [format "write_dmi %02x_00000000 -> %x_%02x_%08x" $wdata $addr_out $rdata $op]
 }
 
@@ -221,7 +230,7 @@ proc select_single_hart {tap hartsel} {
 #	1: the selected is halted
 #	0: timeout
 proc wait_selected_hart_halted {tap timeout_ms} {
-	for {set i 0} {$i < $timeout_ms} {set i [expr {$i+10i}]} {
+	for {set i 0} {$i < $timeout_ms} {set i [expr {$i+10}]} {
 		if {[is_selected_hart_halted $tap]} {
 			return 1
 		} else {
