@@ -74,6 +74,7 @@ extern char *OPENOCD_VERSION_STR;
 #define LONGOPT_NO_HALT_DETECT          24
 #define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST 25
 #define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV  26
+#define LONGOPT_DUMP_TRACE_FOLDER       27
 
 
 int long_opt_flag;
@@ -100,6 +101,7 @@ struct option long_option[] = {
 	{"no-halt-detect", no_argument, &long_opt_flag, LONGOPT_NO_HALT_DETECT},
 	{"no-n22-workaround-imprecise-ldst", no_argument, &long_opt_flag, LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST},
 	{"no-n22-workaround-imprecise-div", no_argument, &long_opt_flag, LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV},
+	{"dump-trace-folder", required_argument, &long_opt_flag, LONGOPT_DUMP_TRACE_FOLDER},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-reset-detect", no_argument, 0, 'A'},
@@ -251,6 +253,7 @@ static const char *bin_folder;
 static const char *custom_interface;
 static const char *custom_target_cfg;
 static unsigned int efreq_range;
+static const char *dump_trace_folder;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 #define NDSV3_L2C_BASE (0x90F00000u)
@@ -463,6 +466,7 @@ static int handle_long_option(int long_opt)
 	uint32_t cop_nums = 0;
 	uint8_t num = 0;
 	uint8_t bnum = 0, pnum = 0, dnum = 0;
+	char *temp_path;
 
 	switch (long_opt) {
 		case LONGOPT_CP0:
@@ -552,6 +556,20 @@ static int handle_long_option(int long_opt)
 		case LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV:
 			no_n22_workaround_imprecise_div = 1;
 			break;
+
+		case LONGOPT_DUMP_TRACE_FOLDER:
+			temp_path = optarg;
+			// process \": Linux server caanot ignore \" (str:\" from IDE)
+			if (temp_path[0] == '\"')
+				removeChar((char *)temp_path, '\"');
+
+			// process space, remove backslash for fopen(folder/file...)
+			// add '/' at the path end
+			dump_trace_folder = replaceWord(temp_path, "\\ ", " ");
+			if (isDirectoryExist(dump_trace_folder) == 0)
+				printf("WARNING: %s is not exist or not a directory!!\n", optarg);
+
+			break;
 		default:
 			return ERROR_FAIL;
 	}
@@ -567,7 +585,6 @@ static int parse_param(int a_argc, char **a_argv)
 		int optarg_len;
 		char tmpchar = 0;
 		int long_opt = 0;
-		uint32_t cop_nums = 0;
 		char tmpstr[10] = {0};
 		unsigned int i;
 
@@ -713,7 +730,7 @@ static int parse_param(int a_argc, char **a_argv)
 				custom_srst_script = optarg;
 				if ( access(custom_srst_script, F_OK) ){
 					printf("<-- ERROR: customer srst script (path: %s) not exist! -->\n", custom_srst_script);
-					return ERROR_FAIL;	
+					return ERROR_FAIL;
 				}
 				break;
 			case 'L': /* customer-trst */
@@ -1283,6 +1300,9 @@ static void update_openocd_cfg_v5()
 
 	if (aice_no_halt_detect != 0)
 		fprintf(openocd_cfg, "nds no_halt_detect %d\n", aice_no_halt_detect);
+
+	if (dump_trace_folder)
+		fprintf(openocd_cfg, "nds configure dump-trace-folder %s\n", dump_trace_folder);
 
 	/*
 	 * Handle ACE option
