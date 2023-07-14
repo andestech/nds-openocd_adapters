@@ -230,7 +230,7 @@ static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
 static unsigned int log_file_size = 0xA00000; // default: 10MB
-static int boot_time = 5000;
+static int boot_time = 3000;
 static int reset_time = 1000;
 static int reset_aice_as_startup;
 static int count_to_check_dbger;
