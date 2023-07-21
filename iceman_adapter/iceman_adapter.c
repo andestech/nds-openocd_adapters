@@ -230,7 +230,7 @@ static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
 static unsigned int log_file_size = 0xA00000; // default: 10MB
-static int boot_time = 3000;
+static int boot_time = 8000;
 static int reset_time = 1000;
 static int reset_aice_as_startup;
 static int count_to_check_dbger;
@@ -366,7 +366,7 @@ static void show_usage()
 	printf("\t\t\t--resume-seq 0x500000:0x80,0x600000:rst\n\n");
 	printf("-t, --tport:\t\tSocket port number for Telnet connection\n");
 	printf("-T, --boot-time:\tBoot time of target board (milliseconds)\n");
-	printf("\t\t\t(default: 5000 milliseconds)\n");
+	printf("\t\t\t(default: 8000 milliseconds)\n");
 	printf("-v, --version:\t\tVersion of ICEman\n");
 	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
