@@ -217,14 +217,15 @@ proc nds_auto_create_multi_targets {target_name tap} {
 
 	#puts [format "create targets..."]
 	for {set i 1} {$i < $_number_of_core} {incr i} {
-		target create $target_name$i nds_v5 -chain-position $tap -coreid $i
+		target create $target_name\_$i nds_v5 -chain-position $tap -coreid $i
 	}
 
 	global _use_smp
 	if {$_use_smp == 1} {
 		set _TARGETS {}
+		lappend _TARGETS $target_name
 		for {set i 0} {$i < $_number_of_core} {incr i} {
-			lappend _TARGETS $target_name$i
+			lappend _TARGETS $target_name\_$i
 		}
 		target smp {*}$_TARGETS
 	}

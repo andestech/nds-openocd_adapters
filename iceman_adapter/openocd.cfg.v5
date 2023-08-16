@@ -32,7 +32,7 @@ if {$_use_smp == 0} {
 #  mww 0xf0100044 0x3
 #}
 
-nds_auto_create_multi_targets $NDS_TARGETNAME $NDS_TAP
+nds_auto_create_multi_targets $CUR_TARGET $NDS_TAP
 ##--target-create-finish
 
 $CUR_TARGET configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
