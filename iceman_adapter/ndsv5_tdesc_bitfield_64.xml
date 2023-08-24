@@ -241,6 +241,7 @@
 <field name="" start="0" end="63" type="uint64"/>
 <field name="microid" start="0" end="11" type="uint64"/>
 <field name="coretype" start="12" end="15" type="marchid_coretype"/>
+<field name="microid2" start="16" end="19" type="uint64"/>
 <field name="commercial" start="63" end="63" type="uint64"/>
 </struct>
 
@@ -540,6 +541,7 @@
 <field name="D_LMSLVP" start="58" end="58"/>
 <field name="I_LMSLVP" start="59" end="59"/>
 <field name="RVARCH2" start="60" end="60"/>
+<field name="msc_ext3" start="63" end="63"/>
 </flags>
 <struct id="reg_mmsc_cfg" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg_flags"/>
@@ -549,6 +551,18 @@
 <field name="excslvl" start="20" end="21" type="mmsc_cfg_excslvl"/>
 <field name="ecdv" start="41" end="42" type="uint64"/>
 <field name="core_pclus" start="48" end="51" type="uint64"/>
+<field name="btb_ecc" start="61" end="62" type="uint64"/>
+</struct>
+
+
+<flags id="mmsc_cfg3_flags" size="8">
+<field name="btb_ram_cmd" start="0" end="0"/>
+<field name="no_cctl_va" start="1" end="1"/>
+<field name="no_cctl_all" start="2" end="2"/>
+<field name="no_cctl_ix_invwb" start="3" end="3"/>
+</flags>
+<struct id="reg_mmsc_cfg3" size="8">
+<field name="" start="0" end="63" type="mmsc_cfg3_flags"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="8">
@@ -626,7 +640,7 @@
 <field name="Zfbfmin" start="32" end="32"/>
 <field name="Zvfbfmin" start="33" end="33"/>
 <field name="Zvfbfwma" start="34" end="34"/>
-<field name="NOZvqmac" start="35" end="35"/>
+<field name="Zvqmac" start="35" end="35"/>
 <field name="Zvlsseg" start="36" end="36"/>
 </flags>
 <struct id="reg_mrvarch_cfg" size="8">
@@ -1395,6 +1409,8 @@
 <reg name="mdcm_cfg" bitsize="64" type="reg_mdcm_cfg"/>
 <reg name="csr4034" bitsize="64" type="reg_mmsc_cfg"/>
 <reg name="mmsc_cfg" bitsize="64" type="reg_mmsc_cfg"/>
+<reg name="csr4036" bitsize="64" type="reg_mmsc_cfg3"/>
+<reg name="mmsc_cfg3" bitsize="64" type="reg_mmsc_cfg3"/>
 <reg name="csr4039" bitsize="64" type="reg_mvec_cfg"/>
 <reg name="mvec_cfg" bitsize="64" type="reg_mvec_cfg"/>
 <reg name="csr4040" bitsize="64" type="reg_mcrash_statesave"/>

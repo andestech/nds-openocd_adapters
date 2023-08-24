@@ -233,6 +233,7 @@
 <field name="" start="0" end="31" type="uint32"/>
 <field name="microid" start="0" end="11" type="uint32"/>
 <field name="coretype" start="12" end="15" type="marchid_coretype"/>
+<field name="microid2" start="16" end="19" type="uint32"/>
 <field name="commercial" start="31" end="31" type="uint32"/>
 </struct>
 
@@ -543,11 +544,23 @@
 <field name="D_LMSLVP" start="26" end="26"/>
 <field name="I_LMSLVP" start="27" end="27"/>
 <field name="RVARCH2" start="28" end="28"/>
+<field name="msc_ext3" start="31" end="31"/>
 </flags>
 <struct id="reg_mmsc_cfg2" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg2_flags"/>
 <field name="ecdv" start="9" end="10" type="uint32"/>
 <field name="core_pclus" start="16" end="19" type="uint32"/>
+<field name="btb_ecc" start="29" end="30" type="uint32"/>
+</struct>
+
+<flags id="mmsc_cfg3_flags" size="4">
+<field name="btb_ram_cmd" start="0" end="0"/>
+<field name="no_cctl_va" start="1" end="1"/>
+<field name="no_cctl_all" start="2" end="2"/>
+<field name="no_cctl_ix_invwb" start="3" end="3"/>
+</flags>
+<struct id="reg_mmsc_cfg3" size="4">
+<field name="" start="0" end="31" type="mmsc_cfg3_flags"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="4">
@@ -627,6 +640,17 @@
 <field name="" start="0" end="31" type="mrvarch_cfg_flags"/>
 <field name="sm_version" start="17" end="19" type="uint32"/>
 <field name="ss_version" start="20" end="22" type="uint32"/>
+</struct>
+
+<flags id="mrvarch_cfg2_flags" size="4">
+<field name="Zfbfmin" start="0" end="0"/>
+<field name="Zvfbfmin" start="1" end="1"/>
+<field name="Zvfbfwma" start="2" end="2"/>
+<field name="Zvqmac" start="3" end="3"/>
+<field name="Zvlsseg" start="4" end="4"/>
+</flags>
+<struct id="reg_mrvarch_cfg2" size="4">
+<field name="" start="0" end="31" type="mrvarch_cfg2_flags"/>
 </struct>
 
 <struct id="reg_mccache_ctl_base" size="4">
@@ -1427,6 +1451,8 @@
 <reg name="mmsc_cfg" bitsize="32" type="reg_mmsc_cfg"/>
 <reg name="csr4035" bitsize="32" type="reg_mmsc_cfg2"/>
 <reg name="mmsc_cfg2" bitsize="32" type="reg_mmsc_cfg2"/>
+<reg name="csr4036" bitsize="32" type="reg_mmsc_cfg3"/>
+<reg name="mmsc_cfg3" bitsize="32" type="reg_mmsc_cfg3"/>
 <reg name="csr4039" bitsize="32" type="reg_mvec_cfg"/>
 <reg name="mvec_cfg" bitsize="32" type="reg_mvec_cfg"/>
 <reg name="csr4040" bitsize="32" type="reg_mcrash_statesave"/>
@@ -1435,6 +1461,8 @@
 <reg name="mstatus_crashsave" bitsize="32" type="reg_mstatus"/>
 <reg name="csr4042" bitsize="32" type="reg_mrvarch_cfg"/>
 <reg name="mrvarch_cfg" bitsize="32" type="reg_mrvarch_cfg"/>
+<reg name="csr4043" bitsize="32" type="reg_mrvarch_cfg2"/>
+<reg name="mrvarch_cfg2" bitsize="32" type="reg_mrvarch_cfg2"/>
 <reg name="csr4047" bitsize="32" type="reg_mccache_ctl_base"/>
 <reg name="mccache_ctl_base" bitsize="32" type="reg_mccache_ctl_base"/>
 <reg name="csr1984" bitsize="32" type="reg_milmb"/>
