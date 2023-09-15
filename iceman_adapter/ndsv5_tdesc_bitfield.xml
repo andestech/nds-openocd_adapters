@@ -1465,6 +1465,7 @@
 <reg name="mrvarch_cfg2" bitsize="32" type="reg_mrvarch_cfg2"/>
 <reg name="csr4047" bitsize="32" type="reg_mccache_ctl_base"/>
 <reg name="mccache_ctl_base" bitsize="32" type="reg_mccache_ctl_base"/>
+<reg name="ml2c_ctl_base" bitsize="32" type="reg_mccache_ctl_base"/>
 <reg name="csr1984" bitsize="32" type="reg_milmb"/>
 <reg name="milmb" bitsize="32" type="reg_milmb"/>
 <reg name="csr1985" bitsize="32" type="reg_mdlmb"/>
