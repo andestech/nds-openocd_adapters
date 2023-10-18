@@ -558,9 +558,45 @@
 <field name="no_cctl_va" start="1" end="1"/>
 <field name="no_cctl_all" start="2" end="2"/>
 <field name="no_cctl_ix_invwb" start="3" end="3"/>
+<field name="hvm_csr" start="4" end="4"/>
 </flags>
 <struct id="reg_mmsc_cfg3" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg3_flags"/>
+</struct>
+
+<enum id="mhvm_cfg_size" size="8">
+<evalue value="0"  name="0 KiB"/>
+<evalue value="12" name="4 KiB"/>
+<evalue value="13" name="8 KiB"/>
+<evalue value="14" name="16 KiB"/>
+<evalue value="15" name="32 KiB"/>
+<evalue value="16" name="64 KiB"/>
+<evalue value="17" name="128 KiB"/>
+<evalue value="18" name="256 KiB"/>
+<evalue value="19" name="512 KiB"/>
+<evalue value="20" name="1 MiB"/>
+<evalue value="21" name="2 MiB"/>
+<evalue value="22" name="4 MiB"/>
+<evalue value="23" name="8 MiB"/>
+<evalue value="24" name="16 MiB"/>
+<evalue value="25" name="32 MiB"/>
+<evalue value="26" name="64 MiB"/>
+<evalue value="27" name="128 MiB"/>
+<evalue value="28" name="256 MiB"/>
+<evalue value="29" name="512 MiB"/>
+<evalue value="30" name="1 GiB"/>
+<evalue value="31" name="2 GiB"/>
+<evalue value="32" name="4 GiB"/>
+</enum>
+<enum id="mhvm_cfg_bank" size="8">
+<evalue value="0" name="1 bank"/>
+<evalue value="1" name="2 bank"/>
+</enum>
+<struct id="reg_mhvm_cfg" size="8">
+<field name="size" start="0" end="7" type="mhvm_cfg_size"/>
+<field name="bank" start="8" end="8" type="mhvm_cfg_bank"/>
+<field name="bsel" start="16" end="20" type="uint32"/>
+<field name="subp" start="24" end="24" type="uint32"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="4">
@@ -1620,6 +1656,8 @@
 <reg name="pmacfg2" bitsize="32" type="reg_pmacfg2"/>
 <reg name="csr3011" bitsize="32" type="reg_pmacfg3"/>
 <reg name="pmacfg3" bitsize="32" type="reg_pmacfg3"/>
+<reg name="csr4048" bitsize="32" type="reg_mhvm_cfg"/>
+<reg name="mhvm_cfg" bitsize="32" type="reg_mhvm_cfg"/>
 </feature>
 
 <feature name="org.gnu.gdb.riscv.virtual">
