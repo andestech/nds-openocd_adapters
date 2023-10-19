@@ -559,7 +559,7 @@
 <field name="no_cctl_va" start="1" end="1"/>
 <field name="no_cctl_all" start="2" end="2"/>
 <field name="no_cctl_ix_invwb" start="3" end="3"/>
-<field name="hvm_cfg" start="4" end="4"/>
+<field name="hvm_csr" start="4" end="4"/>
 </flags>
 <struct id="reg_mmsc_cfg3" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg3_flags"/>
