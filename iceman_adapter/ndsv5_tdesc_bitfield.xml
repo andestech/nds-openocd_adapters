@@ -593,6 +593,7 @@
 <evalue value="1" name="2 bank"/>
 </enum>
 <struct id="reg_mhvm_cfg" size="8">
+<field name="" start="0" end="63" type="uint64"/>
 <field name="size" start="0" end="7" type="mhvm_cfg_size"/>
 <field name="bank" start="8" end="8" type="mhvm_cfg_bank"/>
 <field name="bsel" start="16" end="20" type="uint32"/>
