@@ -75,6 +75,7 @@ extern char *OPENOCD_VERSION_STR;
 #define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST 25
 #define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV  26
 #define LONGOPT_DUMP_TRACE_FOLDER       27
+#define LONGOPT_NO_GROUP                28
 
 
 int long_opt_flag;
@@ -102,6 +103,7 @@ struct option long_option[] = {
 	{"no-n22-workaround-imprecise-ldst", no_argument, &long_opt_flag, LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST},
 	{"no-n22-workaround-imprecise-div", no_argument, &long_opt_flag, LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV},
 	{"dump-trace-folder", required_argument, &long_opt_flag, LONGOPT_DUMP_TRACE_FOLDER},
+	{"no-group", no_argument, &long_opt_flag, LONGOPT_NO_GROUP},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-reset-detect", no_argument, 0, 'A'},
@@ -272,6 +274,7 @@ static int vtarget_xlen;
 static int vtarget_enable;
 static unsigned int no_n22_workaround_imprecise_ldst;
 static unsigned int no_n22_workaround_imprecise_div;
+static unsigned int no_group;
 
 static void show_version()
 {
@@ -570,6 +573,11 @@ static int handle_long_option(int long_opt)
 				printf("WARNING: %s is not exist or not a directory!!\n", optarg);
 
 			break;
+
+		case LONGOPT_NO_GROUP:
+			no_group = 1;
+			break;
+
 		default:
 			return ERROR_FAIL;
 	}
@@ -1293,6 +1301,10 @@ static void update_openocd_cfg_v5()
 
 	if (no_n22_workaround_imprecise_div) {
 		fprintf(openocd_cfg, "nds configure no-n22-workaround-imprecise-div on\n");
+	}
+
+	if (no_group) {
+		fprintf(openocd_cfg, "nds configure no-group on\n");
 	}
 
 	if (aice_no_reset_detect != 0)
