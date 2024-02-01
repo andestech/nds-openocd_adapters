@@ -13,14 +13,15 @@ set CUR_TARGET $NDS_TARGETNAME$cur_target_id
 set TAP_BASE "nds"
 set TAP_TYPE "tap"
 set NDS_TAP $TAP_BASE.$TAP_TYPE
+set TARGET_TYPE "nds_vtarget"
 
 ##--target-create-start
 jtag newtap $TAP_BASE $TAP_TYPE -irlen 5 -expected-id 0x1000563D
 
 if {$_use_smp == 0} {
-	target create $CUR_TARGET nds_vtarget -chain-position $NDS_TAP -coreid 0
+	target create $CUR_TARGET $TARGET_TYPE -chain-position $NDS_TAP -coreid 0
 } else {
-	target create $CUR_TARGET nds_vtarget -chain-position $NDS_TAP -rtos riscv
+	target create $CUR_TARGET $TARGET_TYPE -chain-position $NDS_TAP -rtos riscv
 }
 ###$CUR_TARGET configure -event examine-end {
 ###	global CUR_TARGET
@@ -33,8 +34,8 @@ nds_auto_create_multi_targets $CUR_TARGET $NDS_TAP
 ##--target-create-finish
 source [find custom_lib.tcl]
 
-$CUR_TARGET configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
-flash bank my_first_flash ndsspi 0x80000000 0 0 0 $CUR_TARGET
+#$CUR_TARGET configure -work-area-phys 0 -work-area-size 0x80000 -work-area-backup 1
+#flash bank my_first_flash ndsspi 0x80000000 0 0 0 $CUR_TARGET
 
 #init
 #reset

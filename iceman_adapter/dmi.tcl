@@ -198,6 +198,7 @@ proc nds_select_current_hart {tap hartid} {
 }
 
 proc nds_auto_create_multi_targets {target_name tap} {
+	global TARGET_TYPE
 	global _number_of_core
 
 	nds_auto_detect_targets $tap
@@ -217,7 +218,7 @@ proc nds_auto_create_multi_targets {target_name tap} {
 
 	#puts [format "create targets..."]
 	for {set i 1} {$i < $_number_of_core} {incr i} {
-		target create $target_name\_$i nds_v5 -chain-position $tap -coreid $i
+		target create $target_name\_$i $TARGET_TYPE -chain-position $tap -coreid $i
 	}
 
 	global _use_smp

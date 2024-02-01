@@ -14,6 +14,7 @@ set CUR_TARGET $NDS_TARGETNAME$cur_target_id
 set TAP_BASE "nds"
 set TAP_TYPE "tap"
 set NDS_TAP $TAP_BASE.$TAP_TYPE
+set TARGET_TYPE "nds_v5"
 
 ##--target-create-start
 jtag newtap $TAP_BASE $TAP_TYPE -irlen 5 -expected-id 0x1000563D
@@ -21,9 +22,9 @@ jtag newtap $TAP_BASE $TAP_TYPE -irlen 5 -expected-id 0x1000563D
 ##INITIAL_SCRIPT_REPLACE##
 
 if {$_use_smp == 0} {
-	target create $CUR_TARGET nds_v5 -chain-position $NDS_TAP -coreid 0
+	target create $CUR_TARGET $TARGET_TYPE -chain-position $NDS_TAP -coreid 0
 } else {
-	target create $CUR_TARGET nds_v5 -chain-position $NDS_TAP -coreid 0 -rtos hwthread
+	target create $CUR_TARGET $TARGET_TYPE -chain-position $NDS_TAP -coreid 0 -rtos hwthread
 }
 #$CUR_TARGET configure -event examine-end {
 #	global CUR_TARGET
