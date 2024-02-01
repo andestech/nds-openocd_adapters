@@ -137,9 +137,11 @@ for {set i 0} {$i < $number_of_target} {incr i} {
 	if {$TARGET_ARCH_NAME($i) == "rv32_vtarget"} {
 		target create $TARGET_NAME($i) nds_vtarget -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
 		nds configure target_arch_xlen 32
+		set TARGET_ARCH_NAME($i) "nds_vtarget"
 	} elseif {$TARGET_ARCH_NAME($i) == "rv64_vtarget"} {
 		target create $TARGET_NAME($i) nds_vtarget -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
 		nds configure target_arch_xlen 64
+		set TARGET_ARCH_NAME($i) "nds_vtarget"
 	} else {
 		#target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [expr {$CORE_ID($i)+1}]
 		target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
