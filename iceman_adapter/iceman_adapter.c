@@ -1951,11 +1951,15 @@ unsigned int number_of_tap = 0;
 unsigned int number_of_target = 0;
 
 // TAP_ARCH: 1->v3, 2->v5, 3->v3_sdm, 4->others
-#define TAP_ARCH_V3       1  //"v3"
-#define TAP_ARCH_V5       2  //"v5"
-#define TAP_ARCH_V3_SDM   3  //"v3_sdm"
-#define TAP_ARCH_OTHER    4  //"other"
-#define TAP_ARCH_UNKNOWN  5
+enum TAP_ARCH_TYPE {
+	TAP_ARCH_V3 = 1,	// "v3"
+	TAP_ARCH_V5,		// "v5"
+	TAP_ARCH_V3_SDM,	// "v3_sdm"
+	TAP_ARCH_OTHER,		// "other"
+	TAP_ARCH_VTARGET_32,	// "rv32_vtarget"
+	TAP_ARCH_VTARGET_64,	// "rv64_vtarget"
+	TAP_ARCH_UNKNOWN,
+};
 
 unsigned int tap_irlen[MAX_NUMS_TAP];
 unsigned int tap_expect_id[MAX_NUMS_TAP];
@@ -2090,6 +2094,15 @@ int nds_target_cfg_transfer(const char *p_user)
 					arch_id = TAP_ARCH_V3;
 				else if (strstr(&tmp_buf[0], "other"))
 					arch_id = TAP_ARCH_OTHER;
+				else if (strstr(&tmp_buf[0], "rv32_vtarget")) {
+					arch_id = TAP_ARCH_VTARGET_32;
+					vtarget_enable = 1;
+					vtarget_xlen = 32;
+				} else if (strstr(&tmp_buf[0], "rv64_vtarget")) {
+					arch_id = TAP_ARCH_VTARGET_64;
+					vtarget_enable = 1;
+					vtarget_xlen = 64;
+				}
 
 				if (tap_id >= MAX_NUMS_TAP) {
 					printf("ERROR!! tap_id > MAX_NUMS_TAP !!\n");
@@ -2152,7 +2165,7 @@ int nds_target_cfg_transfer(const char *p_user)
 	}
 
 	if (number_of_target) {
-		if (target_arch_id[0] == TAP_ARCH_V5)
+		if (target_arch_id[0] == TAP_ARCH_V5 || target_arch_id[0] == TAP_ARCH_VTARGET_32 || target_arch_id[0] == TAP_ARCH_VTARGET_64)
 			target_type[0] = TARGET_V5;
 		else
 			target_type[0] = TARGET_V3;

@@ -4,8 +4,8 @@
 # http://www.andestech.com
 #
 
-# TAP_ARCH: 1->v3, 2->v5, 3->v3_sdm, 4->others
-set target_arch_name {"unknown" "nds32_v3" "nds_v5" "nds32_v3_sdm" "others"}
+# TAP_ARCH: 1->v3, 2->v5, 3->v3_sdm, 4->others, 5->rv32_vtarget, 6->rv64_vtarget
+set target_arch_name {"unknown" "nds32_v3" "nds_v5" "nds32_v3_sdm" "others" "rv32_vtarget" "rv64_vtarget"}
 set tap_arch_list {1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
 set target_arch_list {1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
 set target_group {1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}
@@ -60,6 +60,12 @@ for {set i 0} {$i < $max_of_tap} {incr i} {
 	} elseif [ expr $TAP_ARCH($i) == 0x3 ] {
 		set TAP_IRLEN($i) 4
 		set TAP_EXP_CPUID($i)  0x1000163D
+	} elseif [ expr $TAP_ARCH($i) == 0x5 ] {
+		set TAP_IRLEN($i) 5
+		set TAP_EXP_CPUID($i)  0x1000563D
+	} elseif [ expr $TAP_ARCH($i) == 0x6 ] {
+		set TAP_IRLEN($i) 5
+		set TAP_EXP_CPUID($i)  0x1000563D
 	} else {
 		set TAP_IRLEN($i) 4
 		set TAP_EXP_CPUID($i)  0x1000063D
@@ -128,8 +134,16 @@ for {set i 0} {$i < $number_of_target} {incr i} {
 		continue
 	}
 
-	#target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [expr {$CORE_ID($i)+1}]
-	target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
+	if {$TARGET_ARCH_NAME($i) == "rv32_vtarget"} {
+		target create $TARGET_NAME($i) nds_vtarget -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
+		nds configure target_arch_xlen 32
+	} elseif {$TARGET_ARCH_NAME($i) == "rv64_vtarget"} {
+		target create $TARGET_NAME($i) nds_vtarget -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
+		nds configure target_arch_xlen 64
+	} else {
+		#target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [expr {$CORE_ID($i)+1}]
+		target create $TARGET_NAME($i) $TARGET_ARCH_NAME($i) -endian little -chain-position $CHAIN_POSITION($i) -coreid $CORE_ID($i) -group [lindex $target_group $i]
+	}
 	if [ expr $IF_SMP($i) == 0x1 ] {
 		set CORE_NUMS($i) [lindex $target_smp_core_nums $i]
 		$TARGET_NAME($i) configure -rtos hwthread -corenums $CORE_NUMS($i)
