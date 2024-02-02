@@ -21,7 +21,7 @@ jtag newtap $TAP_BASE $TAP_TYPE -irlen 5 -expected-id 0x1000563D
 if {$_use_smp == 0} {
 	target create $CUR_TARGET $TARGET_TYPE -chain-position $NDS_TAP -coreid 0
 } else {
-	target create $CUR_TARGET $TARGET_TYPE -chain-position $NDS_TAP -rtos riscv
+	target create $CUR_TARGET $TARGET_TYPE -chain-position $NDS_TAP -rtos hwthread
 }
 ###$CUR_TARGET configure -event examine-end {
 ###	global CUR_TARGET
