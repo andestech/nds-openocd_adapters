@@ -1322,6 +1322,10 @@
 <field name="" start="0" end="31" type="txevt_flags"/>
 </struct>
 
+<struct id="reg_umisc_ctl" size="4">
+<field name="fp_mode" start="0" end="1" type="uint32"/>
+</struct>
+
 <enum id="mppib_size" size="4">
 <evalue name="1 KiB" value="1"/>
 <evalue name="2 KiB" value="2"/>
@@ -1627,6 +1631,8 @@
 <reg name="sleepvalue" bitsize="32" type="reg_sleepvalue"/>
 <reg name="csr2066" bitsize="32" type="reg_txevt"/>
 <reg name="txevt" bitsize="32" type="reg_txevt"/>
+<reg name="csr2067" bitsize="32" type="reg_umisc_ctl"/>
+<reg name="umisc_ctl" bitsize="32" type="reg_umisc_ctl"/>
 <reg name="csr2032" bitsize="32" type="reg_mppib"/>
 <reg name="mppib" bitsize="32" type="reg_mppib"/>
 <reg name="csr2033" bitsize="32" type="reg_mppib"/>
