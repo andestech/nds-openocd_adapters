@@ -403,7 +403,7 @@
 <evalue name="2048" value="5"/>
 <evalue name="4096" value="6"/>
 </enum>
-<enum id="micm_cfg_ic_repl" size="8">
+<enum id="micm_cfg_ic_repl" size="4">
 <evalue name="Unknown" value="0"/>
 <evalue name="Pseudo-LRU" value="1"/>
 <evalue name="Random" value="2"/>
@@ -559,12 +559,15 @@
 <field name="no_cctl_all" start="2" end="2"/>
 <field name="no_cctl_ix_invwb" start="3" end="3"/>
 <field name="hvm_csr" start="4" end="4"/>
+<field name="pl2c" start="5" end="5"/>
+<field name="pl2_cmd" start="6" end="6"/>
+<field name="cst_ctl" start="7" end="7"/>
 </flags>
 <struct id="reg_mmsc_cfg3" size="4">
 <field name="" start="0" end="31" type="mmsc_cfg3_flags"/>
 </struct>
 
-<enum id="mhvm_cfg_size" size="8">
+<enum id="mhvm_cfg_size" size="4">
 <evalue value="0"  name="0 KiB"/>
 <evalue value="12" name="4 KiB"/>
 <evalue value="13" name="8 KiB"/>
@@ -588,16 +591,28 @@
 <evalue value="31" name="2 GiB"/>
 <evalue value="32" name="4 GiB"/>
 </enum>
-<enum id="mhvm_cfg_bank" size="8">
+<enum id="mhvm_cfg_bank" size="4">
 <evalue value="0" name="1 bank"/>
 <evalue value="1" name="2 bank"/>
 </enum>
-<struct id="reg_mhvm_cfg" size="8">
-<field name="" start="0" end="63" type="uint64"/>
+<struct id="reg_mhvm_cfg" size="4">
+<field name="" start="0" end="31" type="uint32"/>
 <field name="size" start="0" end="7" type="mhvm_cfg_size"/>
 <field name="bank" start="8" end="8" type="mhvm_cfg_bank"/>
 <field name="bsel" start="16" end="20" type="uint32"/>
 <field name="subp" start="24" end="24" type="uint32"/>
+</struct>
+
+<struct id="reg_mrvarch_cfg3" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="Smaia" start="0" end="0"/>
+<field name="Ssaia" start="1" end="1"/>
+<field name="Spmp" start="2" end="3" type="uint32"/>
+<field name="Smrnmi" start="4" end="5" type="uint32"/>
+<field name="Ssnpm" start="6" end="6"/>
+<field name="Smnpm" start="7" end="7"/>
+<field name="Smpm" start="8" end="8"/>
+<field name="Zawrs" start="9" end="9"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="4">
@@ -685,6 +700,30 @@
 <field name="Zvfbfwma" start="2" end="2"/>
 <field name="Zvqmac" start="3" end="3"/>
 <field name="Zvlsseg" start="4" end="4"/>
+<field name="Zicond" start="5" end="5"/>
+<field name="Zihintntl" start="6" end="6"/>
+<field name="Zfa" start="7" end="7"/>
+<field name="Zacas" start="9" end="9"/>
+<field name="Zabha" start="10" end="10"/>
+<field name="Zvfhmin" start="11" end="11"/>
+<field name="Zvfh" start="12" end="12"/>
+<field name="Zvbb" start="15" end="15"/>
+<field name="Zvbc" start="16" end="16"/>
+<field name="Zvkb" start="17" end="17"/>
+<field name="Zvkg" start="18" end="18"/>
+<field name="Zvkn" start="19" end="19"/>
+<field name="Zvknc" start="20" end="20"/>
+<field name="Zvkned" start="21" end="21"/>
+<field name="Zvkng" start="22" end="22"/>
+<field name="Zvknha" start="23" end="23"/>
+<field name="Zvkbnhb" start="24" end="24"/>
+<field name="Zvks" start="25" end="25"/>
+<field name="Zvksc" start="26" end="26"/>
+<field name="Zvksed" start="27" end="27"/>
+<field name="Zvksg" start="28" end="28"/>
+<field name="Zvksh" start="29" end="29"/>
+<field name="Zvkt" start="30" end="30"/>
+<field name="MRVARCH_EXT3" start="31" end="31"/>
 </flags>
 <struct id="reg_mrvarch_cfg2" size="4">
 <field name="" start="0" end="31" type="mrvarch_cfg2_flags"/>
@@ -771,6 +810,9 @@
 <field name="dc_1st_wd" start="12" end="12"/>
 <field name="dc_cohen" start="19" end="19"/>
 <field name="dc_cohsta" start="20" end="20"/>
+<field name="tlb_rwecc" start="23" end="23"/>
+<field name="btb_rwecc" start="26" end="26"/>
+<field name="che_ext" start="31" end="31"/>
 </flags>
 <struct id="reg_mcache_ctl" size="4">
 <field name="" start="0" end="31" type="mcache_ctl_flags"/>
@@ -780,6 +822,45 @@
 <field name="l2c_warnd" start="15" end="16" type="mcache_ctl_l2c_warnd"/>
 <field name="tlb_eccen" start="17" end="18" type="milmb_eccen"/>
 <field name="dpref_mode" start="21" end="22" type="uint32"/>
+<field name="beb_eccen" start="24" end="25" type="uint32"/>
+<field name="l3_warnd" start="27" end="28" type="uint32"/>
+<field name="l4_warnd" start="29" end="30" type="uint32"/>
+</struct>
+
+<flags id="mcache_ctl2_flags" size="4">
+<field name="pl2_en" start="0" end="0"/>
+<field name="pl2_rwecc" start="3" end="3"/>
+<field name="strpref_en" start="4" end="4"/>
+<field name="stripref_en" start="5" end="5"/>
+<field name="rgnpref_en" start="6" end="6"/>
+<field name="tlbpref_en" start="11" end="11"/>
+<field name="sndevt" start="30" end="30"/>
+</flags>
+<struct id="reg_mcache_ctl2" size="4">
+<field name="" start="0" end="31" type="mcache_ctl2_flags"/>
+<field name="pl2_eccen" start="1" end="2" type="uint32"/>
+<field name="sndevtd" start="28" end="29" type="uint32"/>
+</struct>
+
+<enum id="mpl2cm_cfg_dway" size="4">
+<evalue name="Direct-mapped" value="0"/>
+<evalue name="2 way" value="1"/>
+<evalue name="3 way" value="2"/>
+<evalue name="4 way" value="3"/>
+<evalue name="5 way" value="4"/>
+<evalue name="6 way" value="5"/>
+<evalue name="8 way" value="6"/>
+<evalue name="12 way" value="7"/>
+<evalue name="16 way" value="8"/>
+<evalue name="24 way" value="9"/>
+<evalue name="32 way" value="10"/>
+</enum>
+<struct id="reg_mpl2cm_cfg" size="4">
+<field name="" start="0" end="31" type="uint32"/>
+<field name="dset" start="0" end="2" type="micm_cfg_iset"/>
+<field name="dway" start="3" end="5" type="mpl2cm_cfg_dway"/>
+<field name="dlck" start="9" end="9" />
+<field name="dc_ecc" start="10" end="11" type="uint32"/>
 </struct>
 
 <flags id="mmisc_ctl_flags" size="4">
@@ -1663,8 +1744,14 @@
 <reg name="pmacfg2" bitsize="32" type="reg_pmacfg2"/>
 <reg name="csr3011" bitsize="32" type="reg_pmacfg3"/>
 <reg name="pmacfg3" bitsize="32" type="reg_pmacfg3"/>
+<reg name="csr4044" bitsize="32" type="reg_mrvarch_cfg3"/>
+<reg name="mrvarch_cfg3" bitsize="32" type="reg_mrvarch_cfg3"/>
 <reg name="csr4048" bitsize="32" type="reg_mhvm_cfg"/>
 <reg name="mhvm_cfg" bitsize="32" type="reg_mhvm_cfg"/>
+<reg name="csr2026" bitsize="32" type="reg_mcache_ctl2"/>
+<reg name="mcache_ctl2" bitsize="32" type="reg_mcache_ctl2"/>
+<reg name="csr4063" bitsize="32" type="reg_mpl2cm_cfg"/>
+<reg name="mpl2cm_cfg" bitsize="32" type="reg_mpl2cm_cfg"/>
 </feature>
 
 <feature name="org.gnu.gdb.riscv.virtual">
