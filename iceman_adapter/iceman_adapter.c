@@ -15,6 +15,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+/* Ref: https://github.com/kyz/libmspack/issues/1 */
+#if defined(__WIN32__) || defined(__MINGW32__)
+# define mkdir(a, b) mkdir(a) /* mkdir command on Win32 does not support file permissions */
+#endif
+
 /* extern variable from openocd src */
 struct EDM_OPERATIONS {
 	int reg_no;
