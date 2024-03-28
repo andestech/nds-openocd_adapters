@@ -2,8 +2,8 @@
 #define __ICEMAN_SOCKET_H__
 
 #ifdef __MINGW32__
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
 
