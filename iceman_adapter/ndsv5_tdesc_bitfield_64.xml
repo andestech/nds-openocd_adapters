@@ -563,6 +563,7 @@
 <field name="pl2c" start="5" end="5"/>
 <field name="pl2_cmd" start="6" end="6"/>
 <field name="cst_ctl" start="7" end="7"/>
+<field name="shadow" start="8" end="8"/>
 </flags>
 <struct id="reg_mmsc_cfg3" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg3_flags"/>
@@ -614,6 +615,8 @@
 <field name="Smnpm" start="7" end="7"/>
 <field name="Smpm" start="8" end="8"/>
 <field name="Zawrs" start="9" end="9"/>
+<field name="Smcsrind" start="10" end="10"/>
+<field name="Smcsrind" start="11" end="11"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="8">
