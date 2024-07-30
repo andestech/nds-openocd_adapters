@@ -676,6 +676,10 @@ static int parse_param(int a_argc, char **a_argv)
 				// process space, remove backslash for fopen(folder/file...)
 				// add '/' at the path end
 				log_folder = replaceWord(temp_path, "\\ ", " ");
+				for (char *ch = log_folder; *ch != '\0'; ch++) {
+					if (*ch == '\\')
+						*ch = '/';
+				}
 
 				// check directory exist or not, must use log_folder(remove \" and \\ )
 				// if path error, show original path:optarg for user
@@ -705,6 +709,11 @@ static int parse_param(int a_argc, char **a_argv)
 				c = strstr(bin_folder, "ICEman");
 				if (c)
 					*c = '\0';
+				for (char *ch = bin_folder; *ch != '\0'; ch++) {
+					if (*ch == '\\')
+						*ch = '/';
+				}
+
 				mkdir(as_filepath("board"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 				mkdir(as_filepath("interface"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 				mkdir(as_filepath("target"), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
