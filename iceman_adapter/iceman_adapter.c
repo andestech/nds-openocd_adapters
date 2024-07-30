@@ -914,36 +914,40 @@ static void cfg_error(const char *cfg_name, int w)
 	exit(-1);
 }
 
-static void open_config_files()
+static FILE *fopen_check(const char *filename, const char *mode)
 {
-	openocd_cfg_tpl = fopen("openocd.cfg.tpl", "r");
-	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
-	if (!openocd_cfg_tpl)
-		cfg_error("openocd.cfg.tpl", 0);
-	if (!openocd_cfg)
-		cfg_error(as_filepath("openocd.cfg"), 1);
+	FILE *f;
 
-	if (nds_v3_ftdi == 0) {
-		interface_cfg_tpl = fopen("interface/nds32-aice.cfg.tpl", "r");
-		interface_cfg = fopen(as_filepath("interface/nds32-aice.cfg"), "w");
-		if (!interface_cfg_tpl)
-			cfg_error("interface/nds32-aice.cfg.tpl", 0);
-		if (!interface_cfg)
-			cfg_error(as_filepath("interface/nds32-aice.cfg"), 1);
+	if (strcmp(mode, "r") == 0)
+		f = fopen(filename, mode);
+	else
+		f = fopen(as_filepath(filename), mode);
 
+	if (!f) {
+		if (strcmp(mode, "r") == 0)
+			cfg_error(filename, 0);
+		else
+			cfg_error(filename, 1);
 	}
 
-	board_cfg_tpl = fopen("board/nds32_xc5.cfg.tpl", "r");
-	board_cfg = fopen(as_filepath("board/nds32_xc5.cfg"), "w");
-	if (!board_cfg_tpl)
-		cfg_error("board/nds32_xc5.cfg.tpl", 0);
-	if (!board_cfg)
-		cfg_error(as_filepath("board/nds32_xc5.cfg"), 1);
+	return f;
+}
+
+static void open_config_files()
+{
+	openocd_cfg_tpl = fopen_check("openocd.cfg.tpl", "r");
+	openocd_cfg = fopen_check("openocd.cfg", "w");
 
 	if (nds_v3_ftdi == 0) {
-		target_cfg_tpl = fopen("target/nds32.cfg.tpl", "r");
-		if (!target_cfg_tpl)
-			cfg_error("target/nds32.cfg.tpl", 0);
+		interface_cfg_tpl = fopen_check("interface/nds32-aice.cfg.tpl", "r");
+		interface_cfg = fopen_check("interface/nds32-aice.cfg", "w");
+	}
+
+	board_cfg_tpl = fopen_check("board/nds32_xc5.cfg.tpl", "r");
+	board_cfg = fopen_check("board/nds32_xc5.cfg", "w");
+
+	if (nds_v3_ftdi == 0) {
+		target_cfg_tpl = fopen_check("target/nds32.cfg.tpl", "r");
 
 		int coreid;
 		char *target_str = NULL;
@@ -961,9 +965,7 @@ static void open_config_files()
 			}
 			sprintf(target_cfg_name_str, target_str, coreid);
 			sprintf(line_buffer, target_str, coreid);
-			target_cfg[coreid] = fopen(as_filepath(line_buffer), "w");
-			if (!target_cfg[coreid])
-				cfg_error(as_filepath(line_buffer), 1);
+			target_cfg[coreid] = fopen_check(line_buffer, "w");
 		}
 	}
 }
@@ -1141,12 +1143,8 @@ static void update_debug_diag_v5()
 	FILE *debug_diag_tcl = NULL;
 	FILE *debug_diag_tcl_new = NULL;
 
-	debug_diag_tcl = fopen("debug_diag.tcl", "r");
-	debug_diag_tcl_new = fopen(as_filepath("debug_diag_new.tcl"), "w");
-	if (!debug_diag_tcl)
-		cfg_error("debug_diag.tcl", 0);
-	if (!debug_diag_tcl_new)
-		cfg_error(as_filepath("debug_diag_new.tcl"), 1);
+	debug_diag_tcl = fopen_check("debug_diag.tcl", "r");
+	debug_diag_tcl_new = fopen_check("debug_diag_new.tcl", "w");
 
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_TEST 0x%x\n", diagnosis_memory);
 	fprintf(debug_diag_tcl_new, "set NDS_MEM_ADDR 0x%llx\n", diagnosis_address);
@@ -1167,20 +1165,14 @@ static void update_openocd_cfg_v5()
 	char line_buffer[LINE_BUFFER_SIZE];
 	if (vtarget_enable == 1) {
 		if (vtarget_xlen == 32)
-			openocd_cfg_tpl = fopen("openocd.cfg.rv32", "r");
+			openocd_cfg_tpl = fopen_check("openocd.cfg.rv32", "r");
 		else
-			openocd_cfg_tpl = fopen("openocd.cfg.rv64", "r");
-		if (!openocd_cfg_tpl)
-			cfg_error("openocd.cfg.rv32 or openocd.cfg.rv64", 0);
+			openocd_cfg_tpl = fopen_check("openocd.cfg.rv64", "r");
 	} else {
-		openocd_cfg_tpl = fopen("openocd.cfg.v5", "r");
-		if (!openocd_cfg_tpl)
-			cfg_error("openocd.cfg.v5", 0);
+		openocd_cfg_tpl = fopen_check("openocd.cfg.v5", "r");
 	}
 
-	openocd_cfg = fopen(as_filepath("openocd.cfg"), "w");
-	if (!openocd_cfg)
-		cfg_error(as_filepath("openocd.cfg"), 1);
+	openocd_cfg = fopen_check("openocd.cfg", "w");
 
 	/* update openocd.cfg */
 	if (!log_folder)
@@ -1823,19 +1815,13 @@ static void update_board_cfg_v5()
 {
 	char line_buffer[LINE_BUFFER_SIZE];
 
-	if (vtarget_enable == 1) {
-		board_cfg_tpl = fopen("board/nds_vtarget.cfg.tpl", "r");
-		if (!board_cfg_tpl)
-			cfg_error("board/nds_vtarget.cfg.tpl", 0);
-	} else {
-		board_cfg_tpl = fopen("board/nds_v5.cfg.tpl", "r");
-		if (!board_cfg_tpl)
-			cfg_error("board/nds_v5.cfg.tpl", 0);
-	}
+	if (vtarget_enable == 1) 
+		board_cfg_tpl = fopen_check("board/nds_vtarget.cfg.tpl", "r");
+	else
+		board_cfg_tpl = fopen_check("board/nds_v5.cfg.tpl", "r");
+	
 
-	board_cfg = fopen(as_filepath("board/nds_v5.cfg"), "w");
-	if (!board_cfg)
-		cfg_error(as_filepath("board/nds_v5.cfg"), 1);
+	board_cfg = fopen_check("board/nds_v5.cfg", "w");
 
 
 	/* update nds_v5.cfg */
@@ -1994,9 +1980,7 @@ int nds_target_cfg_checkif_transfer(const char *p_user)
 	char *pline_buf = (char *)&line_buf[0];
 	unsigned int i;
 
-	fp_user = fopen(p_user, "r");
-	if (!fp_user)
-		cfg_error(p_user, 0);
+	fp_user = fopen_check(p_user, "r");
 
 	// parsing the first line of the file
 	for (i = 0; i < 5; i++) {
@@ -2021,9 +2005,7 @@ int nds_target_cfg_transfer(const char *p_user)
 	char *cur_str;
 	unsigned int i, j, tap_id, target_id, core_nums, irlen, exp_id, arch_id, group_id = 0;
 
-	fp_user = fopen(p_user, "r");
-	if (!fp_user)
-		cfg_error(p_user, 0);
+	fp_user = fopen_check(p_user, "r");
 
 	for (i = 0; i < MAX_NUMS_TAP; i++) {
 		tap_irlen[i] = 0;
@@ -2280,13 +2262,8 @@ int nds_target_cfg_merge(const char *p_tpl, const char *p_out)
 	unsigned int i, j, num_char;
 	unsigned int *pnew_value, update_nums;
 
-	fp_tpl = fopen(p_tpl, "r");
-	fp_output = fopen(as_filepath(p_out), "wb");
-	if (!fp_tpl)
-		cfg_error(p_tpl, 0);
-	if (!fp_output)
-		cfg_error(as_filepath(p_out), 1);
-
+	fp_tpl = fopen_check(p_tpl, "r");
+	fp_output = fopen_check(p_out, "wb");
 
 	while(1) {
 		if (fgets(pline_buf, LINEBUF_SIZE, fp_tpl) == NULL)
