@@ -9,7 +9,7 @@
 static int winsock_init = 0;
 int prepare_connect(int port_num)
 {
-	struct sockaddr_in sockaddr;
+	struct sockaddr_in6 sockaddr;
 	SOCKET host_descriptor;
 
 	if (winsock_init == 0) {
@@ -21,14 +21,16 @@ int prepare_connect(int port_num)
 	}
 
 	/* Create socket to wait for connection from gdb */
-	host_descriptor = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	host_descriptor = socket(AF_INET6, SOCK_STREAM, 0);
 	if (host_descriptor == INVALID_SOCKET)
 		return ESOCKET;
 
 	int optval = 1;
-
 	/*setsockopt(host_descriptor, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));*/
 	setsockopt(host_descriptor, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (char *)&optval, sizeof(optval));
+
+	int off = 0;
+	setsockopt(host_descriptor, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&off, sizeof(off));
 
 #ifdef SOCKET_NONBLOCK
 	unsigned long non_blocking = 1;
@@ -39,11 +41,12 @@ int prepare_connect(int port_num)
 #endif
 
 	// Listen on specified port
-	sockaddr.sin_family = PF_INET;
-	sockaddr.sin_port = htons(port_num);
-	sockaddr.sin_addr.s_addr = INADDR_ANY;
+	memset(&sockaddr, 0, sizeof(sockaddr));
+	sockaddr.sin6_family = AF_INET6;
+	sockaddr.sin6_port = htons(port_num);
+	sockaddr.sin6_addr = in6addr_any;
 
-	if (bind(host_descriptor, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
+	if (bind(host_descriptor, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0) {
 		closesocket(host_descriptor);
 		return EBIND;
 	}
@@ -64,7 +67,6 @@ int close_host(SOCKET host_descriptor)
 		closesocket(host_descriptor);
 		host_descriptor = INVALID_SOCKET;
 	}
-
 	return 0;
 }
 
@@ -76,10 +78,10 @@ extern void close(int);
 
 int prepare_connect(int port_num)
 {
-	struct sockaddr_in sockaddr;
+	struct sockaddr_in6 sockaddr;
 	int host_descriptor;
 
-	host_descriptor = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	host_descriptor = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
 	if (host_descriptor < 0)
 		return ESOCKET;
@@ -87,6 +89,8 @@ int prepare_connect(int port_num)
 	/* Allow rapid reuse of this port. */
 	//socklen_t optval = 1;
 	//setsockopt(host_descriptor, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
+	int off = 0;
+	setsockopt(host_descriptor, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&off, sizeof(off));
 
 #ifdef SOCKET_NONBLOCK
 	int oldopts = fcntl(host_descriptor, F_GETFL, 0);
@@ -94,9 +98,10 @@ int prepare_connect(int port_num)
 #endif
 
 	/* Listen on specified port */
-	sockaddr.sin_family = PF_INET;
-	sockaddr.sin_port = htons(port_num);
-	sockaddr.sin_addr.s_addr = INADDR_ANY;
+	memset(&sockaddr, 0, sizeof(sockaddr));
+	sockaddr.sin6_family = AF_INET6;
+	sockaddr.sin6_port = htons(port_num);
+	sockaddr.sin6_addr = in6addr_any;
 
 	if (bind(host_descriptor, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) {
 		close(host_descriptor);
