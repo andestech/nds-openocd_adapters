@@ -59,28 +59,32 @@ extern char *OPENOCD_VERSION_STR;
 #define TOSTR(x)	#x
 #define XTOSTR(x)	TOSTR(x)
 
-#define LONGOPT_CP0                     7
-#define LONGOPT_CP1                     8
-#define LONGOPT_CP2                     9
-#define LONGOPT_CP3                     10
-#define LONGOPT_USE_SDM                 11
-#define LONGOPT_AICE_INIT               12
-#define LONGOPT_L2C                     13
-#define LONGOPT_DMI_DELAY               14
-#define LONGOPT_USER_TARGET_CFG         15
-#define LONGOPT_SMP                     16
-#define LONGOPT_HALT_ON_RESET           17
-#define LONGOPT_LIST_DEVICE             18
-#define LONGOPT_DEVICE                  19
-#define LONGOPT_DEVICE_USB_COMBO        20
-#define LONGOPT_RV32                    21
-#define LONGOPT_RV64                    22
-#define LONGOPT_DETECT_2WIRE            23
-#define LONGOPT_NO_HALT_DETECT          24
-#define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST 25
-#define LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV  26
-#define LONGOPT_DUMP_TRACE_FOLDER       27
-#define LONGOPT_NO_GROUP                28
+enum LONG_OPT {
+	LONGOPT_CP0 = 0x7,
+	LONGOPT_CP1,
+	LONGOPT_CP2,
+	LONGOPT_CP3,
+	LONGOPT_USE_SDM,
+	LONGOPT_AICE_INIT,
+	LONGOPT_L2C,
+	LONGOPT_DMI_DELAY,
+	LONGOPT_USER_TARGET_CFG,
+	LONGOPT_SMP,
+	LONGOPT_HALT_ON_RESET,
+	LONGOPT_LIST_DEVICE,
+	LONGOPT_DEVICE,
+	LONGOPT_DEVICE_USB_COMBO,
+	LONGOPT_RV32,
+	LONGOPT_RV64,
+	LONGOPT_DETECT_2WIRE,
+	LONGOPT_NO_HALT_DETECT,
+	LONGOPT_NO_N22_WORKAROUND_IMPRECISE_LDST,
+	LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV,
+	LONGOPT_DUMP_TRACE_FOLDER,
+	LONGOPT_NO_GROUP,
+	LONGOPT_BITBANG_HOST,
+	LONGOPT_BITBANG_PORT,
+} long_opts;
 
 
 int long_opt_flag;
@@ -109,6 +113,8 @@ struct option long_option[] = {
 	{"no-n22-workaround-imprecise-div", no_argument, &long_opt_flag, LONGOPT_NO_N22_WORKAROUND_IMPRECISE_DIV},
 	{"dump-trace-folder", required_argument, &long_opt_flag, LONGOPT_DUMP_TRACE_FOLDER},
 	{"no-group", no_argument, &long_opt_flag, LONGOPT_NO_GROUP},
+	{"bitbang-host", required_argument, &long_opt_flag, LONGOPT_BITBANG_HOST},
+	{"bitbang-port", required_argument, &long_opt_flag, LONGOPT_BITBANG_PORT},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-reset-detect", no_argument, 0, 'A'},
@@ -233,6 +239,8 @@ static char *gdb_port_str;
 static int burner_port = PORTNUM_BURNER;
 static int telnet_port = PORTNUM_TELNET;
 static int tcl_port = PORTNUM_TCL;
+static char *bitbang_host;
+static int bitbang_port;
 static int startup_reset_halt;
 static int soft_reset_halt;
 static int force_debug;
@@ -359,6 +367,8 @@ static void show_usage()
 	printf("--custom-aice-init:\tUse custom script to do initialization process\n");
 	printf("--detect-2wire:\t\tIf JTAG scan chain interrogation (the 5-wire mode) fails, retry the connection with the SDP (2-wire) mode.\n");
 	printf("--no-halt-detect:\tNo halt detection in debug session\n");
+	printf("--bitbang-host:\tSet remote bitbang host\n");
+	printf("--bitbang-port:\tSet remote bitbang port\n");
 }
 
 char output_path[LINE_BUFFER_SIZE];
@@ -543,6 +553,14 @@ static int handle_long_option(int long_opt)
 
 		case LONGOPT_NO_GROUP:
 			no_group = 1;
+			break;
+
+		case LONGOPT_BITBANG_HOST:
+			bitbang_host = strdup(optarg);
+			break;
+
+		case LONGOPT_BITBANG_PORT:
+			bitbang_port = strtol(optarg, NULL, 0);
 			break;
 
 		default:
@@ -1163,6 +1181,11 @@ static void update_openocd_cfg_v5()
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
 
+	if (bitbang_host)
+		fprintf(openocd_cfg, "set BITBANG_HOST %s\n", bitbang_host);
+	if (bitbang_port)
+		fprintf(openocd_cfg, "set BITBANG_PORT %d\n", bitbang_port);
+
 	if ((int)(efreq_range/1000) != 0)
 		fprintf(openocd_cfg, "adapter speed %d\n", (int)(efreq_range/1000));
 	else if (efreq_range != 0)
@@ -1349,6 +1372,11 @@ static void update_openocd_cfg()
 	fprintf(openocd_cfg, "gdb_port %d\n", gdb_port[0]);
 	fprintf(openocd_cfg, "telnet_port %d\n", telnet_port);
 	fprintf(openocd_cfg, "tcl_port %d\n", tcl_port);
+
+	if (bitbang_host)
+		fprintf(openocd_cfg, "set BITBANG_HOST %s\n", bitbang_host);
+	if (bitbang_port)
+		fprintf(openocd_cfg, "set BITBANG_PORT %d\n", bitbang_port);
 
 	/*
 	fprintf(openocd_cfg, "source [find interface/nds32-aice.cfg]\n");
