@@ -264,7 +264,7 @@ static const char *dump_trace_folder;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 #define NDSV3_L2C_BASE (0x90F00000u)
-#define NDSV5_L2C_BASE (0xE0500000u)
+#define NDSV5_L2C_BASE (0x1u)
 static unsigned int edm_dimb = DIMBR_DEFAULT;
 static unsigned int use_sdm;
 static unsigned int use_smp;
