@@ -643,6 +643,7 @@ while {[expr {$time_end-$time_start}] < $time_target_sec} {
 		nds configure scan_retry_times 3
 		nds configure jtag_scans_optimize 4
 		nds configure jtag_max_scans 64
+		halt
 		mww $NDS_MEM_ADDR 1 4
 		scan [nds get_dmi_delay] "%d" delay_count
 		if {$delay_count > $max_delay} {
