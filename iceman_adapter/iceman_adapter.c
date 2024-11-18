@@ -284,7 +284,7 @@ static unsigned int no_group;
 static void show_version()
 {
 	printf("%s\n", ICEMAN_VERSION);
-	printf("Copyright (C) 2007-2021 Andes Technology Corporation\n");
+	printf("Copyright (C) 2007-2024 Andes Technology Corporation\n");
 	printf("%s\n", OPENOCD_VERSION_STR);
 }
 
