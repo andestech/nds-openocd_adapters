@@ -147,8 +147,8 @@ dist_openocd_targetcfg_DATA = target/nds32.cfg.tpl \
 			      target/user_target_cfg_table.txt
 
 if BUILD_CYGWIN_BINARY
-DRIVERLIBS = $(LIBUSB0_LIBS) $(LIBUSB1_LIBS)
-DRIVERCFLAGS = $(LIBUSB0_CFLAGS) $(LIBUSB1_CFLAGS)
+DRIVERLIBS = $(LIBUSB1_LIBS)
+DRIVERCFLAGS = $(LIBUSB1_CFLAGS)
 else
 DRIVERLIBS = $(LIBUSB1_LIBS)
 DRIVERCFLAGS = -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
@@ -178,12 +178,10 @@ ICEman_CFLAGS += -DRELSTR=\"`$(top_srcdir)/guess-rev.sh $(top_srcdir)`\"
 ICEman_CFLAGS += -DPKGBLDDATE=\"`date +%F-%R`\"
 
 
-#ICEman_LDFLAGS = -all-static
-#ICEman_LDFLAGS += ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
-
 PKGLIBS = libusb-1.0
 if BUILD_MINGW_BINARY
 ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a -lws2_32 `pkg-config --libs $(PKGLIBS)`
 else
 ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a -lutil `pkg-config --libs $(PKGLIBS)`
 endif
+

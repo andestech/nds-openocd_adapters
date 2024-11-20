@@ -17,9 +17,8 @@ PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0 >= 1.0.9], [
 ], [
 	use_libusb1=no
 ])
-PKG_CHECK_MODULES([LIBUSB0], [libusb], [use_libusb0=yes], [use_libusb0=no])
 
-if test "$use_libusb1" = "no" -a "$usb_libusb0" = "no"; then
+if test "$use_libusb1" = "no"; then
     AC_MSG_ERROR([Can not find libusb1-0 or libusb])
 fi
 
@@ -54,14 +53,9 @@ AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
 AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
 AM_CONDITIONAL([BUILD_MAC_BINARY], [test "$is_mac" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
-AM_CONDITIONAL([USE_LIBUSB0], [test "$use_libusb1" = "no" -a "$use_libusb0" = "yes"])
 
 AC_MSG_NOTICE([PKG_CONFIG_LIBDIR = $PKG_CONFIG_LIBDIR])
 AC_MSG_NOTICE([PKG_CONFIG_PATH   = $PKG_CONFIG_PATH])
-
-# Define variables
-#AC_SUBST([BUILD_ID], [`date +%Y%m%d%H`])
-#AC_SUBST([COMMIT_ID], [`cd ${srcdir} ; git log | head -n 1 | cut -d ' ' -f 2`])
 
 AC_CONFIG_FILES([Makefile iceman_adapter/Makefile])
 AC_OUTPUT
