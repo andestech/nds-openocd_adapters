@@ -181,12 +181,7 @@ ICEman_CFLAGS += -DPKGBLDDATE=\"`date +%F-%R`\"
 #ICEman_LDFLAGS = -all-static
 #ICEman_LDFLAGS += ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a
 
-if USE_HIDAPI
-PKGLIBS = hidapi-libusb libusb-1.0
-else
 PKGLIBS = libusb-1.0
-endif
-
 if BUILD_MINGW_BINARY
 ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a -lws2_32 `pkg-config --libs $(PKGLIBS)`
 else

@@ -19,16 +19,6 @@ PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0 >= 1.0.9], [
 ])
 PKG_CHECK_MODULES([LIBUSB0], [libusb], [use_libusb0=yes], [use_libusb0=no])
 
-for hidapi_lib in hidapi hidapi-hidraw hidapi-libusb; do
-	PKG_CHECK_MODULES([HIDAPI],[$hidapi_lib],[
-		use_hidapi=yes
-		echo "use_hidapi=true"
-		break
-	],[
-		use_hidapi=no
-	])
-done
-
 if test "$use_libusb1" = "no" -a "$usb_libusb0" = "no"; then
     AC_MSG_ERROR([Can not find libusb1-0 or libusb])
 fi
@@ -65,7 +55,6 @@ AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
 AM_CONDITIONAL([BUILD_MAC_BINARY], [test "$is_mac" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
 AM_CONDITIONAL([USE_LIBUSB0], [test "$use_libusb1" = "no" -a "$use_libusb0" = "yes"])
-AM_CONDITIONAL([USE_HIDAPI], [test "$use_hidapi" = "yes"])
 
 AC_MSG_NOTICE([PKG_CONFIG_LIBDIR = $PKG_CONFIG_LIBDIR])
 AC_MSG_NOTICE([PKG_CONFIG_PATH   = $PKG_CONFIG_PATH])
