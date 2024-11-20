@@ -52,7 +52,6 @@ esac
 AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
 AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
 AM_CONDITIONAL([BUILD_MAC_BINARY], [test "$is_mac" = "yes"])
-AM_CONDITIONAL([USE_LIBUSB1], [test "$use_libusb1" = "yes"])
 
 AC_MSG_NOTICE([PKG_CONFIG_LIBDIR = $PKG_CONFIG_LIBDIR])
 AC_MSG_NOTICE([PKG_CONFIG_PATH   = $PKG_CONFIG_PATH])
