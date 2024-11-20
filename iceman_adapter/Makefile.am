@@ -17,7 +17,6 @@ dist_openocd_cfg_DATA = openocd.cfg.v5 \
 dist_openocd_cfg_DATA += ndsv5_tdesc_bitfield_64.xml \
 			 ndsv5_tdesc_bitfield.xml \
 			 nds32_tdesc_bitfield.xml
-dist_openocd_cfg_DATA += algorithm.bin
 dist_openocd_cfg_DATA += custom_lib.tcl \
 			 debug_diag.tcl \
 			 debug_util.tcl \
