@@ -16,40 +16,45 @@ PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0 >= 1.0.9], [
 	LIBUSB1_CFLAGS=`echo $LIBUSB1_CFLAGS | sed 's/-I/-isystem /'`
 ], [
 	use_libusb1=no
+	AC_MSG_ERROR([Can not find libusb1-0(>= 1.0.9)])
 ])
 
-if test "$use_libusb1" = "no"; then
-    AC_MSG_ERROR([Can not find libusb1-0 or libusb])
-fi
-
+# Platform check
 case $host in
 	*-mingw*)
-		echo "is_mingw=true"
+		AC_MSG_NOTICE([Build on Msys2])
 		is_mingw=yes
 		;;
-	*)
-		echo "is_mingw=false"
-		is_mingw=no
-		;;
-esac
-
-case `uname` in
-	CYGWIN*)
-		echo "is_cygwin=true"
+	*-cygwin*)
+		AC_MSG_NOTICE([Build on Cygwin])
 		is_cygwin=yes
 		;;
-	Darwin*)
-		echo "is_mac=true"
+	*-darwin*)
+		AC_MSG_NOTICE([Build on Darwin])
 		is_mac=yes
 		;;
+	*-linux*)
+		AC_MSG_NOTICE([Build on Linux])
+		;;
 	*)
-		echo "is_cygwin=false"
+		AC_MSG_ERROR([Unsupported platform: $host. This program only supports MinGW, Cygwin, or macOS.])
+		is_mingw=no
 		is_cygwin=no
 		is_mac=no
 		;;
 esac
 
-AM_CONDITIONAL([BUILD_MINGW_BINARY], [test $is_mingw = yes])
+# Cross-compile check(only support linux+mingw)
+if test "$build" != "$host"; then
+	if echo "$host" | grep -q "mingw"; then
+		AC_MSG_NOTICE([Cross-compiling for MinGW on Linux])
+		is_mingw=yes
+		is_cygwin=no
+		is_mac=no
+	fi
+fi
+
+AM_CONDITIONAL([BUILD_MINGW_BINARY], [test "$is_mingw" = "yes"])
 AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
 AM_CONDITIONAL([BUILD_MAC_BINARY], [test "$is_mac" = "yes"])
 
