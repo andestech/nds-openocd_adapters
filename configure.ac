@@ -23,24 +23,24 @@ PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0 >= 1.0.9], [
 case $host in
 	*-mingw*)
 		AC_MSG_NOTICE([Build on Msys2])
-		is_mingw=yes
+		BUILD_MINGW_BINARY=yes
 		;;
 	*-cygwin*)
 		AC_MSG_NOTICE([Build on Cygwin])
-		is_cygwin=yes
+		BUILD_CYGWIN_BINARY=yes
 		;;
 	*-darwin*)
 		AC_MSG_NOTICE([Build on Darwin])
-		is_mac=yes
+		BUILD_MAC_BINARY=yes
 		;;
 	*-linux*)
 		AC_MSG_NOTICE([Build on Linux])
 		;;
 	*)
 		AC_MSG_ERROR([Unsupported platform: $host. This program only supports MinGW, Cygwin, or macOS.])
-		is_mingw=no
-		is_cygwin=no
-		is_mac=no
+		BUILD_MINGW_BINARY=no
+		BUILD_CYGWIN_BINARY=no
+		BUILD_MAC_BINARY=no
 		;;
 esac
 
@@ -48,15 +48,22 @@ esac
 if test "$build" != "$host"; then
 	if echo "$host" | grep -q "mingw"; then
 		AC_MSG_NOTICE([Cross-compiling for MinGW on Linux])
-		is_mingw=yes
-		is_cygwin=no
-		is_mac=no
+		BUILD_MINGW_BINARY=yes
+		BUILD_CYGWIN_BINARY=no
+		BUILD_MAC_BINARY=no
 	fi
 fi
 
-AM_CONDITIONAL([BUILD_MINGW_BINARY], [test "$is_mingw" = "yes"])
-AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$is_cygwin" = "yes"])
-AM_CONDITIONAL([BUILD_MAC_BINARY], [test "$is_mac" = "yes"])
+# Check build for Windows
+if test "$BUILD_MINGW_BINARY" = "yes" || test "$BUILD_CYGWIN_BINARY" = "yes"; then
+	AC_MSG_NOTICE([Build for Windows])
+	BUILD_MINGW_OR_CYGWIN=yes
+fi
+
+AM_CONDITIONAL([BUILD_MINGW_BINARY], [test "$BUILD_MINGW_BINARY" = "yes"])
+AM_CONDITIONAL([BUILD_CYGWIN_BINARY], [test "$BUILD_CYGWIN_BINARY" = "yes"])
+AM_CONDITIONAL([BUILD_MAC_BINARY], [test "$BUILD_MAC_BINARY" = "yes"])
+AM_CONDITIONAL([BUILD_FOR_WINDOWS], [test "$BUILD_MINGW_OR_CYGWIN" = "yes"])
 
 AC_MSG_NOTICE([PKG_CONFIG_LIBDIR = $PKG_CONFIG_LIBDIR])
 AC_MSG_NOTICE([PKG_CONFIG_PATH   = $PKG_CONFIG_PATH])
