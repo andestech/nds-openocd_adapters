@@ -1,0 +1,11 @@
+Windows Driver Installation Guide
+
+1. Navigate to the `libusb-AICE-driver` folder.
+2. Right-click on `Install_driver.exe`.
+3. Select Run as Administrator to begin the installation.
+
+Note: If Windows Security prompts with "Would you like to install this device software?" 
+during the installation, click `Install`.
+
+After installation, verify that "Device Manager" lists `libusbK USB Devices`.
+

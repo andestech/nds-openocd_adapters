@@ -6,6 +6,23 @@ ICEman_SOURCES = iceman_adapter.c \
                  iceman_socket.c \
                  iceman_socket.h
 
+ICEman_LDADD = $(LIBUSB1_LIBS)
+
+ICEman_CFLAGS = -Wall -Wextra -fcommon -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
+ICEman_CFLAGS += -DRELSTR=\"`$(top_srcdir)/guess-rev.sh $(top_srcdir)`\"
+ICEman_CFLAGS += -DPKGBLDDATE=\"`date +%F-%R`\"
+
+ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a `pkg-config --libs libusb-1.0`
+
+if BUILD_MINGW_BINARY
+ICEman_LDADD += -lwsock32
+ICEman_CFLAGS += -DCYG
+ICEman_LDFLAGS += -lws2_32
+else
+ICEman_LDADD += -ldl
+ICEman_LDFLAGS += -lutil
+endif
+
 
 # For ice folder
 openocd_cfgdir = $(bindir)
@@ -37,47 +54,30 @@ dist_openocd_cfg_DATA += custom_lib.tcl \
 	nds_reg_write.tcl \
 	nds32_user.cfg
 
-
-# For driver
 if BUILD_FOR_WINDOWS
-install-data-hook:
-	cp -r $(srcdir)/libusb-AICE-driver $(bindir)/libusb-AICE-driver
-
+$(info Copy libusb-AICE-driver)
+dist_openocd_cfg_DATA += README.win
 else
+$(info Copy ICEman.sh)
 dist_openocd_cfg_DATA += 70-ndsusb-v1.rules \
 	ICEman.sh \
 	ftdi_script-v1.sh
-
-install-data-hook:
-	chmod +x $(DESTDIR)$(bindir)/ICEman.sh
-	chmod +x $(DESTDIR)$(bindir)/ftdi_script-v1.sh
-
 endif
 
 
-# For board, interface, target folder
+# Copy board, interface, target folder
+# If build for win, cp libsub-AICE-driver
+# If build for linux, add execute permision on script
 install-data-hook:
 	cp -r $(srcdir)/board $(bindir)/board
 	cp -r $(srcdir)/interface $(bindir)/interface
 	cp -r $(srcdir)/target $(bindir)/target
 
-
-ICEman_LDADD = $(LIBUSB1_LIBS)
-
-ICEman_CFLAGS = -Wall -Wextra -fcommon -DHAVE_LIBUSB1 $(LIBUSB1_CFLAGS)
-ICEman_CFLAGS += -DRELSTR=\"`$(top_srcdir)/guess-rev.sh $(top_srcdir)`\"
-ICEman_CFLAGS += -DPKGBLDDATE=\"`date +%F-%R`\"
-
-ICEman_LDFLAGS = ../../openocd/src/.libs/libopenocd.a ../../openocd/jimtcl/libjim.a `pkg-config --libs libusb-1.0`
-
-if BUILD_MINGW_BINARY
-ICEman_LDADD += -lwsock32
-ICEman_CFLAGS += -DCYG
-ICEman_LDFLAGS += -lws2_32
+if BUILD_FOR_WINDOWS
+	cp -r $(srcdir)/libusb-AICE-driver $(bindir)/libusb-AICE-driver
+	chmod +x $(bindir)/libusb-AICE-driver/*.exe
 else
-ICEman_LDADD += -ldl
-ICEman_LDFLAGS += -lutil
+	chmod +x $(bindir)/ICEman.sh
+	chmod +x $(bindir)/ftdi_script-v1.sh
 endif
-
-
 
