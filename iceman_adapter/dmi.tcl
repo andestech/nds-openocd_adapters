@@ -251,6 +251,9 @@ proc nds_auto_detect_targets {tap} {
 		if ![ expr {$nds_dmstatus & $DMI_DMSTATUS_ANYNONEXISTENT} ] {
 			set count_cores [expr {$count_cores + 1}]
 			#puts [format "count_cores:  0x%08x" $count_cores]
+		} else {
+			# Presume all hart IDs are sequential.
+			break
 		}
 	}
 	echo [format "count_cores:  0x%08x" $count_cores]
