@@ -292,24 +292,12 @@ static void show_usage()
 {
 	uint32_t i;
 	printf("Usage:\nICEman --port start_port_number[:end_port_number] [--help]\n");
-	printf("-a, --reset-aice (For AICE only):\tReset AICE as ICEman startup\n");
 	printf("-A, --no-reset-detect:\tNo reset detection in debug session\n");
 	printf("-b, --bport:\t\tSocket port number for Burner connection\n");
 	printf("\t\t\t(default: 2354)\n");
 
-	// V3
-	printf("-c, --clock (For V3):\t\tSpecify JTAG clock setting\n");
-	printf("\t\tUsage: -c num\n");
-	printf("\t\t\tnum should be the following:\n");
-	for (i = 0; i <= 15; i++)
-		printf("\t\t\t%d: %s\n", i, aice_clk_string[i]);
-	printf("\t\t\tAICE-MCU, AICE2 and AICE2-T support 8 ~ 15\n");
-	printf("\t\t\tAICE-MINI only supports 10 ~ 15\n\n");
-	printf("\t\t\tAICE-2 supports extended TCK frequency range\n");
-	printf("\t\t\t\tUsage: -c <clock range>Hz/KHz/MHz\n");
-
 	// V5
-	printf("-c, --clock (For V5):\t\tSpecify JTAG clock setting\n");
+	printf("-c, --clock:\t\tSpecify JTAG clock setting\n");
 	printf("\t\tUsage: -c num\n");
 	printf("\t\t\tnum should be the following:\n");
 	for (i = 0; i <= 15; i++) {
@@ -323,12 +311,7 @@ static void show_usage()
 	printf("\t\t\t\tUsage: -c <clock range>KHz/MHz\n");
 
 
-	printf("-C, --check-times (For V3):\tCount/Second to check DBGER\n");
-	printf("\t\t\t(default: 500 times)\n");
-	printf("\t\tExample:\n");
-	printf("\t\t\t1. -C 100 to check 100 times\n");
-	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
-	printf("-C, --check-times (For V5):\tSecond to check DTM\n");
+	printf("-C, --check-times:\tSecond to check DTM\n");
 	printf("\t\t\t(default: 3 seconds)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 millisecond\n");
@@ -338,31 +321,15 @@ static void show_usage()
 	printf("\t\t\tFor multi-user:\n");
 	printf("\t\t\t\tUse --log-output/-f to specify other workspace\n");
 	printf("\t\t\t\twhich user have full permissions.\n");
-	printf("-F, --edm-port-file (Only for Secure MPU):\tEDM port0/1 operations file name\n");
-	printf("\t\tFile format:\n");
-	printf("\t\t\twrite_edm 6:0x1234,7:0x1234;\n");
-	printf("\t\t\twrite_edm 6:0x1111;\n");
-	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
-	printf("-G, --enable-global-stop (Only for V3): Enable 'global stop'.  As users use up hardware watchpoints, target stops at every load/store instructions. \n");
 	printf("-h, --help:\t\tThe usage is for ICEman\n");
 	printf("-H, --reset-hold:\tReset-and-hold while ICEman startup\n");
 	printf("-I, --interface:\tSpecify an interface config file in ice/interface.\n");
-	printf("-k, --word-access-mem (Only for V3):\tAlways use word-aligned address to access device\n");
-	printf("-K, --soft-reset-hold (Only for V3):\tUse soft reset-and-hold\n");
 	printf("-l, --custom-srst:\tUse custom script to do SRST\n");
 	printf("-L, --custom-trst:\tUse custom script to do TRST\n");
-	printf("-M, --edm-dimb (Only for V3):\t\tSpecify the DIMBR (Debug Instruction Memory Base Register)\n");
-	printf("\t\t\t(default: 0xFFFF0000)\n");
 	printf("-N, --custom-restart:\tUse custom script to do RESET-HOLD\n");
 	printf("-o, --reset-time:\tReset time of reset-and-hold (milliseconds)\n");
 	printf("\t\t\t(default: 1000 milliseconds)\n");
-	printf("-O, --edm-port-operation (Only for Secure MPU): EDM port0/1 operations\n");
-	printf("\t\tUsage: -O \"write_edm 6:0x1234,7:0x5678;\"\n");
-	printf("\t\t\t6 for EDM_PORT0 and 7 for EDM_PORT1\n\n");
 	printf("-p, --port:\t\tSocket port number for gdb connection\n");
-	printf("-P, --passcode (Only for Secure MPU):\t\tPASSCODE of secure MPU\n");
-	printf("-r, --ice-retry (Only for V3):\tRetry count when AICE command timeout\n");
-	printf("\t\t\t(default: 50 times)\n");
 	printf("-s, --source:\t\tShow commit ID of this version\n");
 	printf("-S, --stop-seq:\t\tSpecify the SOC device operation sequence while CPU stop\n");
 	printf("-R, --resume-seq:\tSpecify the SOC device operation sequence before CPU resume\n\n");
@@ -379,14 +346,9 @@ static void show_usage()
 	printf("-x, --diagnosis:\tDiagnose connectivity issue\n");
 	printf("\t\tUsage: --diagnosis[=address]\n\n");
 	printf("-X, --uncnd-reset-hold:\tUnconditional Reset-and-hold while ICEman startup (This implies -H)\n");
-	printf("-y, --idlm-base (Only for V3):\t\tDefine ILM&DLM base and size\n");
 	printf("-z, --ace-conf:\t\tSpecify ACE file on each core\n");
 	printf("\t\tUsage: --ace-conf <core#id>=<ace_conf>[,<core#id>=<ace_conf>]*\n");
 	printf("\t\t\tExample: --ace-conf core0=core0.aceconf,core1=core1.aceconf\n");
-	printf("-Z, --target:\t\tSpecify target type (v2/v3/v3m/v5)\n");
-	//printf("--cp0reg/cp1reg/cp2reg/cp3reg (Only for V3):\t\tSpecify coprocessor register numbers\n");
-	//printf("\t\t\tExample: --cp0reg 1024 --cp1reg 1024\n");
-	printf("--use-sdm (Only for V3):Use System Debug Module\n");
 	printf("--l2c[=Base Address]:	Specify the base address of L2C\n");
 	printf("--target-cfg:\t\tSpecify the CPU configuration file for a complex multicore system\n");
 	printf("--smp:\t\t\tEnable SMP mode for multi-cores\n");
