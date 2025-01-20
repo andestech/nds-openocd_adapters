@@ -1,5 +1,5 @@
 {
-	"version":"3.0",
+	"version":"4.0",
 	"options":[
 		{
 			"vid":"0x1CFC",
@@ -7,12 +7,19 @@
 			"name":"AICE-MINI+",
 			"argument":[
 				{
-					"key":"sdp",
-					"value":"-I aice_sdp.cfg"
+					"key":"default",
+					"value":"--detect-2wire",
+					"label":"Auto"
 				},
 				{
-					"key":"default",
-					"value":"-I aice-mini-plus.cfg"
+					"key":"sdp",
+					"value":"-I aice_sdp.cfg",
+					"label":"SDP (2-wire)"
+				},
+				{
+					"key":"jdp",
+					"value":"-I aice-mini-plus.cfg",
+					"label":"JDP (4-wire)"
 				}
 			]
 		},
@@ -22,8 +29,9 @@
 			"name":"AICE-MINI",
 			"argument":[
 				{
-					"key":"default",
-					"value":""
+					"key":"jdp",
+					"value":"",
+					"label":"JDP (4-wire)"
 				}
 			]
 		},
@@ -33,12 +41,24 @@
 			"name":"AICE-MICRO",
 			"argument":[
 				{
-					"key":"sdp",
-					"value":"-I aice_micro_sdp.cfg"
+					"key":"default",
+					"value":"--detect-2wire",
+					"label":"Auto"
 				},
 				{
-					"key":"default",
-					"value":""
+					"key":"sdp",
+					"value":"-I aice_micro_sdp.cfg",
+					"label":"SDP (2-wire)"
+				},
+				{
+					"key":"jdp",
+					"value":"",
+					"label":"JDP (4-wire)"
+				},
+				{
+					"key":"cJtag",
+					"value":"-I aice_micro_cjtag.cfg",
+					"label":"cJTAG (2-wire)"
 				}
 			]
 		},
@@ -48,8 +68,9 @@
 			"name":"Olimex ARM",
 			"argument":[
 				{
-					"key":"default",
-					"value":"-I olimex-arm-usb-tiny-h.cfg"
+					"key":"jdp",
+					"value":"olimex-arm-usb-tiny-h.cfg",
+					"label":"JDP (4-wire)"
 				}
 			]
 		}
