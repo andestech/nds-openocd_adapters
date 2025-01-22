@@ -35,7 +35,7 @@ proc init_dmi {tap} {
 	assert {[expr {$idcode == $ANDES_JDTM_IDCODE}]} [format "IDCODE 0x%x is not expected Andes JDTM IDCODE (0x%x)]" $idcode $ANDES_JDTM_IDCODE]
 
 	irscan $tap $DTM_IR_DTMCS
-	scan [drscan $tap 32 0x30000] "%x" dtmcs
+	scan [drscan $tap 32 0x0] "%x" dtmcs
 	print_debug_msg [format "dtmcs=0x%x" $dtmcs]
 
 	set _abits [expr {$dtmcs >> 4 & 0x3F}]

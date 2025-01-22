@@ -8,7 +8,7 @@ proc dmi_init_once {tap} {
 	set DTM_IR_DTMCS	0x10
 
 	irscan $tap $DTM_IR_DTMCS
-	scan [drscan $tap 32 0x30000] "%x" dtmcs
+	scan [drscan $tap 32 0x0] "%x" dtmcs
 	echo [format "dtmcs=0x%x" $dtmcs]
 
 	set _abits [expr {$dtmcs >> 4 & 0x3F}]
