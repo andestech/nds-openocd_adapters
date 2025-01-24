@@ -564,6 +564,9 @@
 <field name="pl2_cmd" start="6" end="6"/>
 <field name="cst_ctl" start="7" end="7"/>
 <field name="shadow" start="8" end="8"/>
+<field name="ROC" start="9" end="9"/>
+<field name="AMM" start="10" end="10"/>
+<field name="ECC_DETECTION_ONLY" start="12" end="12"/>
 </flags>
 <struct id="reg_mmsc_cfg3" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg3_flags"/>
@@ -613,10 +616,12 @@
 <field name="Smrnmi" start="4" end="5" type="uint64"/>
 <field name="Ssnpm" start="6" end="6"/>
 <field name="Smnpm" start="7" end="7"/>
-<field name="Smpm" start="8" end="8"/>
+<field name="Smmpm" start="8" end="8"/>
 <field name="Zawrs" start="9" end="9"/>
 <field name="Smcsrind" start="10" end="10"/>
 <field name="Smcsrind" start="11" end="11"/>
+<field name="Zimop" start="24" end="24"/>
+<field name="Zcmop" start="25" end="25"/>
 </struct>
 
 <enum id="mvec_cfg_mfsew" size="8">
