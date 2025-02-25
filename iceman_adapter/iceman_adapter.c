@@ -196,8 +196,8 @@ struct device_info {
 const struct device_info device_whitelist[] = {
 	{ .vid = 0x0403, .pid = 0x6010, .description = "AndeShape AICE-MICRO / FTDI USB device" },
 	{ .vid = 0x15ba, .pid = 0x002a, .description = "Olimex ARM-USB-TINY-H" },
-	{ .vid = 0x1cfc, .pid = 0x0000, .description = "AndeShape AICE/AICE-MCU/AICE-MINI/AICE2" },
-	{ .vid = 0x1cfc, .pid = 0x0001, .description = "AndeShape AICE-MINI+" },
+	{ .vid = 0x1cfc, .pid = 0x0000, .description = "AndeShape AICE/AICE-MCU/AICE-MINI/AICE2/AICE2-T" },
+	{ .vid = 0x1cfc, .pid = 0x0001, .description = "AndeShape AICE-MINI+ / AICE-T2" },
 	{ .vid = 0x28e9, .pid = 0x058f, .description = "GigaDevice GD32" },
 };
 
