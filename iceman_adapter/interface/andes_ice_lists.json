@@ -4,7 +4,7 @@
 		{
 			"vid":"0x1CFC",
 			"pid":"0x0001",
-			"name":"AICE-MINI+",
+			"name":"AICE-MINI+/AICE-T2",
 			"argument":[
 				{
 					"key":"default",
@@ -54,11 +54,6 @@
 					"key":"jdp",
 					"value":"",
 					"label":"JDP (4-wire)"
-				},
-				{
-					"key":"cJtag",
-					"value":"-I aice_micro_cjtag.cfg",
-					"label":"cJTAG (2-wire)"
 				}
 			]
 		},
