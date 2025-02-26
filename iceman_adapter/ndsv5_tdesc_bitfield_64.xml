@@ -852,12 +852,17 @@
 <evalue name="24 way" value="9"/>
 <evalue name="32 way" value="10"/>
 </enum>
+<enum id="mpl2cm_cfg_dsz" size="8">
+<evalue name="32 bytes" value="3"/>
+<evalue name="64 bytes" value="4"/>
+</enum>
 <struct id="reg_mpl2cm_cfg" size="8">
 <field name="" start="0" end="63" type="uint64"/>
-<field name="dset" start="0" end="2" type="micm_cfg_iset"/>
-<field name="dway" start="3" end="5" type="mpl2cm_cfg_dway"/>
-<field name="dlck" start="9" end="9" />
-<field name="dc_ecc" start="10" end="11" type="uint64"/>
+<field name="dset" start="0" end="3" type="micm_cfg_iset"/>
+<field name="dway" start="4" end="7" type="mpl2cm_cfg_dway"/>
+<field name="dsz" start="8" end="10" type="mpl2cm_cfg_dsz"/>
+<field name="dlck" start="11" end="11" />
+<field name="dc_ecc" start="12" end="13" type="uint64"/>
 </struct>
 
 <flags id="mmisc_ctl_flags" size="8">
