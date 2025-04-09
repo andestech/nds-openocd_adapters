@@ -69,15 +69,15 @@ endif
 # If build for win, cp libsub-AICE-driver
 # If build for linux, add execute permision on script
 install-data-hook:
-	cp -r $(srcdir)/board $(bindir)/board
-	cp -r $(srcdir)/interface $(bindir)/interface
-	cp -r $(srcdir)/target $(bindir)/target
+	cp -r $(srcdir)/board $(DESTDIR)$(bindir)/board
+	cp -r $(srcdir)/interface $(DESTDIR)$(bindir)/interface
+	cp -r $(srcdir)/target $(DESTDIR)$(bindir)/target
 
 if BUILD_FOR_WINDOWS
-	cp -r $(srcdir)/libusb-AICE-driver $(bindir)/libusb-AICE-driver
-	chmod +x $(bindir)/libusb-AICE-driver/*.exe
+	cp -r $(srcdir)/libusb-AICE-driver $(DESTDIR)$(bindir)/libusb-AICE-driver
+	chmod +x $(DESTDIR)$(bindir)/libusb-AICE-driver/*.exe
 else
-	chmod +x $(bindir)/ICEman.sh
-	chmod +x $(bindir)/ftdi_script-v1.sh
+	chmod +x $(DESTDIR)$(bindir)/ICEman.sh
+	chmod +x $(DESTDIR)$(bindir)/ftdi_script-v1.sh
 endif
 
