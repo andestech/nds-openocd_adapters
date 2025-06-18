@@ -84,6 +84,7 @@ enum LONG_OPT {
 	LONGOPT_NO_GROUP,
 	LONGOPT_BITBANG_HOST,
 	LONGOPT_BITBANG_PORT,
+	LONGOPT_KEEP_HALT,
 } long_opts;
 
 
@@ -115,6 +116,7 @@ struct option long_option[] = {
 	{"no-group", no_argument, &long_opt_flag, LONGOPT_NO_GROUP},
 	{"bitbang-host", required_argument, &long_opt_flag, LONGOPT_BITBANG_HOST},
 	{"bitbang-port", required_argument, &long_opt_flag, LONGOPT_BITBANG_PORT},
+	{"keep-halt", no_argument, &long_opt_flag, LONGOPT_KEEP_HALT},
 
 	{"reset-aice", no_argument, 0, 'a'},
 	{"no-reset-detect", no_argument, 0, 'A'},
@@ -269,6 +271,7 @@ static const char *custom_interface;
 static const char *custom_target_cfg;
 static unsigned int efreq_range;
 static const char *dump_trace_folder;
+static int target_keep_halt_as_examine;
 
 #define DIMBR_DEFAULT (0xFFFF0000u)
 #define NDSV3_L2C_BASE (0x90F00000u)
@@ -369,6 +372,7 @@ static void show_usage()
 	printf("--no-halt-detect:\tNo halt detection in debug session\n");
 	printf("--bitbang-host:\tSet remote bitbang host\n");
 	printf("--bitbang-port:\tSet remote bitbang port\n");
+	printf("--keep-halt: Halt target at start of examine and keep it halted\t\n");
 }
 
 char output_path[LINE_BUFFER_SIZE];
@@ -563,6 +567,9 @@ static int handle_long_option(int long_opt)
 			bitbang_port = strtol(optarg, NULL, 0);
 			break;
 
+		case LONGOPT_KEEP_HALT:
+			target_keep_halt_as_examine = 1;
+			break;
 		default:
 			return ERROR_FAIL;
 	}
@@ -1306,6 +1313,9 @@ static void update_openocd_cfg_v5()
 
 	if (dump_trace_folder)
 		fprintf(openocd_cfg, "nds configure dump-trace-folder %s\n", dump_trace_folder);
+
+	if (target_keep_halt_as_examine)
+		fprintf(openocd_cfg, "nds configure target_keep_halt_as_examine %d\n", target_keep_halt_as_examine);
 
 	/*
 	 * Handle ACE option
