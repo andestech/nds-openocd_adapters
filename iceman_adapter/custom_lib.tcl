@@ -7,12 +7,12 @@ set DMI_DMCONTROL      0x10
 set DMI_DMCONTROL_HALTREQ   0x80000000
 
 proc set_srst {delay_ms} {
-	ftdi_write_pin nSRST 0
+	ftdi ftdi_write_pin nSRST 0
 	sleep $delay_ms
 }
 
 proc clear_srst {delay_ms} {
-	ftdi_write_pin nSRST 1
+	ftdi ftdi_write_pin nSRST 1
 	sleep $delay_ms
 }
 
@@ -41,12 +41,12 @@ proc clear_dbgi {delay_ms} {
 }
 
 proc set_trst {delay_ms} {
-	ftdi_write_pin nTRST 0
+	ftdi ftdi_write_pin nTRST 0
 	sleep $delay_ms
 }
 
 proc clear_trst {delay_ms} {
-	ftdi_write_pin nTRST 1
+	ftdi ftdi_write_pin nTRST 1
 	sleep $delay_ms
 }
 
