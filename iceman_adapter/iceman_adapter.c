@@ -372,7 +372,7 @@ static void show_usage()
 	printf("--no-halt-detect:\tNo halt detection in debug session\n");
 	printf("--bitbang-host:\tSet remote bitbang host\n");
 	printf("--bitbang-port:\tSet remote bitbang port\n");
-	printf("--keep-halt: Halt target at start of examine and keep it halted\t\n");
+	printf("--keep-halt:\tHalt the target at the start of examination and keep it halted\n");
 }
 
 char output_path[LINE_BUFFER_SIZE];
