@@ -567,9 +567,15 @@
 <field name="ROC" start="9" end="9"/>
 <field name="AMM" start="10" end="10"/>
 <field name="ECC_DETECTION_ONLY" start="12" end="12"/>
+<field name="msc_ext4" start="31" end="31"/>
 </flags>
 <struct id="reg_mmsc_cfg3" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg3_flags"/>
+<field name="ppma_ver" start="32" end="34" type="uint64"/>
+</struct>
+
+<struct id="reg_mmsc_cfg4" size="8">
+<field name="ppma_ver" start="0" end="2" type="uint64"/>
 </struct>
 
 <enum id="mhvm_cfg_size" size="8">
@@ -620,6 +626,7 @@
 <field name="Zawrs" start="9" end="9"/>
 <field name="Smcsrind" start="10" end="10"/>
 <field name="Smcsrind" start="11" end="11"/>
+<field name="RERI" start="12" end="12"/>
 <field name="Zimop" start="24" end="24"/>
 <field name="Zcmop" start="25" end="25"/>
 </struct>
@@ -1539,6 +1546,8 @@
 <reg name="mmsc_cfg" bitsize="64" type="reg_mmsc_cfg"/>
 <reg name="csr4036" bitsize="64" type="reg_mmsc_cfg3"/>
 <reg name="mmsc_cfg3" bitsize="64" type="reg_mmsc_cfg3"/>
+<reg name="csr4037" bitsize="64" type="reg_mmsc_cfg4"/>
+<reg name="mmsc_cfg4" bitsize="64" type="reg_mmsc_cfg4"/>
 <reg name="csr4039" bitsize="64" type="reg_mvec_cfg"/>
 <reg name="mvec_cfg" bitsize="64" type="reg_mvec_cfg"/>
 <reg name="csr4040" bitsize="64" type="reg_mcrash_statesave"/>
