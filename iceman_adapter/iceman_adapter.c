@@ -329,7 +329,7 @@ static void show_usage()
 	printf("\t\t\t1. -C 100 to check 100 times\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
 	printf("-C, --check-times (For V5):\tSecond to check DTM\n");
-	printf("\t\t\t(default: 3 seconds)\n");
+	printf("\t\t\t(default: 30 seconds)\n");
 	printf("\t\tExample:\n");
 	printf("\t\t\t1. -C 100 to check 100 millisecond\n");
 	printf("\t\t\t2. -C 100s or -C 100S to check 100 seconds\n\n");
