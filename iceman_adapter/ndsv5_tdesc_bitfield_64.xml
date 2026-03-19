@@ -566,8 +566,12 @@
 <field name="shadow" start="8" end="8"/>
 <field name="ROC" start="9" end="9"/>
 <field name="AMM" start="10" end="10"/>
+<field name="TEE" start="11" end="11"/>
 <field name="ECC_DETECTION_ONLY" start="12" end="12"/>
 <field name="msc_ext4" start="31" end="31"/>
+<field name="L1D_BF" start="35" end="35"/>
+<field name="EDGE_TRIM" start="36" end="36"/>
+<field name="BUS_TO" start="37" end="37"/>
 </flags>
 <struct id="reg_mmsc_cfg3" size="8">
 <field name="" start="0" end="63" type="mmsc_cfg3_flags"/>
@@ -843,6 +847,11 @@
 <field name="l3_warnd" start="27" end="28" type="uint64"/>
 <field name="l4_warnd" start="29" end="30" type="uint64"/>
 <field name="pl2_eccen" start="33" end="34" type="uint64"/>
+<field name="PL2_IPREF_DEPTH" start="44" end="47" type="uint64"/>
+<field name="PL2_DPREF_DEPTH" start="48" end="51" type="uint64"/>
+<field name="PREFETCH_I_TARGET" start="52" end="53" type="uint64"/>
+<field name="PREFETCH_R_TARGET" start="54" end="55" type="uint64"/>
+<field name="PREFETCH_W_TARGET" start="56" end="57" type="uint64"/>
 <field name="sndevtd" start="60" end="61" type="uint64"/>
 </struct>
 
@@ -878,6 +887,7 @@
 <field name="rvcompm" start="2" end="2"/>
 <field name="brpe" start="3" end="3"/>
 <field name="una" start="6" end="6"/>
+<field name="NT" start="7" end="7"/>
 <field name="nbld_en" start="8" end="8"/>
 <field name="newnmi" start="9" end="9"/>
 <field name="vcgl1_en" start="10" end="10"/>
@@ -1806,4 +1816,3 @@
 </feature>
 
 </target>
-

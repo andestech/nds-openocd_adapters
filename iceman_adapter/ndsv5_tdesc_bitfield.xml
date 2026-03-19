@@ -565,6 +565,7 @@
 <field name="shadow" start="8" end="8"/>
 <field name="ROC" start="9" end="9"/>
 <field name="AMM" start="10" end="10"/>
+<field name="TEE" start="11" end="11"/>
 <field name="ECC_DETECTION_ONLY" start="12" end="12"/>
 <field name="msc_ext4" start="31" end="31"/>
 </flags>
@@ -572,7 +573,13 @@
 <field name="" start="0" end="31" type="mmsc_cfg3_flags"/>
 </struct>
 
+<flags id="mmsc_cfg4_flags" size="4">
+<field name="L1D_BF" start="3" end="3"/>
+<field name="EDGE_TRIM" start="4" end="4"/>
+<field name="BUS_TO" start="5" end="5"/>
+</flags>
 <struct id="reg_mmsc_cfg4" size="4">
+<field name="" start="0" end="31" type="mmsc_cfg4_flags"/>
 <field name="ppma_ver" start="0" end="2" type="uint32"/>
 </struct>
 
@@ -855,6 +862,11 @@
 <struct id="reg_mcache_ctl2" size="4">
 <field name="" start="0" end="31" type="mcache_ctl2_flags"/>
 <field name="pl2_eccen" start="1" end="2" type="uint32"/>
+<field name="PL2_IPREF_DEPTH" start="12" end="15" type="uint32"/>
+<field name="PL2_DPREF_DEPTH" start="16" end="19" type="uint32"/>
+<field name="PREFETCH_I_TARGET" start="20" end="21" type="uint32"/>
+<field name="PREFETCH_R_TARGET" start="22" end="23" type="uint32"/>
+<field name="PREFETCH_W_TARGET" start="24" end="25" type="uint32"/>
 <field name="sndevtd" start="28" end="29" type="uint32"/>
 </struct>
 
@@ -890,6 +902,7 @@
 <field name="rvcompm" start="2" end="2"/>
 <field name="brpe" start="3" end="3"/>
 <field name="una" start="6" end="6"/>
+<field name="NT" start="7" end="7"/>
 <field name="nbld_en" start="8" end="8"/>
 <field name="newnmi" start="9" end="9"/>
 <field name="vcgl1_en" start="10" end="10"/>
@@ -1880,4 +1893,3 @@
 </feature>
 
 </target>
-
